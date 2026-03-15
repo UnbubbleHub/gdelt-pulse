@@ -1,0 +1,1 @@
+"""GDELT event pipeline package."""

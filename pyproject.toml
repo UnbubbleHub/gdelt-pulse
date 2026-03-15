@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gdelt-pulse"
+version = "0.1.0"
+description = "GDELT event ingestion and clustering pipeline"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[dependency-groups]
+dev = [
+	"pytest>=8.3.0",
+	"ruff>=0.11.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/gdelt_event_pipeline"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
