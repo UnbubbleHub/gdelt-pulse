@@ -8,7 +8,11 @@ version = "0.1.0"
 description = "GDELT event ingestion and clustering pipeline"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "psycopg[binary]>=3.2.0",
+    "psycopg-pool>=3.2.0",
+    "pgvector>=0.3.0",
+]
 
 [dependency-groups]
 dev = [
