@@ -71,6 +71,7 @@ def parse_v2_locations(raw: str) -> list[dict[str, Any]]:
         return []
 
     results: list[dict[str, Any]] = []
+    seen: set[tuple] = set()
     for entry in raw.split(";"):
         entry = entry.strip()
         if not entry:
@@ -79,16 +80,24 @@ def parse_v2_locations(raw: str) -> list[dict[str, Any]]:
         if len(parts) < 7:
             continue
 
+        name = parts[1] or None
+        country_code = parts[2] or None
+        lat = _float_or_none(parts[5])
+        lon = _float_or_none(parts[6])
+
+        dedup_key = (name, country_code, lat, lon)
+        if dedup_key in seen:
+            continue
+        seen.add(dedup_key)
+
         location: dict[str, Any] = {
             "type": _int_or_none(parts[0]),
-            "name": parts[1] or None,
-            "country_code": parts[2] or None,
+            "name": name,
+            "country_code": country_code,
             "adm1": parts[3] or None,
             "adm2": parts[4] if len(parts) > 4 else None,
         }
 
-        lat = _float_or_none(parts[5])
-        lon = _float_or_none(parts[6])
         if lat is not None and lon is not None:
             location["lat"] = lat
             location["lon"] = lon
