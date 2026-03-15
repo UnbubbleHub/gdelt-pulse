@@ -125,6 +125,39 @@ def get_unembedded_articles(*, limit: int = 100) -> list[dict[str, Any]]:
             return cur.fetchall()
 
 
+def get_untitled_articles(*, limit: int = 200) -> list[dict[str, Any]]:
+    """Return articles that have no title yet."""
+    pool = get_pool()
+    with pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT * FROM articles
+                WHERE title IS NULL
+                ORDER BY gdelt_timestamp DESC
+                LIMIT %s
+                """,
+                (limit,),
+            )
+            return cur.fetchall()
+
+
+def update_article_title(article_id: str, title: str) -> None:
+    """Set the title for an article."""
+    pool = get_pool()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE articles
+                SET title = %s, updated_at = now()
+                WHERE id = %s
+                """,
+                (title, article_id),
+            )
+        conn.commit()
+
+
 def update_article_embedding(
     article_id: str, embedding: list[float], model: str
 ) -> None:
