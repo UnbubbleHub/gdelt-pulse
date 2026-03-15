@@ -11,7 +11,11 @@ from gdelt_event_pipeline.ingestion.gkg_fetcher import (
     get_latest_gkg_url,
 )
 from gdelt_event_pipeline.normalization.normalize import normalize_row
-from gdelt_event_pipeline.storage.articles import upsert_article
+from gdelt_event_pipeline.storage.articles import (
+    get_untitled_articles,
+    update_article_title,
+    upsert_article,
+)
 from gdelt_event_pipeline.storage.pipeline_state import (
     get_pipeline_state,
     update_pipeline_state,
@@ -113,3 +117,30 @@ def run_ingestion(
         result.rows_failed,
     )
     return result
+
+
+def run_title_scraping(
+    *,
+    batch_size: int = 200,
+    timeout: int = 10,
+    max_workers: int = 8,
+) -> tuple[int, int]:
+    """Scrape titles for articles that don't have one yet.
+
+    Returns (attempted, succeeded) counts.
+    """
+    from gdelt_event_pipeline.ingestion.scraper import scrape_titles
+
+    articles = get_untitled_articles(limit=batch_size)
+    if not articles:
+        logger.info("No untitled articles to scrape")
+        return 0, 0
+
+    logger.info("Scraping titles for %d articles", len(articles))
+    titles = scrape_titles(articles, timeout=timeout, max_workers=max_workers)
+
+    for article_id, title in titles.items():
+        update_article_title(article_id, title)
+
+    logger.info("Updated %d/%d article titles", len(titles), len(articles))
+    return len(articles), len(titles)
