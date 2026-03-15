@@ -83,6 +83,17 @@ class TestParseV2Locations:
         raw = "1#France#FR"
         assert parse_v2_locations(raw) == []
 
+    def test_deduplicates_same_location(self):
+        raw = (
+            "1#Iran#IR#IR##32.0#53.0#IR;"
+            "1#Iran#IR#IR##32.0#53.0#IR;"
+            "1#United States#US#US##39.828175#-98.5795#US"
+        )
+        result = parse_v2_locations(raw)
+        assert len(result) == 2
+        assert result[0]["name"] == "Iran"
+        assert result[1]["name"] == "United States"
+
 
 class TestParseV2Persons:
     def test_basic_persons(self):
