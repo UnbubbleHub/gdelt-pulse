@@ -55,6 +55,12 @@ def run_embedding(
     texts: list[str] = []
     valid_articles: list[dict] = []
     for article in articles:
+        if not article.get("title"):
+            result.articles_skipped += 1
+            logger.debug(
+                "Skipping article %s: no title", article.get("id"),
+            )
+            continue
         text = compose_embedding_text(article)
         if not text.strip():
             result.articles_skipped += 1

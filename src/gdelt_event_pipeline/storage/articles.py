@@ -135,6 +135,7 @@ def get_unclustered_articles(*, limit: int = 200) -> list[dict[str, Any]]:
                 SELECT a.* FROM articles a
                 LEFT JOIN cluster_memberships cm ON cm.article_id = a.id
                 WHERE a.embedding IS NOT NULL
+                  AND a.title IS NOT NULL
                   AND cm.id IS NULL
                 ORDER BY a.gdelt_timestamp ASC
                 LIMIT %s

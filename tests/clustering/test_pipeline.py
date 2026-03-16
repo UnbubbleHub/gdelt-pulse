@@ -55,6 +55,24 @@ class TestRunClustering:
 
     @patch("gdelt_event_pipeline.clustering.pipeline.assign_article")
     @patch("gdelt_event_pipeline.clustering.pipeline.get_unclustered_articles")
+    def test_skips_articles_without_title(self, mock_get, mock_assign):
+        titled = _make_article("a1")
+        untitled = _make_article("a2")
+        untitled["title"] = None
+
+        mock_get.return_value = [titled, untitled]
+        mock_assign.return_value = AssignmentResult(
+            cluster_id="c1", similarity=0.9, is_new_cluster=False
+        )
+
+        result = run_clustering()
+
+        assert result.articles_processed == 1
+        assert result.articles_skipped == 1
+        assert mock_assign.call_count == 1
+
+    @patch("gdelt_event_pipeline.clustering.pipeline.assign_article")
+    @patch("gdelt_event_pipeline.clustering.pipeline.get_unclustered_articles")
     def test_threshold_passed_through(self, mock_get, mock_assign):
         mock_get.return_value = [_make_article("a1")]
         mock_assign.return_value = AssignmentResult(

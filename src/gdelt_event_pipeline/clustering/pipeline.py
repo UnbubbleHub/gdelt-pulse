@@ -18,6 +18,7 @@ class ClusteringResult:
     articles_processed: int = 0
     assigned_to_existing: int = 0
     new_clusters_created: int = 0
+    articles_skipped: int = 0
     articles_failed: int = 0
 
 
@@ -43,6 +44,12 @@ def run_clustering(
     )
 
     for article in articles:
+        if not article.get("title"):
+            logger.debug(
+                "Skipping article %s: no title", article.get("id"),
+            )
+            result.articles_skipped += 1
+            continue
         try:
             assignment = assign_article(article, threshold=threshold)
             result.articles_processed += 1
@@ -57,10 +64,11 @@ def run_clustering(
             result.articles_failed += 1
 
     logger.info(
-        "Clustering complete: processed=%d existing=%d new=%d failed=%d",
+        "Clustering complete: processed=%d existing=%d new=%d skipped=%d failed=%d",
         result.articles_processed,
         result.assigned_to_existing,
         result.new_clusters_created,
+        result.articles_skipped,
         result.articles_failed,
     )
     return result
