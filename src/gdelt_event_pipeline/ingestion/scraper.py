@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html
 import logging
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -10,12 +11,31 @@ from urllib.request import Request, urlopen
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_TIMEOUT = 10
-MAX_WORKERS = 8
-USER_AGENT = "gdelt-pulse/0.1"
+DEFAULT_TIMEOUT = 10 # seconds per request
+MAX_WORKERS = 8 # max concurrent threads for scraping
+USER_AGENT = "gdelt-pulse/0.1" # identify ourselves when fetching pages
 MAX_READ_BYTES = 64 * 1024  # only read first 64KB — title is always near the top
 
 _TITLE_RE = re.compile(r"<title[^>]*>(.*?)</title>", re.IGNORECASE | re.DOTALL)
+_META_CHARSET_RE = re.compile(
+    r'<meta[^>]+charset=["\']?([^"\'\s;>]+)', re.IGNORECASE
+)
+_OG_TITLE_RE = re.compile(
+    r'<meta[^>]+property=["\']og:title["\'][^>]+content=["\']([^"\']+)["\']',
+    re.IGNORECASE,
+)
+
+
+def _detect_encoding(raw: bytes, resp_charset: str | None) -> str:
+    """Pick the best encoding from response headers and meta tags."""
+    if resp_charset:
+        return resp_charset
+    # Peek at the first 2KB for a <meta charset> declaration
+    head = raw[:2048].decode("ascii", errors="ignore")
+    match = _META_CHARSET_RE.search(head)
+    if match:
+        return match.group(1).strip()
+    return "utf-8"
 
 
 def _fetch_title(url: str, timeout: int = DEFAULT_TIMEOUT) -> str | None:
@@ -27,38 +47,44 @@ def _fetch_title(url: str, timeout: int = DEFAULT_TIMEOUT) -> str | None:
         req = Request(url, headers={"User-Agent": USER_AGENT})
         with urlopen(req, timeout=timeout) as resp:
             raw = resp.read(MAX_READ_BYTES)
+            resp_charset = resp.headers.get_content_charset()
 
-        # Try utf-8 first, fall back to latin-1
-        for encoding in ("utf-8", "latin-1"):
+        encoding = _detect_encoding(raw, resp_charset)
+
+        # Try detected encoding first, then utf-8, then latin-1
+        text: str | None = None
+        for enc in dict.fromkeys([encoding, "utf-8", "latin-1"]):
             try:
-                html = raw.decode(encoding)
+                text = raw.decode(enc)
                 break
-            except UnicodeDecodeError:
+            except (UnicodeDecodeError, LookupError):
                 continue
-        else:
+        if text is None:
             return None
 
-        match = _TITLE_RE.search(html)
-        if not match:
-            return None
-
-        title = match.group(1).strip()
-        # Collapse whitespace
-        title = re.sub(r"\s+", " ", title)
-        # Strip common HTML entities
-        title = (
-            title.replace("&amp;", "&")
-            .replace("&lt;", "<")
-            .replace("&gt;", ">")
-            .replace("&quot;", '"')
-            .replace("&#39;", "'")
-            .replace("&apos;", "'")
-        )
+        title = _extract_title(text)
         return title if title else None
 
     except Exception:
         logger.debug("Failed to fetch title for %s", url, exc_info=True)
         return None
+
+
+def _extract_title(text: str) -> str | None:
+    """Extract and clean a title from HTML text.
+
+    Tries <title> tag first, then falls back to og:title meta tag.
+    """
+    match = _TITLE_RE.search(text)
+    if not match:
+        match = _OG_TITLE_RE.search(text)
+    if not match:
+        return None
+
+    title = match.group(1).strip()
+    title = re.sub(r"\s+", " ", title)
+    title = html.unescape(title)
+    return title if title else None
 
 
 def scrape_titles(

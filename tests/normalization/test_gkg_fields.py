@@ -1,6 +1,7 @@
 """Tests for GKG field parsers."""
 
 from gdelt_event_pipeline.normalization.gkg_fields import (
+    filter_persons_against_locations,
     parse_all_names,
     parse_v2_locations,
     parse_v2_organizations,
@@ -94,6 +95,15 @@ class TestParseV2Locations:
         assert result[0]["name"] == "Iran"
         assert result[1]["name"] == "United States"
 
+    def test_deduplicates_same_name_different_coords(self):
+        raw = (
+            "4#Kalava#IN#IN36##15.5#78.5#;"
+            "4#Kalava#IN#IN36##15.500001#78.500001#"
+        )
+        result = parse_v2_locations(raw)
+        assert len(result) == 1
+        assert result[0]["name"] == "Kalava"
+
 
 class TestParseV2Persons:
     def test_basic_persons(self):
@@ -108,6 +118,34 @@ class TestParseV2Persons:
 
     def test_empty(self):
         assert parse_v2_persons("") == []
+
+
+class TestFilterPersonsAgainstLocations:
+    def test_removes_location_names_from_persons(self):
+        persons = ["Priyanka Chopra", "Los Angeles", "Nick Jonas"]
+        locations = [
+            {"name": "Los Angeles", "country_code": "US"},
+            {"name": "Mumbai", "country_code": "IN"},
+        ]
+        result = filter_persons_against_locations(persons, locations)
+        assert result == ["Priyanka Chopra", "Nick Jonas"]
+
+    def test_case_insensitive_match(self):
+        persons = ["los angeles", "Joe Biden"]
+        locations = [{"name": "Los Angeles", "country_code": "US"}]
+        result = filter_persons_against_locations(persons, locations)
+        assert result == ["Joe Biden"]
+
+    def test_no_locations(self):
+        persons = ["Joe Biden"]
+        result = filter_persons_against_locations(persons, [])
+        assert result == ["Joe Biden"]
+
+    def test_no_overlap(self):
+        persons = ["Joe Biden"]
+        locations = [{"name": "Washington", "country_code": "US"}]
+        result = filter_persons_against_locations(persons, locations)
+        assert result == ["Joe Biden"]
 
 
 class TestParseV2Organizations:

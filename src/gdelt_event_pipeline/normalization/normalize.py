@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from gdelt_event_pipeline.normalization.gkg_fields import (
+    filter_persons_against_locations,
     parse_all_names,
     parse_v2_locations,
     parse_v2_organizations,
@@ -76,6 +77,7 @@ def normalize_row(row: list[str]) -> dict[str, Any] | None:
     themes = parse_v2_themes(_col(row, COL_V2_THEMES))
     locations = parse_v2_locations(_col(row, COL_V2_LOCATIONS))
     persons = parse_v2_persons(_col(row, COL_V2_PERSONS))
+    persons = filter_persons_against_locations(persons, locations)
     organizations = parse_v2_organizations(_col(row, COL_V2_ORGANIZATIONS))
     tone = parse_v2_tone(_col(row, COL_V2_TONE))
     all_names = parse_all_names(_col(row, COL_ALL_NAMES))
