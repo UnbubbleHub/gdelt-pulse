@@ -23,8 +23,24 @@ class DatabaseSettings:
 
 
 @dataclass(frozen=True)
+class EmbeddingSettings:
+    model_name: str = field(
+        default_factory=lambda: os.environ.get(
+            "EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2"
+        )
+    )
+    dimension: int = field(
+        default_factory=lambda: int(os.environ.get("EMBEDDING_DIMENSION", "384"))
+    )
+    batch_size: int = field(
+        default_factory=lambda: int(os.environ.get("EMBEDDING_BATCH_SIZE", "64"))
+    )
+
+
+@dataclass(frozen=True)
 class Settings:
     db: DatabaseSettings = field(default_factory=DatabaseSettings)
+    embedding: EmbeddingSettings = field(default_factory=EmbeddingSettings)
 
 
 def get_settings() -> Settings:
