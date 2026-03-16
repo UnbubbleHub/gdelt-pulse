@@ -85,7 +85,7 @@ def parse_v2_locations(raw: str) -> list[dict[str, Any]]:
         lat = _float_or_none(parts[5])
         lon = _float_or_none(parts[6])
 
-        dedup_key = (name, country_code, lat, lon)
+        dedup_key = (name, country_code)
         if dedup_key in seen:
             continue
         seen.add(dedup_key)
@@ -152,6 +152,19 @@ def _parse_name_offset_field(raw: str) -> list[str]:
             seen.add(name)
             results.append(name)
     return results
+
+
+def filter_persons_against_locations(
+    persons: list[str], locations: list[dict[str, Any]]
+) -> list[str]:
+    """Remove person names that also appear as location names.
+
+    GDELT's NLP sometimes misclassifies nearby location mentions as persons.
+    """
+    location_names = {
+        loc["name"].lower() for loc in locations if loc.get("name")
+    }
+    return [p for p in persons if p.lower() not in location_names]
 
 
 def _int_or_none(value: str) -> int | None:

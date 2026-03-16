@@ -11,10 +11,10 @@ from urllib.request import Request, urlopen
 
 logger = logging.getLogger(__name__)
 
-LAST_UPDATE_URL = "http://data.gdeltproject.org/gdeltv2/lastupdate.txt"
-GKG_BASE_URL = "http://data.gdeltproject.org/gdeltv2/"
+LAST_UPDATE_URL = "http://data.gdeltproject.org/gdeltv2/lastupdate.txt" # lists recent files with metadata
+GKG_BASE_URL = "http://data.gdeltproject.org/gdeltv2/" # base URL for GKG files
 DEFAULT_TIMEOUT = 30
-USER_AGENT = "gdelt-pulse/0.1"
+USER_AGENT = "gdelt-pulse/0.1" # identify ourselves when fetching files
 
 
 @dataclass

@@ -2,7 +2,11 @@
 
 from unittest.mock import MagicMock, patch
 
-from gdelt_event_pipeline.ingestion.scraper import _fetch_title, scrape_titles
+from gdelt_event_pipeline.ingestion.scraper import (
+    _extract_title,
+    _fetch_title,
+    scrape_titles,
+)
 
 
 # ── _fetch_title extraction logic ──────────────────────────────────────
@@ -11,10 +15,11 @@ from gdelt_event_pipeline.ingestion.scraper import _fetch_title, scrape_titles
 class TestFetchTitleExtraction:
     """Test title extraction from HTML (mocking urlopen)."""
 
-    def _mock_urlopen(self, html_bytes):
+    def _mock_urlopen(self, html_bytes, charset=None):
         """Return a context-manager mock that yields html_bytes on read()."""
         resp = MagicMock()
         resp.read.return_value = html_bytes
+        resp.headers.get_content_charset.return_value = charset
         resp.__enter__ = lambda s: s
         resp.__exit__ = MagicMock(return_value=False)
         return resp
@@ -94,6 +99,43 @@ class TestFetchTitleExtraction:
             b"<title>Caf\xe9 News</title>"
         )
         assert _fetch_title("http://example.com") == "Café News"
+
+    @patch("gdelt_event_pipeline.ingestion.scraper.urlopen")
+    def test_og_title_fallback(self, mock_urlopen):
+        mock_urlopen.return_value = self._mock_urlopen(
+            b'<html><meta property="og:title" content="OG Title Here"></html>'
+        )
+        assert _fetch_title("http://example.com") == "OG Title Here"
+
+    @patch("gdelt_event_pipeline.ingestion.scraper.urlopen")
+    def test_title_tag_preferred_over_og(self, mock_urlopen):
+        mock_urlopen.return_value = self._mock_urlopen(
+            b'<html><title>Real Title</title>'
+            b'<meta property="og:title" content="OG Title"></html>'
+        )
+        assert _fetch_title("http://example.com") == "Real Title"
+
+    @patch("gdelt_event_pipeline.ingestion.scraper.urlopen")
+    def test_numeric_html_entity(self, mock_urlopen):
+        mock_urlopen.return_value = self._mock_urlopen(
+            b"<title>Score: 10 &#8211; 5</title>"
+        )
+        assert _fetch_title("http://example.com") == "Score: 10 \u2013 5"
+
+
+class TestExtractTitle:
+    def test_basic(self):
+        assert _extract_title("<title>Hello</title>") == "Hello"
+
+    def test_html_unescape(self):
+        assert _extract_title("<title>&mdash; Dash</title>") == "\u2014 Dash"
+
+    def test_og_fallback(self):
+        html = '<meta property="og:title" content="Fallback Title">'
+        assert _extract_title(html) == "Fallback Title"
+
+    def test_no_title(self):
+        assert _extract_title("<html><body>nothing</body></html>") is None
 
 
 # ── scrape_titles batch logic ──────────────────────────────────────────
