@@ -136,6 +136,27 @@ def get_cluster_articles(cluster_id: str) -> list[dict[str, Any]]:
             return cur.fetchall()
 
 
+def get_cluster_entity_sample(
+    cluster_id: str, *, limit: int = 5
+) -> list[dict[str, Any]]:
+    """Fetch entity fields from a cluster's most recent articles."""
+    pool = get_pool()
+    with pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT a.locations, a.persons, a.organizations
+                FROM articles a
+                JOIN cluster_memberships cm ON cm.article_id = a.id
+                WHERE cm.cluster_id = %s
+                ORDER BY a.gdelt_timestamp DESC
+                LIMIT %s
+                """,
+                (cluster_id, limit),
+            )
+            return cur.fetchall()
+
+
 def update_cluster_centroid(
     cluster_id: str, centroid: list[float]
 ) -> None:
