@@ -7,16 +7,24 @@ from dataclasses import dataclass
 from typing import Any
 
 from gdelt_event_pipeline.clustering.centroid import compute_new_centroid
+from gdelt_event_pipeline.clustering.scoring import (
+    compute_combined_score,
+    compute_entity_overlap,
+    extract_entity_sets,
+    merge_entity_sets,
+)
 from gdelt_event_pipeline.storage.clusters import (
     assign_article_to_cluster,
     create_cluster,
     find_nearest_cluster,
+    get_cluster_entity_sample,
     update_cluster_centroid,
 )
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_SIMILARITY_THRESHOLD = 0.75
+DEFAULT_SIMILARITY_THRESHOLD = 0.70
+N_CANDIDATES = 5
 
 
 @dataclass
@@ -26,6 +34,12 @@ class AssignmentResult:
     is_new_cluster: bool
 
 
+def _parse_embedding(embedding: Any) -> list[float]:
+    if isinstance(embedding, str):
+        return [float(x) for x in embedding.strip("[]").split(",")]
+    return embedding
+
+
 def assign_article(
     article: dict[str, Any],
     *,
@@ -33,60 +47,72 @@ def assign_article(
 ) -> AssignmentResult:
     """Assign a single article to the best matching cluster, or create a new one.
 
-    1. Query pgvector for the nearest active cluster centroid.
-    2. If cosine similarity >= threshold, join that cluster and update its centroid.
-    3. Otherwise, create a new cluster seeded with this article.
+    Uses a two-stage approach:
+    1. Find the top N nearest clusters by centroid cosine similarity.
+    2. For each candidate, compute entity overlap and combine into a final score.
+    3. Pick the best candidate above threshold, or create a new cluster.
     """
-    embedding = article["embedding"]
-    if isinstance(embedding, str):
-        # pgvector may return the vector as a string representation
-        embedding = [float(x) for x in embedding.strip("[]").split(",")]
-
+    embedding = _parse_embedding(article["embedding"])
     article_id = str(article["id"])
+    article_entities = extract_entity_sets(article)
 
-    # Find nearest cluster
-    nearest = find_nearest_cluster(embedding, limit=1)
+    # Stage 1: find top candidates by cosine similarity
+    candidates = find_nearest_cluster(embedding, limit=N_CANDIDATES)
 
-    if nearest:
-        best = nearest[0]
-        # pgvector <=> returns cosine distance; similarity = 1 - distance
-        similarity = 1.0 - best["cosine_distance"]
+    # Stage 2: score each candidate with entity overlap
+    best_match = None
+    best_score = -1.0
 
-        if similarity >= threshold:
-            # Assign to existing cluster
-            assign_article_to_cluster(
-                article_id,
-                str(best["id"]),
-                similarity_score=similarity,
-                assignment_method="nearest_centroid",
-            )
+    for candidate in candidates:
+        cosine_sim = 1.0 - candidate["cosine_distance"]
 
-            # Update centroid with running average
-            current_centroid = best["centroid_embedding"]
-            if isinstance(current_centroid, str):
-                current_centroid = [
-                    float(x) for x in current_centroid.strip("[]").split(",")
-                ]
-            new_centroid = compute_new_centroid(
-                current_centroid, embedding, best["article_count"]
-            )
-            update_cluster_centroid(str(best["id"]), new_centroid)
+        # Fetch entities from the cluster's recent articles
+        sample = get_cluster_entity_sample(str(candidate["id"]), limit=5)
+        cluster_entities = merge_entity_sets(
+            [extract_entity_sets(row) for row in sample]
+        )
 
-            logger.debug(
-                "Article %s → cluster %s (similarity=%.3f)",
-                article_id, best["id"], similarity,
-            )
-            return AssignmentResult(
-                cluster_id=str(best["id"]),
-                similarity=similarity,
-                is_new_cluster=False,
-            )
+        entity_overlap = compute_entity_overlap(article_entities, cluster_entities)
+        combined = compute_combined_score(cosine_sim, entity_overlap)
+
+        if combined > best_score:
+            best_score = combined
+            best_match = (candidate, cosine_sim, entity_overlap, combined)
+
+    if best_match and best_score >= threshold:
+        candidate, cosine_sim, entity_overlap, combined = best_match
+
+        assign_article_to_cluster(
+            article_id,
+            str(candidate["id"]),
+            similarity_score=combined,
+            assignment_method="nearest_centroid_entity",
+        )
+
+        # Update centroid with running average
+        current_centroid = _parse_embedding(candidate["centroid_embedding"])
+        new_centroid = compute_new_centroid(
+            current_centroid, embedding, candidate["article_count"]
+        )
+        update_cluster_centroid(str(candidate["id"]), new_centroid)
+
+        logger.debug(
+            "Article %s → cluster %s (cosine=%.3f entity=%.3f combined=%.3f)",
+            article_id, candidate["id"], cosine_sim, entity_overlap, combined,
+        )
+        return AssignmentResult(
+            cluster_id=str(candidate["id"]),
+            similarity=combined,
+            is_new_cluster=False,
+        )
 
     # No match above threshold — create new cluster
     cluster = create_cluster(
         representative_title=article.get("title"),
         centroid_embedding=embedding,
-        first_article_at=str(article["gdelt_timestamp"]) if article.get("gdelt_timestamp") else None,
+        first_article_at=(
+            str(article["gdelt_timestamp"]) if article.get("gdelt_timestamp") else None
+        ),
     )
     assign_article_to_cluster(
         article_id,
