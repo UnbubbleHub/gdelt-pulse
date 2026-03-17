@@ -369,7 +369,7 @@ We welcome contributions! This is an open-source project and there are many ways
 
 **Getting involved:**
 
-- **Pick up an issue** — Check [open issues](https://github.com/UnbubbleHub/gdelt-pulse/issues) for tasks labeled `good first issue` or `help wanted`
+- **Pick up an issue** — Check [open issues](https://github.com/UnbubbleHub/gdelt-pulse/issues) 
 - **Suggest improvements** — Have ideas for better clustering algorithms, new features, or architectural changes? Open a [Discussion](https://github.com/UnbubbleHub/gdelt-pulse/discussions) to talk it through
 - **Report bugs** — Found something broken? Open an issue with steps to reproduce
 
