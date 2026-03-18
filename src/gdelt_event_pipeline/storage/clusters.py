@@ -78,6 +78,31 @@ def assign_article_to_cluster(
     return row
 
 
+def find_nearest_cluster(
+    embedding: list[float], *, limit: int = 5
+) -> list[dict[str, Any]]:
+    """Find the nearest active clusters to a given embedding using cosine distance.
+
+    Returns clusters ordered by distance (closest first), each with a
+    'cosine_distance' field.  Cosine similarity = 1 - cosine_distance.
+    """
+    pool = get_pool()
+    with pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT *, (centroid_embedding <=> %s::vector) AS cosine_distance
+                FROM clusters
+                WHERE is_active = true
+                  AND centroid_embedding IS NOT NULL
+                ORDER BY centroid_embedding <=> %s::vector
+                LIMIT %s
+                """,
+                (embedding, embedding, limit),
+            )
+            return cur.fetchall()
+
+
 def get_active_clusters(*, limit: int = 100) -> list[dict[str, Any]]:
     pool = get_pool()
     with pool.connection() as conn:
@@ -107,6 +132,27 @@ def get_cluster_articles(cluster_id: str) -> list[dict[str, Any]]:
                 ORDER BY a.gdelt_timestamp DESC
                 """,
                 (cluster_id,),
+            )
+            return cur.fetchall()
+
+
+def get_cluster_entity_sample(
+    cluster_id: str, *, limit: int = 5
+) -> list[dict[str, Any]]:
+    """Fetch entity fields from a cluster's most recent articles."""
+    pool = get_pool()
+    with pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT a.locations, a.persons, a.organizations
+                FROM articles a
+                JOIN cluster_memberships cm ON cm.article_id = a.id
+                WHERE cm.cluster_id = %s
+                ORDER BY a.gdelt_timestamp DESC
+                LIMIT %s
+                """,
+                (cluster_id, limit),
             )
             return cur.fetchall()
 

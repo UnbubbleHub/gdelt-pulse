@@ -74,6 +74,21 @@ class TestRunEmbedding:
     @patch("gdelt_event_pipeline.embeddings.pipeline.update_article_embedding")
     @patch("gdelt_event_pipeline.embeddings.pipeline.embed_texts")
     @patch("gdelt_event_pipeline.embeddings.pipeline.get_unembedded_articles")
+    def test_skips_no_title_even_with_metadata(self, mock_get, mock_embed, mock_update):
+        """Articles with entities but no title should still be skipped."""
+        mock_get.return_value = [
+            _make_article("id-1", None, themes=[{"theme": "ECON"}]),
+            _make_article("id-2", "Valid title"),
+        ]
+        mock_embed.return_value = [[0.1] * 384]
+
+        result = run_embedding()
+        assert result.articles_skipped == 1
+        assert result.articles_embedded == 1
+
+    @patch("gdelt_event_pipeline.embeddings.pipeline.update_article_embedding")
+    @patch("gdelt_event_pipeline.embeddings.pipeline.embed_texts")
+    @patch("gdelt_event_pipeline.embeddings.pipeline.get_unembedded_articles")
     def test_db_failure_counted(self, mock_get, mock_embed, mock_update):
         mock_get.return_value = [_make_article("id-1", "Title")]
         mock_embed.return_value = [[0.1] * 384]
