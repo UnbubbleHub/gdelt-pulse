@@ -170,30 +170,6 @@ uv sync
 cp .env.example .env
 ```
 
-### Database Setup
-
-1. **Create the database:**
-
-```bash
-createdb gdelt_pulse
-```
-
-2. **Enable required extensions and create the schema:**
-
-```bash
-psql -d gdelt_pulse -f sql/001_schema.sql
-```
-
-This creates four tables (`articles`, `clusters`, `cluster_memberships`, `pipeline_state`) with all required indexes, including HNSW indexes for vector similarity search. See [docs/database_design.md](docs/database_design.md) for full schema documentation.
-
-3. **Verify the setup:**
-
-```bash
-psql -d gdelt_pulse -c "\dt"
-```
-
-You should see all four tables listed.
-
 ### Configuration
 
 Edit `.env` with your PostgreSQL credentials:
@@ -217,6 +193,44 @@ EMBEDDING_BATCH_SIZE=64
 ```
 
 > **Note:** The first time you run the embedding stage, the model (~80 MB) will be downloaded automatically by sentence-transformers.
+
+Windows users
+
+If you're using Windows Command Prompt, you must define the PostgreSQL user directly from the terminal (CMD).
+
+For the current terminal session only:
+```bash
+set PGUSER=postgres
+```
+
+To make it persistent for future terminals:
+```bash
+setx PGUSER postgres
+```
+
+### Database Setup
+
+1. **Create the database:**
+
+```bash
+createdb gdelt_pulse
+```
+
+2. **Enable required extensions and create the schema:**
+
+```bash
+psql -d gdelt_pulse -f sql/001_schema.sql
+```
+
+This creates four tables (`articles`, `clusters`, `cluster_memberships`, `pipeline_state`) with all required indexes, including HNSW indexes for vector similarity search. See [docs/database_design.md](docs/database_design.md) for full schema documentation.
+
+3. **Verify the setup:**
+
+```bash
+psql -d gdelt_pulse -c "\dt"
+```
+
+You should see all four tables listed.
 
 ---
 
