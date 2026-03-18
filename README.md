@@ -170,31 +170,7 @@ uv sync
 cp .env.example .env
 ```
 
-### Configuration
-
-Edit `.env` with your PostgreSQL credentials:
-
-```bash
-# PostgreSQL connection
-PGHOST=localhost
-PGPORT=5432
-PGUSER=postgres
-PGPASSWORD=your_password
-PGDATABASE=gdelt_pulse
-```
-
-Optional embedding settings (defaults work out of the box):
-
-```bash
-# Embedding model (default: sentence-transformers/all-MiniLM-L6-v2)
-EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
-EMBEDDING_DIMENSION=384
-EMBEDDING_BATCH_SIZE=64
-```
-
-> **Note:** The first time you run the embedding stage, the model (~80 MB) will be downloaded automatically by sentence-transformers.
-
-Windows users
+### Windows users
 
 If you're using Windows Command Prompt, you must define the PostgreSQL user directly from the terminal (CMD).
 
@@ -231,6 +207,30 @@ psql -d gdelt_pulse -c "\dt"
 ```
 
 You should see all four tables listed.
+
+### Configuration
+
+Edit `.env` with your PostgreSQL credentials:
+
+```bash
+# PostgreSQL connection
+PGHOST=localhost
+PGPORT=5432
+PGUSER=postgres
+PGPASSWORD=your_password
+PGDATABASE=gdelt_pulse
+```
+
+Optional embedding settings (defaults work out of the box):
+
+```bash
+# Embedding model (default: sentence-transformers/all-MiniLM-L6-v2)
+EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+EMBEDDING_DIMENSION=384
+EMBEDDING_BATCH_SIZE=64
+```
+
+> **Note:** The first time you run the embedding stage, the model (~80 MB) will be downloaded automatically by sentence-transformers.
 
 ---
 
