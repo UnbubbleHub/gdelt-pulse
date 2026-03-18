@@ -172,16 +172,21 @@ cp .env.example .env
 
 ### Windows users
 
-If you're using Windows Command Prompt, you must define the PostgreSQL user directly from the terminal (CMD).
+If you're using Windows, you may want to set the PostgreSQL user in your shell so that the `createdb`/`psql` commands below pick it up automatically. This is optional — you can also pass `-U <user>` directly to those commands (for example, `createdb -U postgres gdelt_pulse`).
 
-For the current terminal session only:
+**Command Prompt (CMD)** – for the current terminal session only:
 ```cmd
 set PGUSER=postgres
 ```
 
-To make it persistent for future terminals:
+To make it persistent for future CMD terminals:
 ```cmd
 setx PGUSER postgres
+```
+
+**PowerShell** – for the current PowerShell session only:
+```powershell
+$env:PGUSER = "postgres"
 ```
 
 ### Database Setup
