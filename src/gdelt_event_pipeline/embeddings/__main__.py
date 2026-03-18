@@ -21,7 +21,7 @@ def main() -> int:
     init_pool(settings.db)
 
     try:
-        result = run_embedding(settings.embedding, limit=500)
+        result = run_embedding(settings.embedding)
         print(f"\nEmbedding summary:")
         print(f"  Articles fetched:  {result.articles_fetched}")
         print(f"  Articles embedded: {result.articles_embedded}")
