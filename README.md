@@ -175,12 +175,12 @@ cp .env.example .env
 If you're using Windows Command Prompt, you must define the PostgreSQL user directly from the terminal (CMD).
 
 For the current terminal session only:
-```bash
+```cmd
 set PGUSER=postgres
 ```
 
 To make it persistent for future terminals:
-```bash
+```cmd
 setx PGUSER postgres
 ```
 
