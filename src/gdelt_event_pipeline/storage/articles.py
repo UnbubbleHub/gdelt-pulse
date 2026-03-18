@@ -125,6 +125,26 @@ def get_unembedded_articles(*, limit: int = 100) -> list[dict[str, Any]]:
             return cur.fetchall()
 
 
+def get_unclustered_articles(*, limit: int = 200) -> list[dict[str, Any]]:
+    """Return articles that have an embedding but are not yet assigned to any cluster."""
+    pool = get_pool()
+    with pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT a.* FROM articles a
+                LEFT JOIN cluster_memberships cm ON cm.article_id = a.id
+                WHERE a.embedding IS NOT NULL
+                  AND a.title IS NOT NULL
+                  AND cm.id IS NULL
+                ORDER BY a.gdelt_timestamp ASC
+                LIMIT %s
+                """,
+                (limit,),
+            )
+            return cur.fetchall()
+
+
 def get_untitled_articles(*, limit: int = 200) -> list[dict[str, Any]]:
     """Return articles that have no title yet."""
     pool = get_pool()
