@@ -170,6 +170,20 @@ uv sync
 cp .env.example .env
 ```
 
+### Windows users
+
+If you're using Windows Command Prompt, you must define the PostgreSQL user directly from the terminal (CMD).
+
+For the current terminal session only:
+```cmd
+set PGUSER=postgres
+```
+
+To make it persistent for future terminals:
+```cmd
+setx PGUSER postgres
+```
+
 ### Database Setup
 
 1. **Create the database:**
