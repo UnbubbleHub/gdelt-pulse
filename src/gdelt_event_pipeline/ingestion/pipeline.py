@@ -121,7 +121,7 @@ def run_ingestion(
 
 def run_title_scraping(
     *,
-    batch_size: int = 200,
+    batch_size: int | None = None,
     timeout: int = 10,
     max_workers: int = 8,
 ) -> tuple[int, int]:

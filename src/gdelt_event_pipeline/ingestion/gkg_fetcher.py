@@ -5,8 +5,10 @@ from __future__ import annotations
 import csv
 import io
 import logging
+import time
 import zipfile
 from dataclasses import dataclass
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 logger = logging.getLogger(__name__)
@@ -51,12 +53,36 @@ def get_latest_gkg_url(timeout: int = DEFAULT_TIMEOUT) -> str:
     return files[0].url
 
 
-def download_and_parse_gkg(url: str, timeout: int = DEFAULT_TIMEOUT) -> list[list[str]]:
-    """Download a GKG zip file and return all rows as lists of strings."""
+def download_and_parse_gkg(
+    url: str, timeout: int = DEFAULT_TIMEOUT, *, retries: int = 3, backoff: int = 15,
+) -> list[list[str]]:
+    """Download a GKG zip file and return all rows as lists of strings.
+
+    Retries on HTTP 404 since GDELT files may not be available immediately
+    after being listed in lastupdate.txt.
+    """
     logger.info("Downloading %s", url)
     req = Request(url, headers={"User-Agent": USER_AGENT})
-    with urlopen(req, timeout=timeout) as response:
-        archive_bytes = response.read()
+
+    last_error: HTTPError | None = None
+    for attempt in range(1, retries + 1):
+        try:
+            with urlopen(req, timeout=timeout) as response:
+                archive_bytes = response.read()
+            break
+        except HTTPError as exc:
+            last_error = exc
+            if exc.code == 404 and attempt < retries:
+                wait = backoff * attempt
+                logger.warning(
+                    "File not available yet (HTTP 404), retrying in %ds (%d/%d)",
+                    wait, attempt, retries,
+                )
+                time.sleep(wait)
+            else:
+                raise
+    else:
+        raise last_error  # type: ignore[misc]
 
     logger.info("Downloaded %d bytes", len(archive_bytes))
 
