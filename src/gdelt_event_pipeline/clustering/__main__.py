@@ -21,8 +21,8 @@ def main() -> int:
     parser.add_argument(
         "--limit",
         type=int,
-        default=500,
-        help="Max articles to process per run.",
+        default=None,
+        help="Max articles to process per run (default: no limit).",
     )
     parser.add_argument(
         "-v", "--verbose",

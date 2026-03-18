@@ -29,7 +29,7 @@ class EmbeddingResult:
 def run_embedding(
     settings: EmbeddingSettings | None = None,
     *,
-    limit: int = 200,
+    limit: int | None = None,
 ) -> EmbeddingResult:
     """Execute one embedding cycle.
 

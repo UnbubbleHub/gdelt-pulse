@@ -25,7 +25,7 @@ class ClusteringResult:
 def run_clustering(
     *,
     threshold: float = 0.75,
-    limit: int = 500,
+    limit: int | None = None,
 ) -> ClusteringResult:
     """Execute one clustering cycle.
 
