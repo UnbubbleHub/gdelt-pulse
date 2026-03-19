@@ -1,4 +1,7 @@
-"""Single-pass incremental clustering: assign an article to the nearest cluster or create a new one."""
+"""Single-pass incremental clustering.
+
+Assign an article to the nearest cluster or create a new one.
+"""
 
 from __future__ import annotations
 
@@ -68,9 +71,7 @@ def assign_article(
 
         # Fetch entities from the cluster's recent articles
         sample = get_cluster_entity_sample(str(candidate["id"]), limit=5)
-        cluster_entities = merge_entity_sets(
-            [extract_entity_sets(row) for row in sample]
-        )
+        cluster_entities = merge_entity_sets([extract_entity_sets(row) for row in sample])
 
         entity_overlap = compute_entity_overlap(article_entities, cluster_entities)
         combined = compute_combined_score(cosine_sim, entity_overlap)
@@ -91,14 +92,16 @@ def assign_article(
 
         # Update centroid with running average
         current_centroid = _parse_embedding(candidate["centroid_embedding"])
-        new_centroid = compute_new_centroid(
-            current_centroid, embedding, candidate["article_count"]
-        )
+        new_centroid = compute_new_centroid(current_centroid, embedding, candidate["article_count"])
         update_cluster_centroid(str(candidate["id"]), new_centroid)
 
         logger.debug(
             "Article %s → cluster %s (cosine=%.3f entity=%.3f combined=%.3f)",
-            article_id, candidate["id"], cosine_sim, entity_overlap, combined,
+            article_id,
+            candidate["id"],
+            cosine_sim,
+            entity_overlap,
+            combined,
         )
         return AssignmentResult(
             cluster_id=str(candidate["id"]),

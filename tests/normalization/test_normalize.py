@@ -1,7 +1,7 @@
 """Tests for the GKG row normalizer."""
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from gdelt_event_pipeline.normalization.normalize import normalize_row, parse_gkg_timestamp
 
@@ -26,7 +26,7 @@ def _make_row(**overrides) -> list[str]:
 class TestParseGkgTimestamp:
     def test_valid_timestamp(self):
         result = parse_gkg_timestamp("20240101120000")
-        assert result == datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        assert result == datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
 
     def test_empty_string(self):
         assert parse_gkg_timestamp("") is None
@@ -41,7 +41,7 @@ class TestNormalizeRow:
         result = normalize_row(row)
         assert result is not None
         assert result["gkg_record_id"] == "20240101120000-1"
-        assert result["gdelt_timestamp"] == datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        assert result["gdelt_timestamp"] == datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
         assert result["canonical_url"] == "https://bbc.co.uk/news/world-12345"
         assert result["domain"] == "bbc.co.uk"
         assert result["canonical_source"] == "bbc"

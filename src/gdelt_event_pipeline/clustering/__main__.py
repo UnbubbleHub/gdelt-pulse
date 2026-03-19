@@ -25,7 +25,8 @@ def main() -> int:
         help="Max articles to process per run (default: no limit).",
     )
     parser.add_argument(
-        "-v", "--verbose",
+        "-v",
+        "--verbose",
         action="store_true",
         help="Enable debug logging.",
     )
@@ -42,7 +43,7 @@ def main() -> int:
 
     try:
         result = run_clustering(threshold=args.threshold, limit=args.limit)
-        print(f"\nClustering summary:")
+        print("\nClustering summary:")
         print(f"  Articles processed:     {result.articles_processed}")
         print(f"  Assigned to existing:   {result.assigned_to_existing}")
         print(f"  New clusters created:   {result.new_clusters_created}")

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import html
-import json
 import webbrowser
 from pathlib import Path
 
@@ -43,7 +42,8 @@ def fetch_data() -> list[dict]:
             clusters = cur.fetchall()
 
             for cluster in clusters:
-                cur.execute("""
+                cur.execute(
+                    """
                     SELECT a.title, a.canonical_url, a.domain, a.canonical_source,
                            a.gdelt_timestamp, a.locations, a.persons, a.organizations,
                            a.tone, cm.similarity_score, cm.assignment_method
@@ -51,7 +51,9 @@ def fetch_data() -> list[dict]:
                     JOIN cluster_memberships cm ON cm.article_id = a.id
                     WHERE cm.cluster_id = %s
                     ORDER BY cm.similarity_score DESC NULLS LAST
-                """, (cluster["id"],))
+                """,
+                    (cluster["id"],),
+                )
                 cluster["articles"] = cur.fetchall()
     return clusters
 
@@ -62,17 +64,31 @@ def build_html(clusters: list[dict]) -> str:
     multi = len(clusters) - singletons
 
     rows = []
-    for i, c in enumerate(clusters):
+    for _i, c in enumerate(clusters):
         title = c["representative_title"] or "(no title)"
         count = c["article_count"]
         is_open = "open" if count >= 5 else ""
-        badge_class = "large" if count > 10 else "medium" if count >= 5 else "small" if count >= 2 else "singleton"
+        badge_class = (
+            "large"
+            if count > 10
+            else "medium"
+            if count >= 5
+            else "small"
+            if count >= 2
+            else "singleton"
+        )
 
         article_rows = []
         for a in c["articles"]:
             t = a.get("tone") or {}
             tone_val = t.get("tone", "")
-            tone_class = "pos" if isinstance(tone_val, (int, float)) and tone_val > 0 else "neg" if isinstance(tone_val, (int, float)) and tone_val < 0 else ""
+            tone_class = (
+                "pos"
+                if isinstance(tone_val, (int, float)) and tone_val > 0
+                else "neg"
+                if isinstance(tone_val, (int, float)) and tone_val < 0
+                else ""
+            )
             tone_str = f"{tone_val:.1f}" if isinstance(tone_val, (int, float)) else ""
 
             locs = a.get("locations") or []
@@ -86,18 +102,18 @@ def build_html(clusters: list[dict]) -> str:
             article_rows.append(f"""
                 <tr>
                     <td class="article-title">
-                        <a href="{_esc(a.get('canonical_url', ''))}" target="_blank">
-                            {_esc(a.get('title')) or '<em>no title</em>'}
+                        <a href="{_esc(a.get("canonical_url", ""))}" target="_blank">
+                            {_esc(a.get("title")) or "<em>no title</em>"}
                         </a>
                     </td>
-                    <td class="source">{_esc(a.get('canonical_source') or a.get('domain'))}</td>
+                    <td class="source">{_esc(a.get("canonical_source") or a.get("domain"))}</td>
                     <td class="tone {tone_class}">{tone_str}</td>
                     <td class="sim">{sim_str}</td>
                     <td class="method">{_esc(method)}</td>
                     <td class="entities">
-                        {_entity_pills(locs, 'loc')}
-                        {_entity_pills(pers, 'per')}
-                        {_entity_pills(orgs, 'org')}
+                        {_entity_pills(locs, "loc")}
+                        {_entity_pills(pers, "per")}
+                        {_entity_pills(orgs, "org")}
                     </td>
                 </tr>
             """)
@@ -108,8 +124,8 @@ def build_html(clusters: list[dict]) -> str:
                 <span class="badge {badge_class}">{count}</span>
                 <span class="cluster-title">{_esc(title)}</span>
                 <span class="cluster-meta">
-                    {_esc(str(c.get('first_article_at', ''))[:16])} &mdash;
-                    {_esc(str(c.get('last_article_at', ''))[:16])}
+                    {_esc(str(c.get("first_article_at", ""))[:16])} &mdash;
+                    {_esc(str(c.get("last_article_at", ""))[:16])}
                 </span>
             </summary>
             <table class="articles">
@@ -120,7 +136,7 @@ def build_html(clusters: list[dict]) -> str:
                     </tr>
                 </thead>
                 <tbody>
-                    {''.join(article_rows)}
+                    {"".join(article_rows)}
                 </tbody>
             </table>
         </details>
@@ -190,7 +206,8 @@ def build_html(clusters: list[dict]) -> str:
     <span>{singletons}</span> singletons
 </div>
 <div class="filter-bar">
-    <input type="text" id="search" placeholder="Filter clusters by title..." oninput="filterClusters()">
+    <input type="text" id="search" placeholder="Filter clusters by title..."
+           oninput="filterClusters()">
     <select id="minSize" onchange="filterClusters()">
         <option value="1">All clusters</option>
         <option value="2" selected>2+ articles</option>
@@ -199,7 +216,7 @@ def build_html(clusters: list[dict]) -> str:
     </select>
 </div>
 <div id="clusters">
-    {''.join(rows)}
+    {"".join(rows)}
 </div>
 <script>
 function filterClusters() {{

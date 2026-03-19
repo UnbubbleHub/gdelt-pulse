@@ -1,7 +1,7 @@
 """Tests for the clustering pipeline orchestrator."""
 
-from unittest.mock import patch, MagicMock
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from unittest.mock import patch
 
 from gdelt_event_pipeline.clustering.assign import AssignmentResult
 from gdelt_event_pipeline.clustering.pipeline import run_clustering
@@ -12,7 +12,7 @@ def _make_article(article_id):
         "id": article_id,
         "title": f"Title {article_id}",
         "embedding": [0.1] * 384,
-        "gdelt_timestamp": datetime(2026, 3, 16, tzinfo=timezone.utc),
+        "gdelt_timestamp": datetime(2026, 3, 16, tzinfo=UTC),
     }
 
 

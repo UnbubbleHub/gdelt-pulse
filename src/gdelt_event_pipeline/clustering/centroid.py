@@ -17,5 +17,5 @@ def compute_new_centroid(
     n = current_count + 1
     return [
         (old * current_count + new) / n
-        for old, new in zip(current_centroid, new_embedding)
+        for old, new in zip(current_centroid, new_embedding, strict=True)
     ]

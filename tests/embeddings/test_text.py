@@ -53,8 +53,7 @@ class TestComposeEmbeddingText:
         }
         result = compose_embedding_text(article)
         assert result == (
-            "Big event. Themes: WAR. Locations: Ukraine. "
-            "Persons: Zelenskyy. Organizations: NATO"
+            "Big event. Themes: WAR. Locations: Ukraine. Persons: Zelenskyy. Organizations: NATO"
         )
 
     def test_no_title_metadata_only(self):

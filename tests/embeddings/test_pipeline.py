@@ -1,7 +1,7 @@
 """Tests for the embedding pipeline orchestrator."""
 
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from gdelt_event_pipeline.config.settings import EmbeddingSettings
 from gdelt_event_pipeline.embeddings.pipeline import run_embedding

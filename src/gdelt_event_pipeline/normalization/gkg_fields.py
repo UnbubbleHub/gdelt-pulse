@@ -161,9 +161,7 @@ def filter_persons_against_locations(
 
     GDELT's NLP sometimes misclassifies nearby location mentions as persons.
     """
-    location_names = {
-        loc["name"].lower() for loc in locations if loc.get("name")
-    }
+    location_names = {loc["name"].lower() for loc in locations if loc.get("name")}
     return [p for p in persons if p.lower() not in location_names]
 
 

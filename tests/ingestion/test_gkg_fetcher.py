@@ -62,9 +62,7 @@ class TestFetchLatestFileList:
 
     @patch("gdelt_event_pipeline.ingestion.gkg_fetcher.urlopen")
     def test_no_gkg_entry(self, mock_urlopen):
-        mock_urlopen.return_value = _mock_urlopen(
-            b"123 abc http://example.com/export.CSV.zip\n"
-        )
+        mock_urlopen.return_value = _mock_urlopen(b"123 abc http://example.com/export.CSV.zip\n")
         result = fetch_latest_file_list()
         assert result == []
 
@@ -76,10 +74,7 @@ class TestFetchLatestFileList:
 
     @patch("gdelt_event_pipeline.ingestion.gkg_fetcher.urlopen")
     def test_malformed_lines_skipped(self, mock_urlopen):
-        data = (
-            "short\n"
-            "654321 def456hash http://data.gdeltproject.org/20260315.gkg.csv.zip\n"
-        )
+        data = "short\n654321 def456hash http://data.gdeltproject.org/20260315.gkg.csv.zip\n"
         mock_urlopen.return_value = _mock_urlopen(data.encode())
         result = fetch_latest_file_list()
         assert len(result) == 1

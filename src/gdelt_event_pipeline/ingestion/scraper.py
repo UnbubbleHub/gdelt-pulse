@@ -11,15 +11,13 @@ from urllib.request import Request, urlopen
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_TIMEOUT = 10 # seconds per request
-MAX_WORKERS = 8 # max concurrent threads for scraping
-USER_AGENT = "gdelt-pulse/0.1" # identify ourselves when fetching pages
+DEFAULT_TIMEOUT = 10  # seconds per request
+MAX_WORKERS = 8  # max concurrent threads for scraping
+USER_AGENT = "gdelt-pulse/0.1"  # identify ourselves when fetching pages
 MAX_READ_BYTES = 64 * 1024  # only read first 64KB — title is always near the top
 
 _TITLE_RE = re.compile(r"<title[^>]*>(.*?)</title>", re.IGNORECASE | re.DOTALL)
-_META_CHARSET_RE = re.compile(
-    r'<meta[^>]+charset=["\']?([^"\'\s;>]+)', re.IGNORECASE
-)
+_META_CHARSET_RE = re.compile(r'<meta[^>]+charset=["\']?([^"\'\s;>]+)', re.IGNORECASE)
 _OG_TITLE_RE = re.compile(
     r'<meta[^>]+property=["\']og:title["\'][^>]+content=["\']([^"\']+)["\']',
     re.IGNORECASE,

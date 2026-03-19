@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import sys
 
 from gdelt_event_pipeline.config.settings import get_settings
 from gdelt_event_pipeline.embeddings.pipeline import run_embedding
@@ -22,7 +21,7 @@ def main() -> int:
 
     try:
         result = run_embedding(settings.embedding)
-        print(f"\nEmbedding summary:")
+        print("\nEmbedding summary:")
         print(f"  Articles fetched:  {result.articles_fetched}")
         print(f"  Articles embedded: {result.articles_embedded}")
         print(f"  Articles skipped:  {result.articles_skipped}")

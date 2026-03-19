@@ -16,7 +16,7 @@ class TestComputeNewCentroid:
         current = [0.5, 0.5, 0.0]  # average of [1,0,0] and [0,1,0]
         new = [0.0, 0.0, 1.0]
         result = compute_new_centroid(current, new, current_count=2)
-        for actual, expected in zip(result, [1 / 3, 1 / 3, 1 / 3]):
+        for actual, expected in zip(result, [1 / 3, 1 / 3, 1 / 3], strict=True):
             assert abs(actual - expected) < 1e-9
 
     def test_identical_vectors(self):

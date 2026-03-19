@@ -5,7 +5,6 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-import psycopg
 from psycopg.rows import dict_row
 
 from gdelt_event_pipeline.storage.database import get_pool
@@ -91,9 +90,7 @@ def get_article_by_canonical_url(canonical_url: str) -> dict[str, Any] | None:
             return cur.fetchone()
 
 
-def get_articles_since(
-    since: datetime, *, limit: int = 100
-) -> list[dict[str, Any]]:
+def get_articles_since(since: datetime, *, limit: int = 100) -> list[dict[str, Any]]:
     pool = get_pool()
     with pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
@@ -181,9 +178,7 @@ def update_article_title(article_id: str, title: str) -> None:
         conn.commit()
 
 
-def update_article_embedding(
-    article_id: str, embedding: list[float], model: str
-) -> None:
+def update_article_embedding(article_id: str, embedding: list[float], model: str) -> None:
     pool = get_pool()
     with pool.connection() as conn:
         with conn.cursor() as cur:

@@ -39,9 +39,7 @@ class TestExtractEntitySets:
         assert result["organizations"] == set()
 
     def test_none_fields(self):
-        result = extract_entity_sets(
-            {"locations": None, "persons": None, "organizations": None}
-        )
+        result = extract_entity_sets({"locations": None, "persons": None, "organizations": None})
         assert result["locations"] == set()
 
     def test_locations_without_name_skipped(self):

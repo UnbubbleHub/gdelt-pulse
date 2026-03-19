@@ -13,15 +13,16 @@ from urllib.request import Request, urlopen
 
 logger = logging.getLogger(__name__)
 
-LAST_UPDATE_URL = "http://data.gdeltproject.org/gdeltv2/lastupdate.txt" # lists recent files with metadata
-GKG_BASE_URL = "http://data.gdeltproject.org/gdeltv2/" # base URL for GKG files
+LAST_UPDATE_URL = "http://data.gdeltproject.org/gdeltv2/lastupdate.txt"
+GKG_BASE_URL = "http://data.gdeltproject.org/gdeltv2/"  # base URL for GKG files
 DEFAULT_TIMEOUT = 30
-USER_AGENT = "gdelt-pulse/0.1" # identify ourselves when fetching files
+USER_AGENT = "gdelt-pulse/0.1"  # identify ourselves when fetching files
 
 
 @dataclass
 class GkgFile:
     """Metadata about a GKG file from the GDELT lastupdate manifest."""
+
     size: int
     md5: str
     url: str
@@ -37,11 +38,13 @@ def fetch_latest_file_list(timeout: int = DEFAULT_TIMEOUT) -> list[GkgFile]:
     for line in payload.splitlines():
         parts = line.split()
         if len(parts) >= 3 and ".gkg.csv.zip" in parts[2]:
-            results.append(GkgFile(
-                size=int(parts[0]),
-                md5=parts[1],
-                url=parts[2],
-            ))
+            results.append(
+                GkgFile(
+                    size=int(parts[0]),
+                    md5=parts[1],
+                    url=parts[2],
+                )
+            )
     return results
 
 
@@ -54,7 +57,11 @@ def get_latest_gkg_url(timeout: int = DEFAULT_TIMEOUT) -> str:
 
 
 def download_and_parse_gkg(
-    url: str, timeout: int = DEFAULT_TIMEOUT, *, retries: int = 3, backoff: int = 15,
+    url: str,
+    timeout: int = DEFAULT_TIMEOUT,
+    *,
+    retries: int = 3,
+    backoff: int = 15,
 ) -> list[list[str]]:
     """Download a GKG zip file and return all rows as lists of strings.
 
@@ -76,7 +83,9 @@ def download_and_parse_gkg(
                 wait = backoff * attempt
                 logger.warning(
                     "File not available yet (HTTP 404), retrying in %ds (%d/%d)",
-                    wait, attempt, retries,
+                    wait,
+                    attempt,
+                    retries,
                 )
                 time.sleep(wait)
             else:

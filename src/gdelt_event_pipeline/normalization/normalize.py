@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from gdelt_event_pipeline.normalization.gkg_fields import (
@@ -17,7 +17,6 @@ from gdelt_event_pipeline.normalization.gkg_fields import (
 )
 from gdelt_event_pipeline.normalization.source import normalize_source
 from gdelt_event_pipeline.normalization.url import canonicalize_url, extract_domain
-
 
 # GKG v2 column indices (0-based)
 COL_GKGRECORDID = 0
@@ -41,7 +40,7 @@ def parse_gkg_timestamp(raw: str) -> datetime | None:
     if not raw:
         return None
     try:
-        return datetime.strptime(raw, "%Y%m%d%H%M%S").replace(tzinfo=timezone.utc)
+        return datetime.strptime(raw, "%Y%m%d%H%M%S").replace(tzinfo=UTC)
     except ValueError:
         return None
 
