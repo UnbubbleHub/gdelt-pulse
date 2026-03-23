@@ -144,22 +144,43 @@ def get_unclustered_articles(*, limit: int | None = None) -> list[dict[str, Any]
             return cur.fetchall()
 
 
-def get_untitled_articles(*, limit: int | None = None) -> list[dict[str, Any]]:
-    """Return articles that have no title yet."""
+def get_untitled_articles(
+    *, limit: int | None = None, max_attempts: int = 1
+) -> list[dict[str, Any]]:
+    """Return articles that have no title and haven't exceeded scrape attempts."""
     pool = get_pool()
     with pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             query = """
                 SELECT * FROM articles
                 WHERE title IS NULL
+                  AND scrape_attempts < %s
                 ORDER BY gdelt_timestamp DESC
             """
+            params: list[Any] = [max_attempts]
             if limit is not None:
                 query += " LIMIT %s"
-                cur.execute(query, (limit,))
-            else:
-                cur.execute(query)
+                params.append(limit)
+            cur.execute(query, params)
             return cur.fetchall()
+
+
+def increment_scrape_attempts(article_ids: list[str]) -> None:
+    """Bump scrape_attempts for the given articles."""
+    if not article_ids:
+        return
+    pool = get_pool()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE articles
+                SET scrape_attempts = scrape_attempts + 1, updated_at = now()
+                WHERE id = ANY(%s)
+                """,
+                (article_ids,),
+            )
+        conn.commit()
 
 
 def update_article_title(article_id: str, title: str) -> None:

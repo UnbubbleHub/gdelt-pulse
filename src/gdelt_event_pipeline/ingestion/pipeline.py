@@ -12,6 +12,7 @@ from gdelt_event_pipeline.ingestion.gkg_fetcher import (
 from gdelt_event_pipeline.normalization.normalize import normalize_row
 from gdelt_event_pipeline.storage.articles import (
     get_untitled_articles,
+    increment_scrape_attempts,
     update_article_title,
     upsert_article,
 )
@@ -139,6 +140,10 @@ def run_title_scraping(
 
     logger.info("Scraping titles for %d articles", len(articles))
     titles = scrape_titles(articles, timeout=timeout, max_workers=max_workers)
+
+    # Mark all attempted articles so failures aren't retried indefinitely
+    all_ids = [str(a["id"]) for a in articles]
+    increment_scrape_attempts(all_ids)
 
     for article_id, title in titles.items():
         update_article_title(article_id, title)
