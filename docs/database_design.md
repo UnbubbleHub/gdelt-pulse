@@ -22,7 +22,7 @@ Main input table. One record per unique canonical URL.
 | id | UUID | Primary key |
 | gkg_record_id | TEXT UNIQUE | Original GKG row identity |
 | gdelt_timestamp | TIMESTAMPTZ | Timestamp from GDELT, used for time-ordering |
-| url | TEXT | Original DocumentIdentifier |
+| url | TEXT | Original DocumentIdentifier (not really needed) |
 | canonical_url | TEXT UNIQUE | Normalized URL, primary dedupe key |
 | domain | TEXT | Extracted from canonical_url |
 | source_common_name | TEXT | Raw source name from GDELT |

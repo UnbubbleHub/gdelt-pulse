@@ -27,6 +27,9 @@ CREATE TABLE articles (
     all_names       JSONB,
     tone            JSONB,
 
+    -- Scraping
+    scrape_attempts INTEGER NOT NULL DEFAULT 0,
+
     -- Embedding
     embedding       vector,
     embedding_model TEXT,

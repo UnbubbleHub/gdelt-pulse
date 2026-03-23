@@ -126,10 +126,11 @@ class TestRunIngestion:
 
 
 class TestRunTitleScraping:
+    @patch("gdelt_event_pipeline.ingestion.pipeline.increment_scrape_attempts")
     @patch("gdelt_event_pipeline.ingestion.pipeline.update_article_title")
     @patch("gdelt_event_pipeline.ingestion.scraper.scrape_titles")
     @patch("gdelt_event_pipeline.ingestion.pipeline.get_untitled_articles")
-    def test_scrapes_and_updates(self, mock_get, mock_scrape, mock_update):
+    def test_scrapes_and_updates(self, mock_get, mock_scrape, mock_update, mock_increment):
         mock_get.return_value = [
             {"id": "id-1", "url": "http://a.com"},
             {"id": "id-2", "url": "http://b.com"},
@@ -141,11 +142,14 @@ class TestRunTitleScraping:
         assert attempted == 2
         assert succeeded == 1
         mock_update.assert_called_once_with("id-1", "Title A")
+        # All attempted articles get their counter bumped, not just successes
+        mock_increment.assert_called_once_with(["id-1", "id-2"])
 
+    @patch("gdelt_event_pipeline.ingestion.pipeline.increment_scrape_attempts")
     @patch("gdelt_event_pipeline.ingestion.pipeline.update_article_title")
     @patch("gdelt_event_pipeline.ingestion.scraper.scrape_titles")
     @patch("gdelt_event_pipeline.ingestion.pipeline.get_untitled_articles")
-    def test_no_untitled_articles(self, mock_get, mock_scrape, mock_update):
+    def test_no_untitled_articles(self, mock_get, mock_scrape, mock_update, mock_increment):
         mock_get.return_value = []
 
         attempted, succeeded = run_title_scraping()
@@ -153,3 +157,4 @@ class TestRunTitleScraping:
         assert attempted == 0
         assert succeeded == 0
         mock_scrape.assert_not_called()
+        mock_increment.assert_not_called()
