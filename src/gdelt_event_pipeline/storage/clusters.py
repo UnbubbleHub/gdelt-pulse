@@ -25,8 +25,7 @@ def create_cluster(
                 VALUES (%s, %s, %s, %s, 0)
                 RETURNING *
                 """,
-                (representative_title, centroid_embedding,
-                 first_article_at, first_article_at),
+                (representative_title, centroid_embedding, first_article_at, first_article_at),
             )
             row = cur.fetchone()
         conn.commit()
@@ -78,9 +77,7 @@ def assign_article_to_cluster(
     return row
 
 
-def find_nearest_cluster(
-    embedding: list[float], *, limit: int = 5
-) -> list[dict[str, Any]]:
+def find_nearest_cluster(embedding: list[float], *, limit: int = 5) -> list[dict[str, Any]]:
     """Find the nearest active clusters to a given embedding using cosine distance.
 
     Returns clusters ordered by distance (closest first), each with a
@@ -136,9 +133,7 @@ def get_cluster_articles(cluster_id: str) -> list[dict[str, Any]]:
             return cur.fetchall()
 
 
-def get_cluster_entity_sample(
-    cluster_id: str, *, limit: int = 5
-) -> list[dict[str, Any]]:
+def get_cluster_entity_sample(cluster_id: str, *, limit: int = 5) -> list[dict[str, Any]]:
     """Fetch entity fields from a cluster's most recent articles."""
     pool = get_pool()
     with pool.connection() as conn:
@@ -157,9 +152,7 @@ def get_cluster_entity_sample(
             return cur.fetchall()
 
 
-def update_cluster_centroid(
-    cluster_id: str, centroid: list[float]
-) -> None:
+def update_cluster_centroid(cluster_id: str, centroid: list[float]) -> None:
     pool = get_pool()
     with pool.connection() as conn:
         with conn.cursor() as cur:

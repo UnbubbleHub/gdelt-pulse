@@ -39,14 +39,13 @@ def run_clustering(
         logger.info("No unclustered articles found")
         return result
 
-    logger.info(
-        "Clustering %d articles (threshold=%.2f)", len(articles), threshold
-    )
+    logger.info("Clustering %d articles (threshold=%.2f)", len(articles), threshold)
 
     for article in articles:
         if not article.get("title"):
             logger.debug(
-                "Skipping article %s: no title", article.get("id"),
+                "Skipping article %s: no title",
+                article.get("id"),
             )
             result.articles_skipped += 1
             continue
@@ -58,9 +57,7 @@ def run_clustering(
             else:
                 result.assigned_to_existing += 1
         except Exception:
-            logger.exception(
-                "Failed to cluster article %s", article.get("id")
-            )
+            logger.exception("Failed to cluster article %s", article.get("id"))
             result.articles_failed += 1
 
     logger.info(

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import logging
-import sys
 
 from gdelt_event_pipeline.config.settings import get_settings
 from gdelt_event_pipeline.ingestion.pipeline import run_ingestion, run_title_scraping
@@ -48,7 +47,8 @@ def parse_args() -> argparse.Namespace:
         help="Network timeout in seconds.",
     )
     parser.add_argument(
-        "-v", "--verbose",
+        "-v",
+        "--verbose",
         action="store_true",
         help="Enable debug logging.",
     )
@@ -73,7 +73,7 @@ def main() -> int:
                 timeout=args.timeout,
                 dry_run=args.dry_run,
             )
-            print(f"\nIngestion summary:")
+            print("\nIngestion summary:")
             print(f"  Rows fetched:     {result.rows_fetched}")
             print(f"  Rows normalized:  {result.rows_normalized}")
             print(f"  Rows upserted:    {result.rows_upserted}")
@@ -84,7 +84,7 @@ def main() -> int:
         # Title scraping phase
         if args.scrape_titles or args.scrape_only:
             attempted, succeeded = run_title_scraping(timeout=min(args.timeout, 10))
-            print(f"\nTitle scraping summary:")
+            print("\nTitle scraping summary:")
             print(f"  Articles attempted: {attempted}")
             print(f"  Titles found:       {succeeded}")
     finally:

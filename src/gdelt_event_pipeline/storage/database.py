@@ -7,7 +7,6 @@ from psycopg_pool import ConnectionPool
 
 from gdelt_event_pipeline.config.settings import DatabaseSettings
 
-
 _pool: ConnectionPool | None = None
 
 

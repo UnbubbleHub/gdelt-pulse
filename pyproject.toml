@@ -17,8 +17,10 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-	"pytest>=8.3.0",
-	"ruff>=0.11.0",
+    "pytest>=8.3.0",
+    "ruff>=0.15.6",
+    "pre-commit>=4.0.0",
+    "build>=1.2.2",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -31,3 +33,7 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+force-exclude = true
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I", "UP"]

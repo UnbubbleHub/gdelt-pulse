@@ -1,8 +1,8 @@
 """Tests for the ingestion pipeline orchestration."""
 
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import patch
 
-from gdelt_event_pipeline.ingestion.pipeline import IngestionResult, run_ingestion, run_title_scraping
+from gdelt_event_pipeline.ingestion.pipeline import run_ingestion, run_title_scraping
 
 
 def _make_gkg_row(record_id="20260315120000-1", url="http://example.com/article"):

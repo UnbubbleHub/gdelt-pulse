@@ -8,7 +8,6 @@ from gdelt_event_pipeline.ingestion.scraper import (
     scrape_titles,
 )
 
-
 # ── _fetch_title extraction logic ──────────────────────────────────────
 
 
@@ -40,37 +39,27 @@ class TestFetchTitleExtraction:
 
     @patch("gdelt_event_pipeline.ingestion.scraper.urlopen")
     def test_title_with_html_entities(self, mock_urlopen):
-        mock_urlopen.return_value = self._mock_urlopen(
-            b"<title>Tom &amp; Jerry &lt;3&gt;</title>"
-        )
+        mock_urlopen.return_value = self._mock_urlopen(b"<title>Tom &amp; Jerry &lt;3&gt;</title>")
         assert _fetch_title("http://example.com") == "Tom & Jerry <3>"
 
     @patch("gdelt_event_pipeline.ingestion.scraper.urlopen")
     def test_title_with_apos_entity(self, mock_urlopen):
-        mock_urlopen.return_value = self._mock_urlopen(
-            b"<title>It&#39;s &apos;fine&apos;</title>"
-        )
+        mock_urlopen.return_value = self._mock_urlopen(b"<title>It&#39;s &apos;fine&apos;</title>")
         assert _fetch_title("http://example.com") == "It's 'fine'"
 
     @patch("gdelt_event_pipeline.ingestion.scraper.urlopen")
     def test_title_with_whitespace_collapse(self, mock_urlopen):
-        mock_urlopen.return_value = self._mock_urlopen(
-            b"<title>  Hello   \n  World  </title>"
-        )
+        mock_urlopen.return_value = self._mock_urlopen(b"<title>  Hello   \n  World  </title>")
         assert _fetch_title("http://example.com") == "Hello World"
 
     @patch("gdelt_event_pipeline.ingestion.scraper.urlopen")
     def test_no_title_tag(self, mock_urlopen):
-        mock_urlopen.return_value = self._mock_urlopen(
-            b"<html><body>No title here</body></html>"
-        )
+        mock_urlopen.return_value = self._mock_urlopen(b"<html><body>No title here</body></html>")
         assert _fetch_title("http://example.com") is None
 
     @patch("gdelt_event_pipeline.ingestion.scraper.urlopen")
     def test_empty_title_returns_none(self, mock_urlopen):
-        mock_urlopen.return_value = self._mock_urlopen(
-            b"<title>   </title>"
-        )
+        mock_urlopen.return_value = self._mock_urlopen(b"<title>   </title>")
         assert _fetch_title("http://example.com") is None
 
     @patch("gdelt_event_pipeline.ingestion.scraper.urlopen")
@@ -87,17 +76,13 @@ class TestFetchTitleExtraction:
 
     @patch("gdelt_event_pipeline.ingestion.scraper.urlopen")
     def test_case_insensitive_tag(self, mock_urlopen):
-        mock_urlopen.return_value = self._mock_urlopen(
-            b"<TITLE>Upper Case</TITLE>"
-        )
+        mock_urlopen.return_value = self._mock_urlopen(b"<TITLE>Upper Case</TITLE>")
         assert _fetch_title("http://example.com") == "Upper Case"
 
     @patch("gdelt_event_pipeline.ingestion.scraper.urlopen")
     def test_latin1_fallback(self, mock_urlopen):
         # \xe9 is 'é' in latin-1 but invalid standalone utf-8
-        mock_urlopen.return_value = self._mock_urlopen(
-            b"<title>Caf\xe9 News</title>"
-        )
+        mock_urlopen.return_value = self._mock_urlopen(b"<title>Caf\xe9 News</title>")
         assert _fetch_title("http://example.com") == "Café News"
 
     @patch("gdelt_event_pipeline.ingestion.scraper.urlopen")
@@ -110,16 +95,13 @@ class TestFetchTitleExtraction:
     @patch("gdelt_event_pipeline.ingestion.scraper.urlopen")
     def test_title_tag_preferred_over_og(self, mock_urlopen):
         mock_urlopen.return_value = self._mock_urlopen(
-            b'<html><title>Real Title</title>'
-            b'<meta property="og:title" content="OG Title"></html>'
+            b'<html><title>Real Title</title><meta property="og:title" content="OG Title"></html>'
         )
         assert _fetch_title("http://example.com") == "Real Title"
 
     @patch("gdelt_event_pipeline.ingestion.scraper.urlopen")
     def test_numeric_html_entity(self, mock_urlopen):
-        mock_urlopen.return_value = self._mock_urlopen(
-            b"<title>Score: 10 &#8211; 5</title>"
-        )
+        mock_urlopen.return_value = self._mock_urlopen(b"<title>Score: 10 &#8211; 5</title>")
         assert _fetch_title("http://example.com") == "Score: 10 \u2013 5"
 
 

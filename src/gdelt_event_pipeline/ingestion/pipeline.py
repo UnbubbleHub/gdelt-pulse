@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any
 
 from gdelt_event_pipeline.ingestion.gkg_fetcher import (
     download_and_parse_gkg,
@@ -17,7 +16,6 @@ from gdelt_event_pipeline.storage.articles import (
     upsert_article,
 )
 from gdelt_event_pipeline.storage.pipeline_state import (
-    get_pipeline_state,
     update_pipeline_state,
 )
 
@@ -27,6 +25,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class IngestionResult:
     """Summary of one ingestion run."""
+
     rows_fetched: int = 0
     rows_normalized: int = 0
     rows_skipped: int = 0
@@ -68,7 +67,7 @@ def run_ingestion(
     last_record_id = None
 
     for row in rows:
-        article = normalize_row(row) 
+        article = normalize_row(row)
         if article is None:
             result.rows_skipped += 1
             continue
@@ -76,7 +75,9 @@ def run_ingestion(
         result.rows_normalized += 1
 
         # Deduplicate within this batch
-        canonical = article["canonical_url"] #it is the normalized URL, so should be consistent across duplicates
+        canonical = article[
+            "canonical_url"
+        ]  # it is the normalized URL, so should be consistent across duplicates
         if canonical in seen_canonical_urls:
             result.duplicate_urls += 1
             continue

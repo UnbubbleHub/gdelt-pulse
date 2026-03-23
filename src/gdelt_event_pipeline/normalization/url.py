@@ -4,17 +4,32 @@ from __future__ import annotations
 
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
-
 # Query parameters that are tracking/analytics noise, not part of article identity.
-_STRIP_PARAMS = frozenset({
-    "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
-    "utm_cid", "utm_reader",
-    "fbclid", "gclid", "gclsrc", "dclid",
-    "mc_cid", "mc_eid",
-    "ref", "referrer", "source",
-    "ncid", "ocid", "sr_share",
-    "_ga", "_gl",
-})
+_STRIP_PARAMS = frozenset(
+    {
+        "utm_source",
+        "utm_medium",
+        "utm_campaign",
+        "utm_term",
+        "utm_content",
+        "utm_cid",
+        "utm_reader",
+        "fbclid",
+        "gclid",
+        "gclsrc",
+        "dclid",
+        "mc_cid",
+        "mc_eid",
+        "ref",
+        "referrer",
+        "source",
+        "ncid",
+        "ocid",
+        "sr_share",
+        "_ga",
+        "_gl",
+    }
+)
 
 
 def canonicalize_url(raw_url: str) -> str:
@@ -52,9 +67,7 @@ def canonicalize_url(raw_url: str) -> str:
 
     # Filter tracking query parameters
     query_params = parse_qs(parsed.query, keep_blank_values=False)
-    filtered = {
-        k: v for k, v in query_params.items() if k.lower() not in _STRIP_PARAMS
-    }
+    filtered = {k: v for k, v in query_params.items() if k.lower() not in _STRIP_PARAMS}
     query = urlencode(filtered, doseq=True) if filtered else ""
 
     return urlunparse((scheme, netloc, path, "", query, ""))

@@ -16,10 +16,7 @@ class DatabaseSettings:
 
     @property
     def dsn(self) -> str:
-        return (
-            f"postgresql://{self.user}:{self.password}"
-            f"@{self.host}:{self.port}/{self.database}"
-        )
+        return f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
 
 
 @dataclass(frozen=True)

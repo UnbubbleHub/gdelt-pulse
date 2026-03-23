@@ -79,11 +79,7 @@ def compute_combined_score(
 
 def _extract_location_names(raw: Any) -> set[str]:
     data = _load_json(raw)
-    return {
-        loc["name"].lower()
-        for loc in data
-        if isinstance(loc, dict) and loc.get("name")
-    }
+    return {loc["name"].lower() for loc in data if isinstance(loc, dict) and loc.get("name")}
 
 
 def _extract_flat_names(raw: Any) -> set[str]:

@@ -96,10 +96,7 @@ class TestParseV2Locations:
         assert result[1]["name"] == "United States"
 
     def test_deduplicates_same_name_different_coords(self):
-        raw = (
-            "4#Kalava#IN#IN36##15.5#78.5#;"
-            "4#Kalava#IN#IN36##15.500001#78.500001#"
-        )
+        raw = "4#Kalava#IN#IN36##15.5#78.5#;4#Kalava#IN#IN36##15.500001#78.500001#"
         result = parse_v2_locations(raw)
         assert len(result) == 1
         assert result[0]["name"] == "Kalava"

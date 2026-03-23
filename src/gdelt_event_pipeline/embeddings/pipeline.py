@@ -58,7 +58,8 @@ def run_embedding(
         if not article.get("title"):
             result.articles_skipped += 1
             logger.debug(
-                "Skipping article %s: no title", article.get("id"),
+                "Skipping article %s: no title",
+                article.get("id"),
             )
             continue
         text = compose_embedding_text(article)
@@ -80,7 +81,7 @@ def run_embedding(
     )
 
     # Store results
-    for article, vector in zip(valid_articles, vectors):
+    for article, vector in zip(valid_articles, vectors, strict=True):
         try:
             update_article_embedding(
                 str(article["id"]),
@@ -89,9 +90,7 @@ def run_embedding(
             )
             result.articles_embedded += 1
         except Exception:
-            logger.exception(
-                "Failed to store embedding for article %s", article.get("id")
-            )
+            logger.exception("Failed to store embedding for article %s", article.get("id"))
             result.articles_failed += 1
 
     logger.info(
