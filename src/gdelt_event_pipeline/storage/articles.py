@@ -90,6 +90,23 @@ def get_article_by_canonical_url(canonical_url: str) -> dict[str, Any] | None:
             return cur.fetchone()
 
 
+def get_recent_articles(*, limit: int = 50) -> list[dict[str, Any]]:
+    """Return the most recent articles with titles."""
+    pool = get_pool()
+    with pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT * FROM articles
+                WHERE title IS NOT NULL
+                ORDER BY gdelt_timestamp DESC
+                LIMIT %s
+                """,
+                (limit,),
+            )
+            return cur.fetchall()
+
+
 def get_articles_since(since: datetime, *, limit: int = 100) -> list[dict[str, Any]]:
     pool = get_pool()
     with pool.connection() as conn:
