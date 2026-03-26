@@ -105,6 +105,7 @@ def download_and_parse_gkg(
 
         with archive.open(csv_member) as raw:
             text = io.TextIOWrapper(raw, encoding="utf-8", errors="replace")
+            csv.field_size_limit(10 * 1024 * 1024)  # 10 MB — GKG fields can be very large
             reader = csv.reader(text, delimiter="\t")
             rows = [row for row in reader if row]
 
