@@ -984,7 +984,7 @@ function mkCard(a,rank,scored){
     rk=`<div class="card-rank"><span class="hi">#${rank} &middot; ${scored.rrf_score.toFixed(5)}</span><span>${sm}</span><span>${kw}</span></div>`;
   }
   let tg=tags(a.locations,'loc',r=>r.name||r)+tags(a.persons,'per',r=>r)+tags(a.organizations,'org',r=>r);
-  return `<div class="card">${rk}<div class="card-title"><a href="${esc(url)}" target="_blank">${title}</a></div><div class="card-meta"><span>${esc(a.domain||'')}</span><span>${fmtDate(a.gdelt_timestamp)}</span></div>${tg?`<div class="tags">${tg}</div>`:''}</div>`;
+  return `<div class="card">${rk}<div class="card-title"><a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${title}</a></div><div class="card-meta"><span>${esc(a.domain||'')}</span><span>${fmtDate(a.gdelt_timestamp)}</span></div>${tg?`<div class="tags">${tg}</div>`:''}</div>`;
 }
 
 function mkClCard(c){
@@ -1015,7 +1015,7 @@ async function openCluster(id){
     $('#mBody').innerHTML=d.articles.length?d.articles.map(a=>{
       const sim=a.similarity_score!=null?`similarity ${a.similarity_score.toFixed(4)}`:'';
       let tg=tags(a.locations,'loc',r=>r.name||r)+tags(a.persons,'per',r=>r)+tags(a.organizations,'org',r=>r);
-      return `<div class="card"><div class="card-rank"><span>${sim}</span></div><div class="card-title"><a href="${esc(a.canonical_url||a.url||'#')}" target="_blank">${esc(a.title||'(no title)')}</a></div><div class="card-meta"><span>${esc(a.domain||'')}</span><span>${fmtDate(a.gdelt_timestamp)}</span></div>${tg?`<div class="tags">${tg}</div>`:''}</div>`;
+      return `<div class="card"><div class="card-rank"><span>${sim}</span></div><div class="card-title"><a href="${esc(a.canonical_url||a.url||'#')}" target="_blank" rel="noopener noreferrer">${esc(a.title||'(no title)')}</a></div><div class="card-meta"><span>${esc(a.domain||'')}</span><span>${fmtDate(a.gdelt_timestamp)}</span></div>${tg?`<div class="tags">${tg}</div>`:''}</div>`;
     }).join(''):'<div class="empty">No articles</div>';
   }catch(e){$('#mBody').innerHTML=`<div class="empty">${esc(e.message)}</div>`}
 }
