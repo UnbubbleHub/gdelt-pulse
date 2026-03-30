@@ -77,26 +77,46 @@ def assign_article_to_cluster(
     return row
 
 
-def find_nearest_cluster(embedding: list[float], *, limit: int = 5) -> list[dict[str, Any]]:
+def find_nearest_cluster(
+    embedding: list[float], *, limit: int = 5, max_age_hours: int | None = 72
+) -> list[dict[str, Any]]:
     """Find the nearest active clusters to a given embedding using cosine distance.
 
     Returns clusters ordered by distance (closest first), each with a
     'cosine_distance' field.  Cosine similarity = 1 - cosine_distance.
+
+    If *max_age_hours* is set, only clusters whose last article was added
+    within that many hours are considered.  Pass ``None`` to disable the
+    temporal window and search all active clusters.
     """
     pool = get_pool()
     with pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute(
-                """
-                SELECT *, (centroid_embedding <=> %s::vector) AS cosine_distance
-                FROM clusters
-                WHERE is_active = true
-                  AND centroid_embedding IS NOT NULL
-                ORDER BY centroid_embedding <=> %s::vector
-                LIMIT %s
-                """,
-                (embedding, embedding, limit),
-            )
+            if max_age_hours is not None:
+                cur.execute(
+                    """
+                    SELECT *, (centroid_embedding <=> %s::vector) AS cosine_distance
+                    FROM clusters
+                    WHERE is_active = true
+                      AND centroid_embedding IS NOT NULL
+                      AND last_article_at >= now() - make_interval(hours => %s)
+                    ORDER BY centroid_embedding <=> %s::vector
+                    LIMIT %s
+                    """,
+                    (embedding, max_age_hours, embedding, limit),
+                )
+            else:
+                cur.execute(
+                    """
+                    SELECT *, (centroid_embedding <=> %s::vector) AS cosine_distance
+                    FROM clusters
+                    WHERE is_active = true
+                      AND centroid_embedding IS NOT NULL
+                    ORDER BY centroid_embedding <=> %s::vector
+                    LIMIT %s
+                    """,
+                    (embedding, embedding, limit),
+                )
             return cur.fetchall()
 
 

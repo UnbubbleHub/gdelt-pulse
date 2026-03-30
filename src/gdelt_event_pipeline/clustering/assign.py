@@ -47,6 +47,7 @@ def assign_article(
     article: dict[str, Any],
     *,
     threshold: float = DEFAULT_SIMILARITY_THRESHOLD,
+    max_age_hours: int | None = 72,
 ) -> AssignmentResult:
     """Assign a single article to the best matching cluster, or create a new one.
 
@@ -59,8 +60,8 @@ def assign_article(
     article_id = str(article["id"])
     article_entities = extract_entity_sets(article)
 
-    # Stage 1: find top candidates by cosine similarity
-    candidates = find_nearest_cluster(embedding, limit=N_CANDIDATES)
+    # Stage 1: find top candidates by cosine similarity (within temporal window)
+    candidates = find_nearest_cluster(embedding, limit=N_CANDIDATES, max_age_hours=max_age_hours)
 
     # Stage 2: score each candidate with entity overlap
     best_match = None
