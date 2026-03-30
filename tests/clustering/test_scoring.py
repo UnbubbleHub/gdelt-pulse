@@ -110,3 +110,8 @@ class TestComputeCombinedScore:
         # entity_overlap=1.0 adds 0.25 → combined=0.90, above threshold
         combined = compute_combined_score(0.65, 1.0, entity_weight=0.25)
         assert combined >= 0.70
+
+    def test_score_capped_at_one(self):
+        # cosine=0.95 + entity bonus 0.25 would be 1.20 uncapped
+        score = compute_combined_score(0.95, 1.0, entity_weight=0.25)
+        assert score == 1.0

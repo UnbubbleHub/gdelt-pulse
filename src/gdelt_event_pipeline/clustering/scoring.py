@@ -74,7 +74,7 @@ def compute_combined_score(
     above threshold, but cannot create a match from nothing (cosine must
     still be reasonably close).
     """
-    return cosine_similarity + entity_weight * entity_overlap
+    return min(cosine_similarity + entity_weight * entity_overlap, 1.0)
 
 
 def _extract_location_names(raw: Any) -> set[str]:
