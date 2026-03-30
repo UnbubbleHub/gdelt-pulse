@@ -290,11 +290,17 @@ Processes up to 500 articles per run. Articles without a title are skipped.
 Assigns embedded articles to event clusters.
 
 ```bash
-# Run with default settings (threshold=0.75, limit=500)
+# Run with default settings (threshold=0.75, 72h temporal window)
 uv run python -m gdelt_event_pipeline.clustering
 
 # Adjust similarity threshold (lower = more permissive matching)
 uv run python -m gdelt_event_pipeline.clustering --threshold 0.70
+
+# Custom temporal window (only match clusters active within N hours)
+uv run python -m gdelt_event_pipeline.clustering --window 48
+
+# Disable temporal window (match all active clusters)
+uv run python -m gdelt_event_pipeline.clustering --window 0
 
 # Process more articles per run
 uv run python -m gdelt_event_pipeline.clustering --limit 1000
@@ -302,6 +308,8 @@ uv run python -m gdelt_event_pipeline.clustering --limit 1000
 # Verbose output (shows per-article assignment details)
 uv run python -m gdelt_event_pipeline.clustering -v
 ```
+
+By default, only clusters that received an article within the last 72 hours are considered as candidates. This prevents old clusters from absorbing unrelated new articles on the same topic. The window is configurable via `--window` or the `CLUSTER_WINDOW_HOURS` environment variable.
 
 ### Full Pipeline Run
 

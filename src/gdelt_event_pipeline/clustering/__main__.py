@@ -25,6 +25,13 @@ def main() -> int:
         help="Max articles to process per run (default: no limit).",
     )
     parser.add_argument(
+        "--window",
+        type=int,
+        default=None,
+        help="Temporal window in hours for cluster candidates (default: from config, "
+        "typically 72). Use 0 to disable.",
+    )
+    parser.add_argument(
         "-v",
         "--verbose",
         action="store_true",
@@ -41,8 +48,16 @@ def main() -> int:
     settings = get_settings()
     init_pool(settings.db)
 
+    # Resolve temporal window: CLI flag > config > default (72h)
+    if args.window is not None:
+        max_age_hours = args.window if args.window > 0 else None
+    else:
+        max_age_hours = settings.clustering.window_hours
+
     try:
-        result = run_clustering(threshold=args.threshold, limit=args.limit)
+        result = run_clustering(
+            threshold=args.threshold, limit=args.limit, max_age_hours=max_age_hours
+        )
         print("\nClustering summary:")
         print(f"  Articles processed:     {result.articles_processed}")
         print(f"  Assigned to existing:   {result.assigned_to_existing}")

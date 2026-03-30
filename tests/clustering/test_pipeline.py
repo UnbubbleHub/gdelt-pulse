@@ -80,4 +80,32 @@ class TestRunClustering:
         )
 
         run_clustering(threshold=0.9)
-        mock_assign.assert_called_once_with(mock_get.return_value[0], threshold=0.9)
+        mock_assign.assert_called_once_with(
+            mock_get.return_value[0], threshold=0.9, max_age_hours=72
+        )
+
+    @patch("gdelt_event_pipeline.clustering.pipeline.assign_article")
+    @patch("gdelt_event_pipeline.clustering.pipeline.get_unclustered_articles")
+    def test_max_age_hours_passed_through(self, mock_get, mock_assign):
+        mock_get.return_value = [_make_article("a1")]
+        mock_assign.return_value = AssignmentResult(
+            cluster_id="c1", similarity=1.0, is_new_cluster=True
+        )
+
+        run_clustering(max_age_hours=48)
+        mock_assign.assert_called_once_with(
+            mock_get.return_value[0], threshold=0.75, max_age_hours=48
+        )
+
+    @patch("gdelt_event_pipeline.clustering.pipeline.assign_article")
+    @patch("gdelt_event_pipeline.clustering.pipeline.get_unclustered_articles")
+    def test_max_age_hours_disabled(self, mock_get, mock_assign):
+        mock_get.return_value = [_make_article("a1")]
+        mock_assign.return_value = AssignmentResult(
+            cluster_id="c1", similarity=1.0, is_new_cluster=True
+        )
+
+        run_clustering(max_age_hours=None)
+        mock_assign.assert_called_once_with(
+            mock_get.return_value[0], threshold=0.75, max_age_hours=None
+        )

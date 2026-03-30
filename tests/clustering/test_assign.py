@@ -52,6 +52,19 @@ def test_assigns_to_existing_above_threshold(
     mock_update_centroid.assert_called_once()
 
 
+@patch("gdelt_event_pipeline.clustering.assign.update_cluster_centroid")
+@patch("gdelt_event_pipeline.clustering.assign.assign_article_to_cluster")
+@patch("gdelt_event_pipeline.clustering.assign.get_cluster_entity_sample")
+@patch("gdelt_event_pipeline.clustering.assign.find_nearest_cluster")
+def test_max_age_hours_forwarded_to_find(mock_find, mock_sample, mock_assign, mock_update):
+    mock_find.return_value = [_make_cluster(cosine_distance=0.1)]
+    mock_sample.return_value = []
+
+    assign_article(_make_article(), max_age_hours=48)
+
+    mock_find.assert_called_once_with([0.1] * 384, limit=5, max_age_hours=48)
+
+
 @patch("gdelt_event_pipeline.clustering.assign.assign_article_to_cluster")
 @patch("gdelt_event_pipeline.clustering.assign.create_cluster")
 @patch("gdelt_event_pipeline.clustering.assign.get_cluster_entity_sample")

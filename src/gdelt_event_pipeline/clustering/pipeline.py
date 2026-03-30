@@ -26,11 +26,15 @@ def run_clustering(
     *,
     threshold: float = 0.75,
     limit: int | None = None,
+    max_age_hours: int | None = 72,
 ) -> ClusteringResult:
     """Execute one clustering cycle.
 
     Fetches unclustered articles (those with embeddings but no cluster
     membership) and assigns each via single-pass nearest-centroid matching.
+
+    *max_age_hours* limits cluster candidates to those that received an
+    article within the given window.  Pass ``None`` to disable.
     """
     result = ClusteringResult()
 
@@ -39,7 +43,13 @@ def run_clustering(
         logger.info("No unclustered articles found")
         return result
 
-    logger.info("Clustering %d articles (threshold=%.2f)", len(articles), threshold)
+    window_desc = f"{max_age_hours}h window" if max_age_hours else "no window"
+    logger.info(
+        "Clustering %d articles (threshold=%.2f, %s)",
+        len(articles),
+        threshold,
+        window_desc,
+    )
 
     for article in articles:
         if not article.get("title"):
@@ -50,7 +60,7 @@ def run_clustering(
             result.articles_skipped += 1
             continue
         try:
-            assignment = assign_article(article, threshold=threshold)
+            assignment = assign_article(article, threshold=threshold, max_age_hours=max_age_hours)
             result.articles_processed += 1
             if assignment.is_new_cluster:
                 result.new_clusters_created += 1
