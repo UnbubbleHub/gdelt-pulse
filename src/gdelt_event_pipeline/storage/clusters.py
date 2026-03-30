@@ -100,15 +100,28 @@ def find_nearest_cluster(embedding: list[float], *, limit: int = 5) -> list[dict
             return cur.fetchall()
 
 
-def get_active_clusters(*, limit: int = 100) -> list[dict[str, Any]]:
+def get_cluster_by_id(cluster_id: str) -> dict[str, Any] | None:
+    pool = get_pool()
+    with pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("SELECT * FROM clusters WHERE id = %s", (cluster_id,))
+            return cur.fetchone()
+
+
+def get_active_clusters(*, limit: int = 100, sort: str = "recent") -> list[dict[str, Any]]:
+    order_clause = {
+        "articles": "article_count DESC",
+        "oldest": "first_article_at ASC NULLS LAST",
+    }.get(sort, "last_article_at DESC NULLS LAST")
+
     pool = get_pool()
     with pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
-                """
+                f"""
                 SELECT * FROM clusters
                 WHERE is_active = true
-                ORDER BY last_article_at DESC NULLS LAST
+                ORDER BY {order_clause}
                 LIMIT %s
                 """,
                 (limit,),

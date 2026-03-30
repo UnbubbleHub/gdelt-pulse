@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GDELT Pulse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+
+:root {
+  --bg: #050507;
+  --bg-raised: #0c0c10;
+  --surface: #111116;
+  --surface-2: #17171d;
+  --surface-3: #1d1d25;
+  --border: #222230;
+  --border-dim: #1a1a24;
+  --text: #ededf0;
+  --text-2: #b0b0be;
+  --text-3: #6e6e82;
+  --primary: #7c6aef;
+  --primary-light: #9d8ff5;
+  --primary-dim: rgba(124, 106, 239, 0.1);
+  --primary-glow: rgba(124, 106, 239, 0.06);
+  --teal: #2dd4a8;
+  --teal-dim: rgba(45, 212, 168, 0.1);
+  --amber: #e5a63e;
+  --amber-dim: rgba(229, 166, 62, 0.1);
+  --rose: #e5637a;
+  --rose-dim: rgba(229, 99, 122, 0.1);
+  --blue: #5ba4f5;
+  --blue-dim: rgba(91, 164, 245, 0.1);
+}
+
+body {
+  font-family: 'DM Sans', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: var(--primary-dim); color: var(--primary-light); }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-dim); border-radius: 3px; }
+
+/* ── App shell ──────────────────────────────────────── */
+
+.shell { display: flex; min-height: 100vh; }
+
+/* ── Sidebar ────────────────────────────────────────── */
+
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--bg-raised);
+  border-right: 1px solid var(--border-dim);
+  padding: 28px 0;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 50;
+}
+
+.sidebar-brand {
+  padding: 0 24px;
+  margin-bottom: 32px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sidebar-brand .logo {
+  width: 28px;
+  height: 28px;
+  background: var(--primary);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: white;
+}
+
+.sidebar-brand span {
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: -0.02em;
+}
+
+.sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 2px; padding: 0 10px; }
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 450;
+  color: var(--text-3);
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+  width: 100%;
+  text-align: left;
+  transition: all 0.12s ease;
+}
+
+.nav-link:hover { color: var(--text-2); background: var(--surface); }
+
+.nav-link.active {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.nav-link svg { flex-shrink: 0; opacity: 0.5; }
+.nav-link.active svg { opacity: 0.85; }
+
+.sidebar-footer {
+  padding: 16px 24px;
+  font-size: 0.7rem;
+  color: var(--text-3);
+}
+
+/* ── Main content ───────────────────────────────────── */
+
+.main {
+  flex: 1;
+  margin-left: 220px;
+  min-height: 100vh;
+}
+
+.page {
+  display: none;
+  padding: 36px 40px 60px;
+  max-width: 920px;
+  animation: pageIn 0.2s ease;
+}
+
+.page.active { display: block; }
+
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.page-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  margin-bottom: 6px;
+}
+
+.page-subtitle {
+  font-size: 0.84rem;
+  color: var(--text-3);
+  margin-bottom: 28px;
+  font-weight: 400;
+}
+
+/* ── Dashboard stats ────────────────────────────────── */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+  margin-bottom: 36px;
+}
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border-dim);
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+
+.stat-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+.stat-value.accent { color: var(--primary-light); }
+.stat-value.teal { color: var(--teal); }
+
+/* ── Section headers ────────────────────────────────── */
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.section-title {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  font-weight: 600;
+}
+
+.section-action {
+  font-size: 0.78rem;
+  color: var(--primary);
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-weight: 500;
+}
+
+.section-action:hover { text-decoration: underline; }
+
+/* ── Search ─────────────────────────────────────────── */
+
+.search-area {
+  margin-bottom: 24px;
+}
+
+.search-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.search-input-wrap {
+  flex: 1;
+  position: relative;
+}
+
+.search-input-wrap svg {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-3);
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  padding: 11px 16px 11px 42px;
+  background: var(--surface);
+  border: 1px solid var(--border-dim);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 0.88rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.search-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+.search-input::placeholder { color: var(--text-3); }
+
+.btn {
+  padding: 11px 20px;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.84rem;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover { background: var(--primary-light); }
+.btn-primary:active { transform: scale(0.97); }
+.btn-primary:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.btn-ghost {
+  background: var(--surface-2);
+  color: var(--text-2);
+  border: 1px solid var(--border-dim);
+}
+
+.btn-ghost:hover { background: var(--surface-3); color: var(--text); }
+
+/* ── Filter bar ─────────────────────────────────────── */
+
+.filter-toggle {
+  font-size: 0.78rem;
+  color: var(--text-3);
+  background: none;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+  font-weight: 500;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.filter-toggle:hover { color: var(--text-2); }
+
+.filter-panel {
+  display: none;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border-dim);
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+.filter-panel.open { display: flex; animation: slideDown 0.15s ease; }
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.filter-item {
+  flex: 1 1 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filter-item label {
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-3);
+  font-weight: 600;
+}
+
+.filter-item input {
+  padding: 7px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border-dim);
+  border-radius: 7px;
+  color: var(--text);
+  font-size: 0.8rem;
+  font-family: inherit;
+  outline: none;
+}
+
+.filter-item input:focus { border-color: var(--primary); }
+
+.weight-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: var(--text-3);
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.weight-row input[type="range"] {
+  width: 110px;
+  accent-color: var(--primary);
+}
+
+.weight-val {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-2);
+  font-size: 0.75rem;
+  min-width: 26px;
+  text-align: center;
+}
+
+/* ── Results meta ───────────────────────────────────── */
+
+.results-meta {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 14px;
+  font-size: 0.75rem;
+  color: var(--text-3);
+}
+
+.results-meta strong {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-2);
+  font-weight: 500;
+}
+
+/* ── Segmented control ──────────────────────────────── */
+
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--surface);
+  border-radius: 9px;
+  border: 1px solid var(--border-dim);
+  margin-bottom: 16px;
+}
+
+.seg-btn {
+  padding: 7px 16px;
+  border: none;
+  background: none;
+  border-radius: 7px;
+  font-size: 0.78rem;
+  font-family: inherit;
+  font-weight: 500;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.seg-btn:hover { color: var(--text-2); }
+
+.seg-btn.active {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.seg-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  margin-left: 4px;
+  color: var(--text-3);
+}
+
+.seg-btn.active .seg-count { color: var(--primary-light); }
+
+/* ── Cards ──────────────────────────────────────────── */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border-dim);
+  border-radius: 12px;
+  padding: 15px 18px;
+  margin-bottom: 6px;
+  transition: all 0.12s ease;
+}
+
+.card:hover {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+.card-rank {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--text-3);
+  margin-bottom: 6px;
+  display: flex;
+  gap: 10px;
+}
+
+.card-rank .hi { color: var(--primary-light); font-weight: 500; }
+
+.card-title {
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 6px;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+}
+
+.card-title a { color: var(--text); text-decoration: none; transition: color 0.1s; }
+.card-title a:hover { color: var(--primary-light); }
+
+.card-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 0.74rem;
+  color: var(--text-3);
+  margin-bottom: 8px;
+}
+
+.tags { display: flex; gap: 4px; flex-wrap: wrap; }
+
+.tag {
+  padding: 2px 7px;
+  font-size: 0.66rem;
+  font-weight: 500;
+  border-radius: 4px;
+}
+
+.tag-loc { color: var(--teal); background: var(--teal-dim); }
+.tag-per { color: var(--amber); background: var(--amber-dim); }
+.tag-org { color: var(--rose); background: var(--rose-dim); }
+
+/* ── Cluster cards ──────────────────────────────────── */
+
+.cl-card {
+  background: var(--surface);
+  border: 1px solid var(--border-dim);
+  border-radius: 12px;
+  padding: 15px 18px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.cl-card:hover {
+  border-color: var(--primary);
+  background: var(--surface-2);
+}
+
+.cl-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 5px;
+}
+
+.cl-title {
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+}
+
+.cl-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--primary-light);
+  background: var(--primary-dim);
+  padding: 3px 9px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cl-meta { font-size: 0.74rem; color: var(--text-3); }
+
+.cl-sim {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--text-3);
+  margin-bottom: 5px;
+}
+
+/* ── Sort ───────────────────────────────────────────── */
+
+.sort-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.sort-row label {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sort-row select {
+  padding: 6px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border-dim);
+  border-radius: 7px;
+  color: var(--text-2);
+  font-family: inherit;
+  font-size: 0.78rem;
+  outline: none;
+  cursor: pointer;
+}
+
+/* ── Modal ──────────────────────────────────────────── */
+
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(5,5,7,0.8);
+  backdrop-filter: blur(6px);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.overlay.open { display: flex; animation: fadeIn 0.12s ease; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 660px;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 28px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+  animation: modalIn 0.15s ease;
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal::-webkit-scrollbar { width: 5px; }
+.modal::-webkit-scrollbar-thumb { background: var(--border-dim); border-radius: 3px; }
+
+.modal-x {
+  float: right;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--border-dim);
+  background: var(--surface);
+  color: var(--text-3);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s;
+}
+
+.modal-x:hover { color: var(--text); border-color: var(--border); }
+
+.modal h2 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+  padding-right: 40px;
+  letter-spacing: -0.02em;
+}
+
+.modal .cl-meta { margin-bottom: 16px; }
+
+/* ── States ─────────────────────────────────────────── */
+
+.loading, .empty {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--text-3);
+  font-size: 0.84rem;
+}
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.5s linear infinite;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Responsive ─────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .main { margin-left: 0; }
+  .page { padding: 24px 16px 40px; }
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .cl-top { flex-direction: column; gap: 4px; }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="logo">G</div>
+      <span>GDELT Pulse</span>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-link active" data-page="home">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Home
+      </button>
+      <button class="nav-link" data-page="search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Search
+      </button>
+      <button class="nav-link" data-page="articles">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Articles
+      </button>
+      <button class="nav-link" data-page="clusters">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><circle cx="5" cy="19" r="2"/><line x1="14.5" y1="9.5" x2="17.5" y2="6.5"/><line x1="9.5" y1="9.5" x2="6.5" y2="6.5"/><line x1="14.5" y1="14.5" x2="17.5" y2="17.5"/><line x1="9.5" y1="14.5" x2="6.5" y2="17.5"/></svg>
+        Clusters
+      </button>
+    </nav>
+    <div class="sidebar-footer">GDELT Pulse v0.1</div>
+  </aside>
+
+  <!-- Main content -->
+  <div class="main">
+
+    <!-- HOME -->
+    <div class="page active" id="pg-home">
+      <h1 class="page-title">Dashboard</h1>
+      <p class="page-subtitle">Overview of your GDELT news pipeline</p>
+      <div class="stat-grid" id="statsGrid">
+        <div class="stat-card"><div class="stat-label">Total Articles</div><div class="stat-value" id="s-articles">--</div></div>
+        <div class="stat-card"><div class="stat-label">With Titles</div><div class="stat-value" id="s-titled">--</div></div>
+        <div class="stat-card"><div class="stat-label">Embedded</div><div class="stat-value" id="s-embedded">--</div></div>
+        <div class="stat-card"><div class="stat-label">Clusters</div><div class="stat-value accent" id="s-clusters">--</div></div>
+        <div class="stat-card"><div class="stat-label">Largest Cluster</div><div class="stat-value teal" id="s-largest">--</div></div>
+        <div class="stat-card"><div class="stat-label">Memberships</div><div class="stat-value" id="s-memberships">--</div></div>
+      </div>
+
+      <div class="section-header">
+        <span class="section-title">Recent Articles</span>
+        <button class="section-action" id="homeViewAll">View all</button>
+      </div>
+      <div id="homeArticles"><div class="loading">Loading<span class="spinner"></span></div></div>
+
+      <div style="margin-top:28px">
+        <div class="section-header">
+          <span class="section-title">Top Clusters</span>
+          <button class="section-action" id="homeViewClusters">View all</button>
+        </div>
+        <div id="homeClusters"><div class="loading">Loading<span class="spinner"></span></div></div>
+      </div>
+    </div>
+
+    <!-- SEARCH -->
+    <div class="page" id="pg-search">
+      <h1 class="page-title">Search</h1>
+      <p class="page-subtitle">Hybrid semantic and keyword search</p>
+
+      <div class="search-area">
+        <div class="search-row">
+          <div class="search-input-wrap">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input class="search-input" type="text" id="searchInput" placeholder="Search articles and events..." autocomplete="off">
+          </div>
+          <button class="btn btn-primary" id="searchBtn">Search</button>
+        </div>
+
+        <button class="filter-toggle" id="filterToggle">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+          Filters
+        </button>
+
+        <div class="filter-panel" id="filterPanel">
+          <div class="filter-item"><label>Location</label><input type="text" id="fLoc" placeholder="Turkey, Syria"></div>
+          <div class="filter-item"><label>Person</label><input type="text" id="fPer" placeholder="Biden"></div>
+          <div class="filter-item"><label>Organization</label><input type="text" id="fOrg" placeholder="NATO"></div>
+          <div class="filter-item"><label>Theme</label><input type="text" id="fThm" placeholder="ECON_BANKRUPTCY"></div>
+          <div class="filter-item"><label>Domain</label><input type="text" id="fDom" placeholder="bbc.co.uk"></div>
+          <div class="filter-item"><label>Source</label><input type="text" id="fSrc" placeholder="reuters"></div>
+          <div class="filter-item"><label>Date from</label><input type="date" id="fDF"></div>
+          <div class="filter-item"><label>Date to</label><input type="date" id="fDT"></div>
+        </div>
+
+        <div class="weight-row">
+          <span>Semantic</span>
+          <input type="range" id="wSlider" min="0" max="1" step="0.1" value="0.5">
+          <span class="weight-val" id="wVal">0.5</span>
+          <span>Keyword</span>
+        </div>
+      </div>
+
+      <div id="searchResults" style="display:none">
+        <div class="results-meta" id="searchMeta"></div>
+        <div class="segmented" id="searchTabs">
+          <button class="seg-btn active" data-stab="s-arts">Articles<span class="seg-count" id="sArtCnt"></span></button>
+          <button class="seg-btn" data-stab="s-cls">Clusters<span class="seg-count" id="sClCnt"></span></button>
+        </div>
+        <div id="s-arts"></div>
+        <div id="s-cls" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- ARTICLES -->
+    <div class="page" id="pg-articles">
+      <h1 class="page-title">Articles</h1>
+      <p class="page-subtitle">Recent articles from the GDELT pipeline</p>
+      <div id="artList"><div class="loading">Loading<span class="spinner"></span></div></div>
+    </div>
+
+    <!-- CLUSTERS -->
+    <div class="page" id="pg-clusters">
+      <h1 class="page-title">Clusters</h1>
+      <p class="page-subtitle">Event clusters grouping related articles</p>
+      <div class="sort-row">
+        <label>Sort by</label>
+        <select id="clSort">
+          <option value="articles">Most articles</option>
+          <option value="recent">Most recent</option>
+          <option value="oldest">Oldest first</option>
+        </select>
+      </div>
+      <div id="clList"><div class="loading">Loading<span class="spinner"></span></div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <button class="modal-x" id="modalX">&times;</button>
+    <h2 id="mTitle"></h2>
+    <div class="cl-meta" id="mMeta"></div>
+    <div id="mBody"></div>
+  </div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s), API='/api';
+
+// ── Navigation ─────────────────────────────────────────
+$$('.nav-link').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    $$('.nav-link').forEach(b=>b.classList.remove('active'));
+    $$('.page').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    $(`#pg-${btn.dataset.page}`).classList.add('active');
+    if(btn.dataset.page==='home') loadHome();
+    if(btn.dataset.page==='articles') loadArticlesPage();
+    if(btn.dataset.page==='clusters') loadClustersPage();
+    if(btn.dataset.page==='search') $('#searchInput').focus();
+  });
+});
+
+$('#homeViewAll').addEventListener('click',()=>navTo('articles'));
+$('#homeViewClusters').addEventListener('click',()=>navTo('clusters'));
+
+function navTo(page){
+  $$('.nav-link').forEach(b=>b.classList.remove('active'));
+  $$('.page').forEach(p=>p.classList.remove('active'));
+  $(`.nav-link[data-page="${page}"]`).classList.add('active');
+  $(`#pg-${page}`).classList.add('active');
+  if(page==='articles') loadArticlesPage();
+  if(page==='clusters') loadClustersPage();
+}
+
+// ── Search tabs ────────────────────────────────────────
+$$('.seg-btn[data-stab]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    $$('.seg-btn[data-stab]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    ['s-arts','s-cls'].forEach(id=>{
+      $(`#${id}`).style.display = id===btn.dataset.stab ? 'block' : 'none';
+    });
+  });
+});
+
+// ── Events ─────────────────────────────────────────────
+$('#searchInput').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch()});
+$('#searchBtn').addEventListener('click',doSearch);
+$('#filterToggle').addEventListener('click',()=>$('#filterPanel').classList.toggle('open'));
+$('#wSlider').addEventListener('input',()=>{$('#wVal').textContent=$('#wSlider').value});
+$('#overlay').addEventListener('click',e=>{if(e.target===$('#overlay'))closeModal()});
+$('#modalX').addEventListener('click',closeModal);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+$('#clSort').addEventListener('change',()=>{_clLoaded=false;loadClustersPage()});
+
+// ── Dashboard ──────────────────────────────────────────
+let _homeLoaded=false;
+async function loadHome(){
+  if(_homeLoaded) return;
+  try{
+    const [stats,articles,clusters]=await Promise.all([
+      fetch(`${API}/stats`).then(r=>r.json()),
+      fetch(`${API}/articles?limit=5`).then(r=>r.json()),
+      fetch(`${API}/clusters?limit=5&sort=articles`).then(r=>r.json()),
+    ]);
+    _homeLoaded=true;
+    $('#s-articles').textContent=stats.total_articles.toLocaleString();
+    $('#s-titled').textContent=stats.titled_articles.toLocaleString();
+    $('#s-embedded').textContent=stats.embedded_articles.toLocaleString();
+    $('#s-clusters').textContent=stats.total_clusters.toLocaleString();
+    $('#s-largest').textContent=stats.largest_cluster.toLocaleString();
+    $('#s-memberships').textContent=stats.total_memberships.toLocaleString();
+    $('#homeArticles').innerHTML=articles.length?articles.map(a=>mkCard(a)).join(''):'<div class="empty">No articles yet</div>';
+    $('#homeClusters').innerHTML=clusters.length?clusters.map(c=>mkClCard(c)).join(''):'<div class="empty">No clusters yet</div>';
+    bindCl('#homeClusters');
+  }catch(e){
+    $('#homeArticles').innerHTML=`<div class="empty">${esc(e.message)}</div>`;
+  }
+}
+loadHome();
+
+// ── Search ─────────────────────────────────────────────
+async function doSearch(){
+  const q=$('#searchInput').value.trim();
+  if(!q) return;
+  $('#searchResults').style.display='block';
+  $('#s-arts').innerHTML='<div class="loading">Searching<span class="spinner"></span></div>';
+  $('#s-cls').innerHTML='';
+  $('#searchBtn').disabled=true;
+
+  const p=new URLSearchParams({q,limit:30,semantic_weight:$('#wSlider').value,clusters:'true'});
+  const fv=(id,k)=>{const v=$(id).value.trim();if(v)p.set(k,v)};
+  fv('#fLoc','location');fv('#fPer','person');fv('#fOrg','org');fv('#fThm','theme');
+  fv('#fDom','domain');fv('#fSrc','source');fv('#fDF','date_from');fv('#fDT','date_to');
+
+  try{
+    const d=await fetch(`${API}/search?${p}`).then(r=>r.json());
+    $('#searchMeta').innerHTML=`Semantic: <strong>${d.total_semantic_hits}</strong> &middot; Keyword: <strong>${d.total_keyword_hits}</strong> &middot; Results: <strong>${d.articles.length}</strong>`;
+    $('#sArtCnt').textContent=d.articles.length||'';
+    $('#sClCnt').textContent=d.clusters.length||'';
+
+    $('#s-arts').innerHTML=d.articles.length
+      ? d.articles.map((sa,i)=>mkCard(sa.article,i+1,sa)).join('')
+      : '<div class="empty">No articles found</div>';
+
+    $('#s-cls').innerHTML=d.clusters.length
+      ? d.clusters.map(sc=>mkSearchClCard(sc)).join('')
+      : '<div class="empty">No matching clusters</div>';
+    bindCl('#s-cls');
+  }catch(e){
+    $('#s-arts').innerHTML=`<div class="empty">${esc(e.message)}</div>`;
+  }finally{ $('#searchBtn').disabled=false; }
+}
+
+// ── Articles page ──────────────────────────────────────
+let _artLoaded=false;
+async function loadArticlesPage(){
+  if(_artLoaded) return;
+  $('#artList').innerHTML='<div class="loading">Loading<span class="spinner"></span></div>';
+  try{
+    const arts=await fetch(`${API}/articles?limit=100`).then(r=>r.json());
+    _artLoaded=true;
+    $('#artList').innerHTML=arts.length?arts.map(a=>mkCard(a)).join(''):'<div class="empty">No articles</div>';
+  }catch(e){$('#artList').innerHTML=`<div class="empty">${esc(e.message)}</div>`}
+}
+
+// ── Clusters page ──────────────────────────────────────
+let _clLoaded=false;
+async function loadClustersPage(){
+  if(_clLoaded) return;
+  $('#clList').innerHTML='<div class="loading">Loading<span class="spinner"></span></div>';
+  const sort=$('#clSort').value;
+  try{
+    const cls=await fetch(`${API}/clusters?limit=200&sort=${sort}`).then(r=>r.json());
+    _clLoaded=true;
+    $('#clList').innerHTML=cls.length?cls.map(c=>mkClCard(c)).join(''):'<div class="empty">No clusters</div>';
+    bindCl('#clList');
+  }catch(e){$('#clList').innerHTML=`<div class="empty">${esc(e.message)}</div>`}
+}
+
+// ── Card builders ──────────────────────────────────────
+function mkCard(a,rank,scored){
+  const title=esc(a.title||'(no title)'), url=a.canonical_url||a.url||'#';
+  let rk='';
+  if(scored){
+    const sm=scored.semantic_rank?`sem #${scored.semantic_rank}`:'sem -';
+    const kw=scored.keyword_rank?`kw #${scored.keyword_rank}`:'kw -';
+    rk=`<div class="card-rank"><span class="hi">#${rank} &middot; ${scored.rrf_score.toFixed(5)}</span><span>${sm}</span><span>${kw}</span></div>`;
+  }
+  let tg=tags(a.locations,'loc',r=>r.name||r)+tags(a.persons,'per',r=>r)+tags(a.organizations,'org',r=>r);
+  return `<div class="card">${rk}<div class="card-title"><a href="${esc(url)}" target="_blank">${title}</a></div><div class="card-meta"><span>${esc(a.domain||'')}</span><span>${fmtDate(a.gdelt_timestamp)}</span></div>${tg?`<div class="tags">${tg}</div>`:''}</div>`;
+}
+
+function mkClCard(c){
+  return `<div class="cl-card" data-id="${c.id}"><div class="cl-top"><span class="cl-title">${esc(c.representative_title||'(untitled)')}</span><span class="cl-badge">${c.article_count} articles</span></div><div class="cl-meta">${fmtDate(c.first_article_at)} &mdash; ${fmtDate(c.last_article_at)}</div></div>`;
+}
+
+function mkSearchClCard(sc){
+  const c=sc.cluster, sim=(1-sc.cosine_distance).toFixed(4);
+  return `<div class="cl-card" data-id="${c.id}"><div class="cl-sim">similarity ${sim}</div><div class="cl-top"><span class="cl-title">${esc(c.representative_title||'(untitled)')}</span><span class="cl-badge">${c.article_count} articles</span></div><div class="cl-meta">${fmtDate(c.first_article_at)} &mdash; ${fmtDate(c.last_article_at)}</div></div>`;
+}
+
+function bindCl(sel){
+  $$(`${sel} .cl-card`).forEach(el=>el.addEventListener('click',()=>openCluster(el.dataset.id)));
+}
+
+// ── Cluster modal ──────────────────────────────────────
+async function openCluster(id){
+  $('#overlay').classList.add('open');
+  document.body.style.overflow='hidden';
+  $('#mTitle').textContent='Loading...';
+  $('#mMeta').textContent='';
+  $('#mBody').innerHTML='<div class="loading">Loading<span class="spinner"></span></div>';
+  try{
+    const d=await fetch(`${API}/clusters/${id}`).then(r=>r.json());
+    const c=d.cluster;
+    $('#mTitle').textContent=c.representative_title||'(untitled)';
+    $('#mMeta').innerHTML=`${c.article_count} articles &middot; ${fmtDate(c.first_article_at)} &mdash; ${fmtDate(c.last_article_at)}`;
+    $('#mBody').innerHTML=d.articles.length?d.articles.map(a=>{
+      const sim=a.similarity_score!=null?`similarity ${a.similarity_score.toFixed(4)}`:'';
+      let tg=tags(a.locations,'loc',r=>r.name||r)+tags(a.persons,'per',r=>r)+tags(a.organizations,'org',r=>r);
+      return `<div class="card"><div class="card-rank"><span>${sim}</span></div><div class="card-title"><a href="${esc(a.canonical_url||a.url||'#')}" target="_blank">${esc(a.title||'(no title)')}</a></div><div class="card-meta"><span>${esc(a.domain||'')}</span><span>${fmtDate(a.gdelt_timestamp)}</span></div>${tg?`<div class="tags">${tg}</div>`:''}</div>`;
+    }).join(''):'<div class="empty">No articles</div>';
+  }catch(e){$('#mBody').innerHTML=`<div class="empty">${esc(e.message)}</div>`}
+}
+
+function closeModal(){$('#overlay').classList.remove('open');document.body.style.overflow=''}
+
+// ── Helpers ────────────────────────────────────────────
+function esc(s){const d=document.createElement('div');d.textContent=String(s);return d.innerHTML}
+function fmtDate(s){if(!s)return '';const d=new Date(s);return isNaN(d)?String(s):d.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'})}
+function tags(arr,type,ex){
+  if(!arr||!Array.isArray(arr))return '';
+  const seen=new Set();
+  return arr.slice(0,4).map(item=>{
+    const n=typeof item==='string'?item:ex(item);
+    if(!n||seen.has(n))return '';seen.add(n);
+    return `<span class="tag tag-${type}">${esc(n)}</span>`;
+  }).join('');
+}
+</script>
+</body>
+</html>

@@ -37,6 +37,10 @@ CREATE TABLE articles (
     -- Raw GKG payload for debugging / re-parsing
     raw_payload     JSONB,
 
+    -- Full-text search (auto-maintained by PostgreSQL)
+    title_tsv       tsvector
+                    GENERATED ALWAYS AS (to_tsvector('english', COALESCE(title, ''))) STORED,
+
     -- Timestamps
     first_seen_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
     last_seen_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -55,6 +59,9 @@ CREATE INDEX idx_articles_themes        ON articles USING gin (themes);
 CREATE INDEX idx_articles_locations     ON articles USING gin (locations);
 CREATE INDEX idx_articles_organizations ON articles USING gin (organizations);
 CREATE INDEX idx_articles_persons       ON articles USING gin (persons);
+
+-- Full-text search on titles
+CREATE INDEX idx_articles_title_tsv ON articles USING gin (title_tsv);
 
 -- Vector similarity search (HNSW for approximate nearest neighbor)
 -- Dimension must match your embedding model; set to 1536 as a common default.
