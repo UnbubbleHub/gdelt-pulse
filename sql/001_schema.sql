@@ -34,9 +34,6 @@ CREATE TABLE articles (
     embedding       vector(384),
     embedding_model TEXT,
 
-    -- Raw GKG payload for debugging / re-parsing
-    raw_payload     JSONB,
-
     -- Full-text search (auto-maintained by PostgreSQL)
     title_tsv       tsvector
                     GENERATED ALWAYS AS (to_tsvector('english', COALESCE(title, ''))) STORED,

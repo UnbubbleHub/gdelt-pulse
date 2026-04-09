@@ -27,13 +27,13 @@ def upsert_article(article: dict[str, Any]) -> dict[str, Any]:
                     gkg_record_id, gdelt_timestamp, url, canonical_url,
                     domain, source_common_name, canonical_source, title,
                     themes, locations, organizations, persons, all_names, tone,
-                    raw_payload, first_seen_at, last_seen_at
+                    first_seen_at, last_seen_at
                 ) VALUES (
                     %(gkg_record_id)s, %(gdelt_timestamp)s, %(url)s, %(canonical_url)s,
                     %(domain)s, %(source_common_name)s, %(canonical_source)s, %(title)s,
                     %(themes)s, %(locations)s, %(organizations)s, %(persons)s,
                     %(all_names)s, %(tone)s,
-                    %(raw_payload)s, %(gdelt_timestamp)s, %(gdelt_timestamp)s
+                    %(gdelt_timestamp)s, %(gdelt_timestamp)s
                 )
                 ON CONFLICT (canonical_url) DO UPDATE SET
                     themes         = CASE

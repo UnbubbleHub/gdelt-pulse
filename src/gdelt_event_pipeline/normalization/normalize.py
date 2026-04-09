@@ -81,9 +81,6 @@ def normalize_row(row: list[str]) -> dict[str, Any] | None:
     tone = parse_v2_tone(_col(row, COL_V2_TONE))
     all_names = parse_all_names(_col(row, COL_ALL_NAMES))
 
-    # Build raw_payload from all columns for debugging
-    raw_payload = {f"col_{i}": val for i, val in enumerate(row)}
-
     return {
         "gkg_record_id": gkg_record_id,
         "gdelt_timestamp": gdelt_timestamp,
@@ -99,7 +96,6 @@ def normalize_row(row: list[str]) -> dict[str, Any] | None:
         "persons": json.dumps(persons) if persons else None,
         "all_names": json.dumps(all_names) if all_names else None,
         "tone": json.dumps(tone) if tone else None,
-        "raw_payload": json.dumps(raw_payload),
     }
 
 
