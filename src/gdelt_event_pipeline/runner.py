@@ -27,7 +27,7 @@ from gdelt_event_pipeline.storage.database import close_pool, init_pool
 logger = logging.getLogger(__name__)
 
 DEFAULT_INTERVAL = 15 * 60  # 15 minutes — matches GDELT update frequency
-TITLE_SCRAPE_BATCH = 200
+TITLE_SCRAPE_BATCH = None  # no limit — scrape all new untitled articles each cycle
 
 
 def _ensure_schema() -> None:
@@ -60,6 +60,28 @@ def _ensure_schema() -> None:
             logger.info("Schema created successfully.")
 
 
+def _cleanup_failed_articles() -> int:
+    """Delete articles that failed scraping and will never be useful."""
+    from gdelt_event_pipeline.storage.database import get_pool
+
+    pool = get_pool()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                DELETE FROM articles
+                WHERE title IS NULL
+                  AND scrape_attempts >= 1
+                  AND embedding IS NULL
+                """
+            )
+            deleted = cur.rowcount
+        conn.commit()
+    if deleted:
+        logger.info("Cleaned up %d failed articles", deleted)
+    return deleted
+
+
 def _utcnow() -> str:
     return datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
 
@@ -86,6 +108,14 @@ def run_cycle(settings) -> dict[str, str]:
     except Exception:
         logger.exception("Title scraping failed")
         summary["titles"] = "ERROR"
+
+    # 2b. Delete articles that failed scraping (no title, already attempted)
+    try:
+        deleted = _cleanup_failed_articles()
+        if deleted:
+            summary["cleanup"] = f"deleted={deleted}"
+    except Exception:
+        logger.exception("Cleanup failed")
 
     # 3. Embed
     try:
@@ -160,10 +190,18 @@ def main() -> None:
             if shutdown:
                 break
 
-            # Sleep in short increments so we can respond to signals
-            sleep_until = time.monotonic() + interval
-            while time.monotonic() < sleep_until and not shutdown:
-                time.sleep(1)
+            # Sleep only the remaining time so we never skip a GDELT window
+            remaining = max(0, interval - elapsed)
+            if remaining == 0:
+                logger.warning(
+                    "Cycle took %.1fs (> %ds interval), starting next immediately",
+                    elapsed,
+                    interval,
+                )
+            else:
+                sleep_until = time.monotonic() + remaining
+                while time.monotonic() < sleep_until and not shutdown:
+                    time.sleep(1)
     finally:
         logger.info("Shutting down, closing database pool...")
         close_pool()

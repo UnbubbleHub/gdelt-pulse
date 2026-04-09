@@ -12,7 +12,7 @@ from urllib.request import Request, urlopen
 logger = logging.getLogger(__name__)
 
 DEFAULT_TIMEOUT = 10  # seconds per request
-MAX_WORKERS = 8  # max concurrent threads for scraping
+MAX_WORKERS = 16  # max concurrent threads for scraping
 USER_AGENT = "gdelt-pulse/0.1"  # identify ourselves when fetching pages
 MAX_READ_BYTES = 64 * 1024  # only read first 64KB — title is always near the top
 
