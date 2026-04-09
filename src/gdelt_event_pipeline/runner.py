@@ -30,6 +30,35 @@ DEFAULT_INTERVAL = 15 * 60  # 15 minutes — matches GDELT update frequency
 TITLE_SCRAPE_BATCH = 200
 
 
+def _ensure_schema() -> None:
+    """Run schema SQL if tables don't exist yet."""
+    from pathlib import Path
+
+    from gdelt_event_pipeline.storage.database import get_pool
+
+    pool = get_pool()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT EXISTS ("
+                "  SELECT 1 FROM information_schema.tables"
+                "  WHERE table_name = 'articles'"
+                ")"
+            )
+            exists = cur.fetchone()[0]
+        if not exists:
+            logger.info("Tables not found — running schema initialization...")
+            schema_path = Path(__file__).resolve().parents[2] / "sql" / "001_schema.sql"
+            if not schema_path.exists():
+                # In Docker, sql/ is at /app/sql/
+                schema_path = Path("/app/sql/001_schema.sql")
+            sql = schema_path.read_text()
+            with conn.cursor() as cur:
+                cur.execute(sql)
+            conn.commit()
+            logger.info("Schema created successfully.")
+
+
 def _utcnow() -> str:
     return datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
 
@@ -94,6 +123,9 @@ def main() -> None:
 
     logger.info("Starting continuous pipeline (interval=%ds)", interval)
     init_pool(settings.db)
+
+    # Auto-create schema on fresh databases (e.g. Railway first deploy)
+    _ensure_schema()
 
     # Graceful shutdown on SIGTERM/SIGINT
     shutdown = False

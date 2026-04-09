@@ -92,6 +92,9 @@ app = FastAPI(
     description="Hybrid semantic + keyword search over GDELT news events.",
     version="0.1.0",
     lifespan=lifespan,
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
 )
 
 _settings = get_settings()
@@ -116,7 +119,9 @@ _rate_limit_store: dict[str, list[float]] = defaultdict(list)
 @app.middleware("http")
 async def rate_limit_middleware(request: Request, call_next) -> Response:
     """Simple per-IP rate limiter for search endpoints."""
-    if not request.url.path.startswith("/api/search"):
+    if not (
+        request.url.path.startswith("/api/search") or request.url.path.startswith("/api/clusters")
+    ):
         return await call_next(request)
 
     client_ip = request.client.host if request.client else "unknown"

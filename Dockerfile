@@ -21,5 +21,8 @@ RUN uv sync --frozen --no-dev
 # (avoids downloading ~90MB on every container start)
 RUN uv run python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')"
 
-# Default: run the continuous pipeline
-CMD ["uv", "run", "python", "-m", "gdelt_event_pipeline.runner"]
+# Expose the API port (Railway reads this)
+EXPOSE 8000
+
+# Run both the pipeline and the API server
+CMD ["sh", "-c", "uv run python -m gdelt_event_pipeline.runner & uv run uvicorn gdelt_event_pipeline.api.app:app --host 0.0.0.0 --port ${PORT:-8000} & wait"]
