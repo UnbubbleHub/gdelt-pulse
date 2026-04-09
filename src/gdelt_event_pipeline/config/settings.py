@@ -14,10 +14,16 @@ class DatabaseSettings:
     user: str = field(default_factory=lambda: os.environ.get("PGUSER", "postgres"))
     password: str = field(default_factory=lambda: os.environ.get("PGPASSWORD", ""))
     database: str = field(default_factory=lambda: os.environ.get("PGDATABASE", "gdelt_pulse"))
+    url: str = field(default_factory=lambda: os.environ.get("DATABASE_URL", ""))
 
     @property
     def dsn(self) -> str:
-        return f"postgresql://{quote_plus(self.user)}:{quote_plus(self.password)}@{self.host}:{self.port}/{self.database}"
+        if self.url:
+            return self.url
+        return (
+            f"postgresql://{quote_plus(self.user)}:{quote_plus(self.password)}"
+            f"@{self.host}:{self.port}/{self.database}"
+        )
 
 
 @dataclass(frozen=True)
