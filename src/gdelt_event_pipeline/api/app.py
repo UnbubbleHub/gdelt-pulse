@@ -79,10 +79,41 @@ def _split_csv(value: str | None) -> list[str] | None:
 # ── App lifecycle ─────────────────────────────────────────────────────
 
 
+def _ensure_schema() -> None:
+    """Create tables if they don't exist (first deploy on Railway etc.)."""
+    import logging
+
+    from gdelt_event_pipeline.storage.database import get_pool
+
+    logger = logging.getLogger(__name__)
+    pool = get_pool()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT EXISTS ("
+                "  SELECT 1 FROM information_schema.tables"
+                "  WHERE table_name = 'articles'"
+                ")"
+            )
+            row = cur.fetchone()
+            exists = row[0] if isinstance(row, (tuple, list)) else row.get("exists", False)
+        if not exists:
+            logger.info("Tables not found — running schema initialization...")
+            schema_path = Path(__file__).resolve().parents[3] / "sql" / "001_schema.sql"
+            if not schema_path.exists():
+                schema_path = Path("/app/sql/001_schema.sql")
+            sql = schema_path.read_text()
+            with conn.cursor() as cur:
+                cur.execute(sql)
+            conn.commit()
+            logger.info("Schema created successfully.")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     init_pool(settings.db)
+    _ensure_schema()
     yield
     close_pool()
 
