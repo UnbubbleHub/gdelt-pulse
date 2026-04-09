@@ -45,7 +45,8 @@ def _ensure_schema() -> None:
                 "  WHERE table_name = 'articles'"
                 ")"
             )
-            exists = cur.fetchone()[0]
+            row = cur.fetchone()
+            exists = row[0] if isinstance(row, (tuple, list)) else row.get("exists", False)
         if not exists:
             logger.info("Tables not found — running schema initialization...")
             schema_path = Path(__file__).resolve().parents[2] / "sql" / "001_schema.sql"
