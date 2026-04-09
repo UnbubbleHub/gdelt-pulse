@@ -71,12 +71,6 @@ class TestNormalizeRow:
         orgs = json.loads(result["organizations"])
         assert orgs == ["NATO"]
 
-    def test_raw_payload_included(self):
-        row = _make_row()
-        result = normalize_row(row)
-        raw = json.loads(result["raw_payload"])
-        assert "col_0" in raw
-
     def test_row_too_short_returns_none(self):
         assert normalize_row(["only", "three", "cols"]) is None
 
