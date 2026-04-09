@@ -1,0 +1,143 @@
+"""Continuous pipeline runner.
+
+Runs all pipeline stages (ingest -> scrape titles -> embed -> cluster) in a
+loop, sleeping between cycles to match the GDELT 15-minute update cadence.
+
+Usage:
+    python -m gdelt_event_pipeline.runner
+    # or with env overrides:
+    PIPELINE_INTERVAL=600 python -m gdelt_event_pipeline.runner
+"""
+
+from __future__ import annotations
+
+import logging
+import os
+import signal
+import sys
+import time
+from datetime import UTC, datetime
+
+from gdelt_event_pipeline.clustering.pipeline import run_clustering
+from gdelt_event_pipeline.config.settings import get_settings
+from gdelt_event_pipeline.embeddings.pipeline import run_embedding
+from gdelt_event_pipeline.ingestion.pipeline import run_ingestion, run_title_scraping
+from gdelt_event_pipeline.storage.database import close_pool, init_pool
+
+logger = logging.getLogger(__name__)
+
+DEFAULT_INTERVAL = 15 * 60  # 15 minutes — matches GDELT update frequency
+TITLE_SCRAPE_BATCH = 200
+
+
+def _utcnow() -> str:
+    return datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
+
+
+def run_cycle(settings) -> dict[str, str]:
+    """Execute one full pipeline cycle. Returns a summary dict."""
+    summary: dict[str, str] = {}
+
+    # 1. Ingest
+    try:
+        ing = run_ingestion()
+        summary["ingest"] = (
+            f"fetched={ing.rows_fetched} upserted={ing.rows_upserted} "
+            f"dupes={ing.duplicate_urls} failed={ing.rows_failed}"
+        )
+    except Exception:
+        logger.exception("Ingestion failed")
+        summary["ingest"] = "ERROR"
+
+    # 2. Scrape titles
+    try:
+        attempted, succeeded = run_title_scraping(batch_size=TITLE_SCRAPE_BATCH)
+        summary["titles"] = f"attempted={attempted} succeeded={succeeded}"
+    except Exception:
+        logger.exception("Title scraping failed")
+        summary["titles"] = "ERROR"
+
+    # 3. Embed
+    try:
+        emb = run_embedding(settings.embedding)
+        summary["embed"] = (
+            f"fetched={emb.articles_fetched} embedded={emb.articles_embedded} "
+            f"skipped={emb.articles_skipped} failed={emb.articles_failed}"
+        )
+    except Exception:
+        logger.exception("Embedding failed")
+        summary["embed"] = "ERROR"
+
+    # 4. Cluster
+    try:
+        cl = run_clustering(max_age_hours=settings.clustering.window_hours)
+        summary["cluster"] = (
+            f"processed={cl.articles_processed} existing={cl.assigned_to_existing} "
+            f"new={cl.new_clusters_created} failed={cl.articles_failed}"
+        )
+    except Exception:
+        logger.exception("Clustering failed")
+        summary["cluster"] = "ERROR"
+
+    return summary
+
+
+def main() -> None:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)-8s %(name)s  %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+    interval = int(os.environ.get("PIPELINE_INTERVAL", DEFAULT_INTERVAL))
+    settings = get_settings()
+
+    logger.info("Starting continuous pipeline (interval=%ds)", interval)
+    init_pool(settings.db)
+
+    # Graceful shutdown on SIGTERM/SIGINT
+    shutdown = False
+
+    def _handle_signal(signum, _frame):
+        nonlocal shutdown
+        logger.info("Received signal %s, shutting down after current cycle...", signum)
+        shutdown = True
+
+    signal.signal(signal.SIGTERM, _handle_signal)
+    signal.signal(signal.SIGINT, _handle_signal)
+
+    cycle = 0
+    try:
+        while not shutdown:
+            cycle += 1
+            logger.info("=== Cycle %d starting at %s ===", cycle, _utcnow())
+            t0 = time.monotonic()
+
+            summary = run_cycle(settings)
+
+            elapsed = time.monotonic() - t0
+            parts = [f"{k}: {v}" for k, v in summary.items()]
+            logger.info(
+                "=== Cycle %d done in %.1fs | %s ===",
+                cycle,
+                elapsed,
+                " | ".join(parts),
+            )
+
+            if shutdown:
+                break
+
+            # Sleep in short increments so we can respond to signals
+            sleep_until = time.monotonic() + interval
+            while time.monotonic() < sleep_until and not shutdown:
+                time.sleep(1)
+    finally:
+        logger.info("Shutting down, closing database pool...")
+        close_pool()
+
+    logger.info("Pipeline stopped after %d cycles.", cycle)
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()

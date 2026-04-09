@@ -31,7 +31,7 @@ CREATE TABLE articles (
     scrape_attempts INTEGER NOT NULL DEFAULT 0,
 
     -- Embedding
-    embedding       vector,
+    embedding       vector(384),
     embedding_model TEXT,
 
     -- Raw GKG payload for debugging / re-parsing
@@ -77,7 +77,7 @@ CREATE TABLE clusters (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     representative_title TEXT,
     summary             TEXT,
-    centroid_embedding   vector,
+    centroid_embedding   vector(384),
     article_count       INTEGER NOT NULL DEFAULT 0,
     first_article_at    TIMESTAMPTZ,
     last_article_at     TIMESTAMPTZ,

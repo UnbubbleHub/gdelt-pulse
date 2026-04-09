@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
+from urllib.parse import quote_plus
 
 
 @dataclass(frozen=True)
@@ -16,7 +17,7 @@ class DatabaseSettings:
 
     @property
     def dsn(self) -> str:
-        return f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
+        return f"postgresql://{quote_plus(self.user)}:{quote_plus(self.password)}@{self.host}:{self.port}/{self.database}"
 
 
 @dataclass(frozen=True)
@@ -42,10 +43,20 @@ class ClusteringSettings:
 
 
 @dataclass(frozen=True)
+class ApiSettings:
+    cors_origins: list[str] = field(
+        default_factory=lambda: [
+            o.strip() for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip()
+        ]
+    )
+
+
+@dataclass(frozen=True)
 class Settings:
     db: DatabaseSettings = field(default_factory=DatabaseSettings)
     embedding: EmbeddingSettings = field(default_factory=EmbeddingSettings)
     clustering: ClusteringSettings = field(default_factory=ClusteringSettings)
+    api: ApiSettings = field(default_factory=ApiSettings)
 
 
 def get_settings() -> Settings:

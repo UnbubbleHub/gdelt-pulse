@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+import time
+from collections import defaultdict
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -58,11 +60,12 @@ class ClusterDetailOut(BaseModel):
 # ── Helpers ───────────────────────────────────────────────────────────
 
 
-def _strip_embedding(row: dict[str, Any]) -> dict[str, Any]:
-    """Remove large vector fields before sending to the client."""
+def _strip_internal_fields(row: dict[str, Any]) -> dict[str, Any]:
+    """Remove large/internal fields before sending to the client."""
     row.pop("embedding", None)
     row.pop("centroid_embedding", None)
     row.pop("title_tsv", None)
+    row.pop("raw_payload", None)
     return row
 
 
@@ -91,12 +94,47 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+_settings = get_settings()
+_cors_origins = _settings.api.cors_origins or ["http://localhost:8000"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins,
     allow_methods=["GET"],
     allow_headers=["*"],
 )
+
+
+# ── Rate limiting ────────────────────────────────────────────────────
+
+RATE_LIMIT_MAX = 30  # requests per window
+RATE_LIMIT_WINDOW = 60  # seconds
+
+_rate_limit_store: dict[str, list[float]] = defaultdict(list)
+
+
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next) -> Response:
+    """Simple per-IP rate limiter for search endpoints."""
+    if not request.url.path.startswith("/api/search"):
+        return await call_next(request)
+
+    client_ip = request.client.host if request.client else "unknown"
+    now = time.monotonic()
+
+    # Prune old entries
+    timestamps = _rate_limit_store[client_ip]
+    _rate_limit_store[client_ip] = [t for t in timestamps if now - t < RATE_LIMIT_WINDOW]
+
+    if len(_rate_limit_store[client_ip]) >= RATE_LIMIT_MAX:
+        return Response(
+            content='{"detail":"Rate limit exceeded. Try again later."}',
+            status_code=429,
+            media_type="application/json",
+        )
+
+    _rate_limit_store[client_ip].append(now)
+    return await call_next(request)
 
 
 @app.get("/", include_in_schema=False)
@@ -152,7 +190,7 @@ def search(
         total_keyword_hits=result.total_keyword_hits,
         articles=[
             ScoredArticleOut(
-                article=_strip_embedding(sa.article),
+                article=_strip_internal_fields(sa.article),
                 semantic_rank=sa.semantic_rank,
                 keyword_rank=sa.keyword_rank,
                 rrf_score=sa.rrf_score,
@@ -161,7 +199,7 @@ def search(
         ],
         clusters=[
             ScoredClusterOut(
-                cluster=_strip_embedding(sc.cluster),
+                cluster=_strip_internal_fields(sc.cluster),
                 cosine_distance=sc.cosine_distance,
                 rank=sc.rank,
             )
@@ -206,7 +244,7 @@ def list_articles(
 ):
     """List recent articles, newest first."""
     rows = get_recent_articles(limit=limit)
-    return [_strip_embedding(row) for row in rows]
+    return [_strip_internal_fields(row) for row in rows]
 
 
 @app.get("/api/clusters", response_model=list[dict[str, Any]])
@@ -216,7 +254,7 @@ def list_clusters(
 ):
     """List active clusters."""
     rows = get_active_clusters(limit=limit, sort=sort)
-    return [_strip_embedding(row) for row in rows]
+    return [_strip_internal_fields(row) for row in rows]
 
 
 @app.get("/api/clusters/{cluster_id}", response_model=ClusterDetailOut)
@@ -229,8 +267,8 @@ def get_cluster_detail(cluster_id: str):
     articles = get_cluster_articles(cluster_id)
 
     return ClusterDetailOut(
-        cluster=_strip_embedding(cluster),
-        articles=[_strip_embedding(a) for a in articles],
+        cluster=_strip_internal_fields(cluster),
+        articles=[_strip_internal_fields(a) for a in articles],
     )
 
 
