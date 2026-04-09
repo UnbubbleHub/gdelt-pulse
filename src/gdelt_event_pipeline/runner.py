@@ -190,10 +190,18 @@ def main() -> None:
             if shutdown:
                 break
 
-            # Sleep in short increments so we can respond to signals
-            sleep_until = time.monotonic() + interval
-            while time.monotonic() < sleep_until and not shutdown:
-                time.sleep(1)
+            # Sleep only the remaining time so we never skip a GDELT window
+            remaining = max(0, interval - elapsed)
+            if remaining == 0:
+                logger.warning(
+                    "Cycle took %.1fs (> %ds interval), starting next immediately",
+                    elapsed,
+                    interval,
+                )
+            else:
+                sleep_until = time.monotonic() + remaining
+                while time.monotonic() < sleep_until and not shutdown:
+                    time.sleep(1)
     finally:
         logger.info("Shutting down, closing database pool...")
         close_pool()
