@@ -41,14 +41,15 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100dv
 .fb{font-family:var(--sans);font-size:12px;font-weight:600;color:var(--text3);padding:7px 18px;border-radius:100px;cursor:pointer;border:none;background:none;transition:all .25s}
 .fb:hover{color:var(--text2)}
 .fb.on{color:var(--text);background:var(--accent-soft)}
-.flt-hint{font-size:10px;color:var(--text3);font-weight:400;letter-spacing:.01em;text-align:center;transition:opacity .3s;pointer-events:none}
 
 /* ── LANDING (left side) ──────── */
-.landing{position:fixed;top:50%;left:40px;transform:translateY(-55%);z-index:90;max-width:260px;pointer-events:none;transition:opacity 1s,transform 1s}
-.landing.away{opacity:0;transform:translateY(-55%) translateX(-30px)}
+.landing{position:fixed;top:50%;left:40px;transform:translateY(-55%);z-index:90;max-width:260px;pointer-events:none;transition:opacity .6s,transform .6s}
+.landing.away{opacity:0;transform:translateY(-55%) translateX(-30px);pointer-events:none}
 .landing-h{font-size:42px;font-weight:700;line-height:1.08;letter-spacing:-.04em;margin-bottom:14px;color:var(--text)}
 .landing-h span{color:var(--accent)}
 .landing-p{font-size:13px;font-weight:400;line-height:1.7;color:var(--text2)}
+.landing-mode{font-size:11px;font-weight:500;color:var(--accent);margin-top:14px;opacity:0;transition:opacity .4s}
+.landing-mode.vis{opacity:1}
 
 /* ── GLOBE ────────────────────── */
 .gl{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
@@ -133,16 +134,20 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100dv
   .flt-tabs{width:100%;justify-content:center;border-radius:0;border:none;border-top:1px solid rgba(255,255,255,.06);background:rgba(13,17,39,.95);padding:6px 8px;gap:0}
   .fb{font-size:12px;padding:10px 0;flex:1;text-align:center;border-radius:0}
   .fb.on{background:none;border-bottom:2px solid var(--accent)}
-  .flt-hint{display:none}
 
-  /* No landing text on mobile */
-  .landing{display:none}
+  /* Landing: compact, above the globe */
+  .landing{left:16px;right:16px;max-width:none;top:42px;transform:none;text-align:center}
+  .landing.away{opacity:0;transform:translateY(-10px)}
+  .landing-h{font-size:18px;margin-bottom:4px;display:inline}
+  .landing-h br{display:none}
+  .landing-p{display:none}
+  .landing-mode{margin-top:4px;font-size:10px}
 
-  /* Globe: top half of screen */
-  .gl{position:fixed;top:0;left:0;right:0;height:45vh;bottom:auto}
+  /* Globe: top portion, pushed down to make room for brand + landing */
+  .gl{position:fixed;top:70px;left:0;right:0;height:calc(50vh - 30px);bottom:auto;overflow:hidden}
 
   /* Event cards: vertical scrollable list */
-  .tray{position:fixed;top:45vh;left:0;right:0;bottom:52px;z-index:90;padding:8px 12px;flex-direction:column;gap:6px;overflow-y:auto;overflow-x:hidden;mask-image:linear-gradient(180deg,transparent,#000 8px,#000 calc(100% - 8px),transparent);touch-action:pan-y;-webkit-overflow-scrolling:touch}
+  .tray{position:fixed;top:calc(50vh + 40px);left:0;right:0;bottom:52px;z-index:90;padding:8px 12px;flex-direction:column;gap:6px;overflow-y:auto;overflow-x:hidden;mask-image:linear-gradient(180deg,transparent,#000 8px,#000 calc(100% - 8px),transparent);touch-action:pan-y;-webkit-overflow-scrolling:touch}
   .tray.hide{transform:translateY(20px);opacity:0}
   .cd{width:100%;flex-shrink:0;padding:12px;display:flex;flex-direction:row;align-items:center;gap:10px;animation:none;opacity:1}
   .cd:hover{transform:none}
@@ -179,12 +184,12 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100dv
     <button class="fb" data-m="silent">Silent</button>
     <button class="fb" data-m="timeline">Timeline</button>
   </div>
-  <div class="flt-hint" id="flt-hint">Hottest stories right now</div>
 </div>
 
 <div class="landing" id="landing">
   <div class="landing-h">The world,<br><span>live.</span></div>
   <div class="landing-p">Tap any event to explore what's happening across the globe right now.</div>
+  <div class="landing-mode vis" id="landing-mode">Showing the hottest stories right now</div>
 </div>
 
 <div class="gl" id="gl"></div>
@@ -215,7 +220,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100dv
 
 const C={conflict:"#e74c4c",economy:"#e6a817",politics:"#5b6abf",health:"#1db88a",environment:"#1aafbf",technology:"#8b5cf6",society:"#e67e22",general:"#8893a7"};
 const L={conflict:"Conflict",economy:"Economy",politics:"Politics",health:"Health",environment:"Environment",technology:"Technology",society:"Society",general:"General"};
-const HINTS={live:"Hottest stories right now",rising:"Stories gaining momentum",silent:"Big stories that went quiet",timeline:"Scrub through the last 6 hours"};
+const HINTS={live:"Showing the hottest stories right now",rising:"Showing stories gaining momentum",silent:"Showing big stories that went quiet",timeline:"Scrub through the last 6 hours"};
 const META_COL={loc:"#3b82f6",person:"#e74c4c",org:"#8b5cf6",theme:"#e6a817"};
 
 let mode="live",data=[],allTL=[],act=null,countries=null;
@@ -226,18 +231,16 @@ async function boot(){
   document.getElementById("ld").classList.add("out");
   setTimeout(()=>document.getElementById("ld").style.display="none",600);
   spin();wire();
-  window.addEventListener("resize",()=>{sz();const gH=mob?H*.45:H;proj.translate([W/2,mob?gH*.48:H*.46]).scale(R*zm);svg.attr("width",W).attr("height",H);draw()});
-  // fade landing after first interaction or 6s
-  const fadeLanding=()=>document.getElementById("landing").classList.add("away");
-  setTimeout(fadeLanding,6000);
-  svg.on("mousedown.landing touchstart.landing",()=>{fadeLanding();svg.on("mousedown.landing touchstart.landing",null)});
+  /* Force browser to compute event card layout so first transition is smooth */
+  const ev=document.getElementById("ev");ev.offsetHeight;
+  window.addEventListener("resize",()=>{sz();const gH=mob?(H*.5-30):H;proj.translate([W/2,mob?70+gH*.5:H*.46]).scale(R*zm);svg.attr("width",W).attr("height",H);draw()});
 }
 
-function sz(){W=innerWidth;H=innerHeight;mob=W<=700;const gH=mob?H*.45:H;R=Math.min(W*(mob?.85:1),gH*.82)*(mob?.4:.42)}
+function sz(){W=innerWidth;H=innerHeight;mob=W<=700;const gH=mob?(H*.5-30):H;R=Math.min(W*(mob?.85:1),gH*.82)*(mob?.4:.42)}
 
 function mkG(){
-  const gH=mob?H*.45:H;
-  proj=d3.geoOrthographic().translate([W/2,mob?gH*.48:H*.46]).scale(R).rotate(rot).clipAngle(90);
+  const gH=mob?(H*.5-30):H;
+  proj=d3.geoOrthographic().translate([W/2,mob?70+gH*.5:H*.46]).scale(R).rotate(rot).clipAngle(90);
   ph=d3.geoPath().projection(proj);
   svg=d3.select("#gl").append("svg").attr("width",W).attr("height",H);
   const df=svg.append("defs");
@@ -280,8 +283,8 @@ async function world(){
 }
 
 function draw(){
-  const gH=mob?H*.45:H;
-  const cx=W/2,cy=mob?gH*.48:H*.46,r=R*zm;
+  const gH=mob?(H*.5-30):H;
+  const cx=W/2,cy=mob?70+gH*.5:H*.46,r=R*zm;
   g.select(".c-atmo").attr("cx",cx).attr("cy",cy).attr("r",r+22);
   g.select(".c-oc").attr("cx",cx).attr("cy",cy).attr("r",r);
   proj.translate([cx,cy]).scale(r);
@@ -293,8 +296,8 @@ function draw(){
 function dots(){
   const mg=g.select(".c-mk");mg.selectAll("*").remove();
   if(!data.length)return;
-  const gH=mob?H*.45:H;
-  const cen=proj.invert([W/2,mob?gH*.48:H*.46]);
+  const gH=mob?(H*.5-30):H;
+  const cen=proj.invert([W/2,mob?70+gH*.5:H*.46]);
 
   data.forEach(c=>{
     if(c.lat==null||c.lon==null)return;
@@ -376,10 +379,16 @@ function mkCards(){
 function pick(c){
   act=c;
   document.getElementById("landing").classList.add("away");
-  if(c.lat!=null&&c.lon!=null)fly(c.lon,c.lat,1.8);
   document.querySelectorAll(".cd").forEach((el,i)=>el.classList.toggle("pick",data[i]&&data[i].id===c.id));
-  dots();
-  openEv(c);
+  /* Defer heavy work: fly first, then open card after browser has
+     painted the highlight so the UI feels instant on mobile */
+  requestAnimationFrame(()=>{
+    if(c.lat!=null&&c.lon!=null)fly(c.lon,c.lat,1.8);
+    dots();
+    /* Wait one more frame so fly() has started before we add
+       the event card DOM + transition — avoids GPU contention */
+    requestAnimationFrame(()=>openEv(c));
+  });
 }
 
 function fly(lon,lat,tz){
@@ -450,13 +459,16 @@ function openEv(c){
     </div>
     ${srcHtml}
     ${cta}`;
-  document.getElementById("ev").classList.add("on");
+  const evEl=document.getElementById("ev");
+  evEl.offsetHeight;/* force reflow so transition starts from correct position */
+  evEl.classList.add("on");
   document.getElementById("tray").classList.add("hide");
 }
 
 function closeEv(){
   document.getElementById("ev").classList.remove("on");
   document.getElementById("tray").classList.remove("hide");
+  document.getElementById("landing").classList.remove("away");
   act=null;flyBack();
 }
 
@@ -467,7 +479,13 @@ function wire(){
     b.onclick=()=>{
       const m=b.dataset.m;if(m===mode)return;mode=m;
       document.querySelectorAll(".fb").forEach(x=>x.classList.remove("on"));b.classList.add("on");
-      document.getElementById("flt-hint").textContent=HINTS[m]||"";
+      const lm=document.getElementById("landing-mode");lm.textContent=HINTS[m]||"";lm.classList.add("vis");
+      /* Update landing headline to match mode */
+      const hd=document.querySelector(".landing-h");
+      if(m==="rising")hd.innerHTML='What\'s<br><span>rising.</span>';
+      else if(m==="silent")hd.innerHTML='Gone<br><span>quiet.</span>';
+      else if(m==="timeline")hd.innerHTML='Look<br><span>back.</span>';
+      else hd.innerHTML='The world,<br><span>live.</span>';
       closeEv();
       document.getElementById("tl").classList.toggle("vis",m==="timeline");
       document.getElementById("tray").style.display=m==="timeline"?"none":"";
