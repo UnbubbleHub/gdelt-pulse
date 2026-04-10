@@ -151,7 +151,9 @@ _rate_limit_store: dict[str, list[float]] = defaultdict(list)
 async def rate_limit_middleware(request: Request, call_next) -> Response:
     """Simple per-IP rate limiter for search endpoints."""
     if not (
-        request.url.path.startswith("/api/search") or request.url.path.startswith("/api/clusters")
+        request.url.path.startswith("/api/search")
+        or request.url.path.startswith("/api/clusters")
+        or request.url.path.startswith("/api/globe")
     ):
         return await call_next(request)
 
@@ -177,6 +179,12 @@ async def rate_limit_middleware(request: Request, call_next) -> Response:
 def root():
     """Serve the frontend."""
     return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.get("/globe", include_in_schema=False)
+def globe():
+    """Serve the NewsGlobe frontend."""
+    return FileResponse(STATIC_DIR / "globe.html")
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────
@@ -388,6 +396,237 @@ def get_cluster_detail(cluster_id: str):
         cluster=_strip_internal_fields(cluster),
         articles=[_strip_internal_fields(a) for a in articles],
     )
+
+
+# ── Globe endpoints ──────────────────────────────────────────────────
+
+
+@app.get("/api/globe/clusters")
+def globe_clusters(
+    mode: str = Query("live", description="Filter mode: live, rising, silent"),
+    limit: int = Query(12, ge=1, le=50, description="Max clusters"),
+):
+    """Return top clusters with geographic coordinates for the 3D globe.
+
+    Modes:
+    - live:   Clusters with articles in the last 2 hours, sorted by article_count.
+    - rising: Clusters whose article count grew fastest in the last 6 hours.
+    - silent: Large clusters that have gone quiet (no new articles for 6-48h).
+    """
+    from gdelt_event_pipeline.storage.database import get_pool
+
+    pool = get_pool()
+    with pool.connection() as conn:
+        from psycopg.rows import dict_row
+
+        with conn.cursor(row_factory=dict_row) as cur:
+            if mode == "rising":
+                # Clusters whose article count grew fastest in the last 6h,
+                # ranked by recent article velocity.
+                cur.execute(
+                    """
+                    SELECT c.id, c.representative_title, c.article_count,
+                           c.first_article_at, c.last_article_at,
+                           c.created_at, c.updated_at,
+                           recent.recent_count,
+                           CASE WHEN c.article_count > 0
+                                THEN recent.recent_count::float / c.article_count
+                                ELSE 0 END AS velocity
+                    FROM clusters c
+                    JOIN (
+                        SELECT cm.cluster_id, count(*) AS recent_count
+                        FROM cluster_memberships cm
+                        JOIN articles a ON a.id = cm.article_id
+                        WHERE a.gdelt_timestamp >= now() - interval '6 hours'
+                        GROUP BY cm.cluster_id
+                        HAVING count(*) >= 2
+                    ) recent ON recent.cluster_id = c.id
+                    WHERE c.is_active = true AND c.article_count >= 3
+                    ORDER BY recent.recent_count DESC, velocity DESC
+                    LIMIT %s
+                    """,
+                    (limit,),
+                )
+            elif mode == "silent":
+                # Large clusters that have gone quiet — no new articles
+                # in the last 6h but were active within the last 48h.
+                cur.execute(
+                    """
+                    SELECT c.id, c.representative_title, c.article_count,
+                           c.first_article_at, c.last_article_at,
+                           c.created_at, c.updated_at,
+                           0 AS recent_count, 0 AS velocity
+                    FROM clusters c
+                    WHERE c.is_active = true
+                      AND c.article_count >= 5
+                      AND c.last_article_at < now() - interval '6 hours'
+                      AND c.last_article_at >= now() - interval '48 hours'
+                    ORDER BY c.article_count DESC
+                    LIMIT %s
+                    """,
+                    (limit,),
+                )
+            else:
+                # live: most active clusters right now (articles in last 2h),
+                # sorted by article count.
+                cur.execute(
+                    """
+                    SELECT c.id, c.representative_title, c.article_count,
+                           c.first_article_at, c.last_article_at,
+                           c.created_at, c.updated_at,
+                           COALESCE(recent.recent_count, 0) AS recent_count,
+                           0 AS velocity
+                    FROM clusters c
+                    LEFT JOIN (
+                        SELECT cm.cluster_id, count(*) AS recent_count
+                        FROM cluster_memberships cm
+                        JOIN articles a ON a.id = cm.article_id
+                        WHERE a.gdelt_timestamp >= now() - interval '2 hours'
+                        GROUP BY cm.cluster_id
+                    ) recent ON recent.cluster_id = c.id
+                    WHERE c.is_active = true AND c.article_count >= 2
+                    ORDER BY c.last_article_at DESC NULLS LAST
+                    LIMIT %s
+                    """,
+                    (limit,),
+                )
+
+            clusters = cur.fetchall()
+            cluster_ids = [c["id"] for c in clusters]
+
+            if not cluster_ids:
+                return []
+
+            # Fetch primary location (most common lat/lon) for each cluster
+            cur.execute(
+                """
+                SELECT cm.cluster_id,
+                       a.locations,
+                       a.themes,
+                       a.title,
+                       a.url,
+                       a.domain,
+                       a.gdelt_timestamp
+                FROM cluster_memberships cm
+                JOIN articles a ON a.id = cm.article_id
+                WHERE cm.cluster_id = ANY(%s)
+                  AND a.locations IS NOT NULL
+                  AND jsonb_array_length(a.locations) > 0
+                ORDER BY a.gdelt_timestamp DESC
+                """,
+                (cluster_ids,),
+            )
+            article_rows = cur.fetchall()
+
+    # Build location + metadata per cluster
+    cluster_locations: dict[str, list[dict]] = defaultdict(list)
+    cluster_articles_data: dict[str, list[dict]] = defaultdict(list)
+
+    for row in article_rows:
+        cid = str(row["cluster_id"])
+        locs = row["locations"]
+        if isinstance(locs, list):
+            for loc in locs:
+                if loc.get("lat") is not None and loc.get("lon") is not None:
+                    cluster_locations[cid].append(loc)
+        cluster_articles_data[cid].append(
+            {
+                "title": row["title"],
+                "url": row["url"],
+                "domain": row["domain"],
+                "gdelt_timestamp": row["gdelt_timestamp"],
+                "themes": row["themes"],
+            }
+        )
+
+    results = []
+    for c in clusters:
+        cid = str(c["id"])
+        locs = cluster_locations.get(cid, [])
+
+        # Pick the most common location as primary
+        lat, lon, location_name, country_code = None, None, None, None
+        if locs:
+            # Count occurrences of each (lat, lon) rounded to 1 decimal
+            from collections import Counter
+
+            coord_counts = Counter()
+            coord_info: dict[tuple, dict] = {}
+            for loc in locs:
+                key = (round(loc["lat"], 1), round(loc["lon"], 1))
+                coord_counts[key] += 1
+                if key not in coord_info:
+                    coord_info[key] = loc
+            best = coord_counts.most_common(1)[0][0]
+            info = coord_info[best]
+            lat, lon = info["lat"], info["lon"]
+            location_name = info.get("name")
+            country_code = info.get("country_code")
+
+        # Collect top themes across articles
+        theme_counts: dict[str, int] = {}
+        for art in cluster_articles_data.get(cid, [])[:20]:
+            if art.get("themes") and isinstance(art["themes"], list):
+                for t in art["themes"][:5]:
+                    tn = t.get("theme", "")
+                    if tn and not tn.startswith("TAX_"):
+                        theme_counts[tn] = theme_counts.get(tn, 0) + 1
+        top_themes = sorted(theme_counts, key=theme_counts.get, reverse=True)[:5]
+
+        # Category from top theme
+        category = _categorize_themes(top_themes)
+
+        # Sample articles (latest 5)
+        sample_articles = []
+        for art in cluster_articles_data.get(cid, [])[:5]:
+            sample_articles.append(
+                {
+                    "title": art["title"],
+                    "url": art["url"],
+                    "domain": art["domain"],
+                }
+            )
+
+        results.append(
+            {
+                "id": cid,
+                "title": c["representative_title"],
+                "article_count": c["article_count"],
+                "recent_count": c.get("recent_count", 0),
+                "velocity": round(c.get("velocity", 0), 3),
+                "lat": lat,
+                "lon": lon,
+                "location_name": location_name,
+                "country_code": country_code,
+                "category": category,
+                "top_themes": top_themes,
+                "first_article_at": c["first_article_at"],
+                "last_article_at": c["last_article_at"],
+                "sample_articles": sample_articles,
+            }
+        )
+
+    return results
+
+
+def _categorize_themes(themes: list[str]) -> str:
+    """Map GDELT themes to a simple category for color coding."""
+    theme_str = " ".join(themes).upper()
+    if any(k in theme_str for k in ["MILITARY", "WAR", "ARMED", "TERROR", "CONFLICT"]):
+        return "conflict"
+    if any(k in theme_str for k in ["ECON", "MARKET", "TRADE", "FINANCE", "BUSINESS"]):
+        return "economy"
+    if any(k in theme_str for k in ["ELECT", "POLITIC", "GOVERN", "DIPLOMAT", "LEGISLAT"]):
+        return "politics"
+    if any(k in theme_str for k in ["HEALTH", "DISEASE", "MEDICAL", "PANDEMIC"]):
+        return "health"
+    if any(k in theme_str for k in ["ENVIRON", "CLIMATE", "DISASTER", "QUAKE", "FLOOD"]):
+        return "environment"
+    if any(k in theme_str for k in ["TECH", "CYBER", "AI ", "DIGITAL", "SCIENCE"]):
+        return "technology"
+    if any(k in theme_str for k in ["HUMAN_RIGHTS", "PROTEST", "REFUGEE", "MIGRATION"]):
+        return "society"
+    return "general"
 
 
 # ── Runner ────────────────────────────────────────────────────────────
