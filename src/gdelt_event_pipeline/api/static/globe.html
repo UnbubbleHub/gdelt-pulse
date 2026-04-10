@@ -143,7 +143,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100dv
   .landing-mode{margin-top:2px;font-size:9px}
 
   /* Globe: upper portion, SVG sized by JS to match container */
-  .gl{position:fixed;top:75px;left:0;right:0;height:calc(45vh - 30px);bottom:auto;overflow:hidden}
+  .gl{inset:auto;position:fixed;top:75px;left:0;right:0;height:calc(45vh - 30px);bottom:auto;overflow:hidden}
 
   /* Event cards: vertical list below globe */
   .tray{position:fixed;top:calc(45vh + 45px);left:0;right:0;bottom:52px;z-index:90;padding:8px 12px;flex-direction:column;gap:6px;overflow-y:auto;overflow-x:hidden;mask-image:linear-gradient(180deg,transparent,#000 8px,#000 calc(100% - 8px),transparent);touch-action:pan-y;-webkit-overflow-scrolling:touch}
@@ -233,6 +233,8 @@ async function boot(){
   /* Force browser to compute event card layout so first transition is smooth */
   const ev=document.getElementById("ev");ev.offsetHeight;
   window.addEventListener("resize",()=>{sz();const cy=mob?gH*.5:H*.46;proj.translate([gW/2,cy]).scale(R*zm);svg.attr("width",gW).attr("height",mob?gH:H);draw()});
+  /* Auto-refresh every 15 min to match pipeline cadence */
+  setInterval(()=>{if(!act)pull()},15*60*1000);
 }
 
 function sz(){W=innerWidth;H=innerHeight;mob=W<=700;gW=mob?W:W;gH=mob?(H*.45-30):H;R=Math.min(gW*(mob?.85:1),gH*.82)*(mob?.4:.42)}
@@ -340,12 +342,15 @@ async function pull(){
   }catch(e){console.error(e)}
 }
 
-function mkCards(){
+let cardsBuilt=false;
+function mkCards(animate){
+  const anim=animate!==false&&!cardsBuilt;
   const t=document.getElementById("tray");t.innerHTML="";t.classList.remove("hide");
   const m=mode==="timeline"?"live":mode;
   data.forEach((c,i)=>{
     const col=C[c.category]||C.general;
-    const el=document.createElement("div");el.className="cd";el.style.animationDelay=i*.04+"s";
+    const el=document.createElement("div");el.className="cd";
+    if(anim){el.style.animationDelay=i*.04+"s";}else{el.style.opacity="1";}
     if(act&&act.id===c.id)el.classList.add("pick");
     const artCount=c.article_count||0;
     const countLabel=artCount>=1000?(artCount/1000).toFixed(1)+"k":artCount;
@@ -353,7 +358,6 @@ function mkCards(){
     let meta="";
     if(m==="rising"){
       const rc=c.recent_count||0;
-      const vel=c.velocity?Math.round(c.velocity*100):0;
       meta=`<span style="color:#2ee8a5">▲ ${rc} new in 2h</span><span>${countLabel} total</span>`;
     }else if(m==="silent"){
       const sh=c.silent_hours?Math.round(c.silent_hours):0;
@@ -371,6 +375,7 @@ function mkCards(){
     el.onclick=()=>pick(c);
     t.appendChild(el);
   });
+  cardsBuilt=true;
 }
 
 function pick(c){
@@ -401,7 +406,7 @@ function flyBack(){
   const fz=zm,t0=performance.now(),dur=700;
   (function s(now){const p=Math.min((now-t0)/dur,1);const e=1-Math.pow(1-p,3);
     zm=fz+(1-fz)*e;proj.scale(R*zm);draw();
-    if(p<1)requestAnimationFrame(s);else{dots();mkCards();setTimeout(()=>{autoR=true;spin()},4000)}
+    if(p<1)requestAnimationFrame(s);else{dots();mkCards(false);setTimeout(()=>{autoR=true;spin()},4000)}
   })(t0);
 }
 
@@ -429,21 +434,16 @@ function openEv(c){
     return `<span class="ev-pill" style="color:${p.color};border-color:rgba(${r},${gr},${b},.2);background:rgba(${r},${gr},${b},.08)">${p.icon}<span>${esc(p.label)}</span></span>`;
   }).join("");
 
-  // Only ONE article source
-  let srcHtml="";
-  if(c.sample_articles&&c.sample_articles.length){
-    const a=c.sample_articles[0];
+  // Find the first article that has a URL
+  let srcHtml="",cta="";
+  const srcArt=c.sample_articles&&c.sample_articles.find(a=>a.url);
+  if(srcArt){
     srcHtml=`<div class="ev-src">
       <div class="ev-src-lbl">Source</div>
-      <a href="${esc(a.url)}" target="_blank" rel="noopener" class="ev-src-link">${esc(a.title||"Read article")}</a>
-      <div class="ev-src-d">${esc(a.domain||"")}</div>
+      <a href="${esc(srcArt.url)}" target="_blank" rel="noopener" class="ev-src-link">${esc(srcArt.title||"Read article")}</a>
+      <div class="ev-src-d">${esc(srcArt.domain||"")}</div>
     </div>`;
-  }
-
-  // Unbubble CTA
-  let cta="";
-  if(c.sample_articles&&c.sample_articles.length){
-    cta=`<a class="ev-cta" href="https://unbubble.link/${encodeURI(c.sample_articles[0].url)}" target="_blank" rel="noopener">Unbubble this story</a>`;
+    cta=`<a class="ev-cta" href="https://unbubble.link/${encodeURI(srcArt.url)}" target="_blank" rel="noopener">Unbubble this story</a>`;
   }
 
   document.getElementById("ev-body").innerHTML=`
@@ -484,6 +484,7 @@ function wire(){
       else if(m==="timeline")hd.innerHTML='Look<br><span>back.</span>';
       else hd.innerHTML='The world,<br><span>live.</span>';
       closeEv();
+      cardsBuilt=false;
       document.getElementById("tl").classList.toggle("vis",m==="timeline");
       document.getElementById("tray").style.display=m==="timeline"?"none":"";
       pull();
