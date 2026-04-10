@@ -26,7 +26,7 @@
   --sans:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
   --r:16px;
 }
-body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100dvh;overflow:hidden;-webkit-font-smoothing:antialiased;user-select:none}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100dvh;overflow:hidden;-webkit-font-smoothing:antialiased;user-select:none;touch-action:none;overscroll-behavior:none}
 
 /* ── TOP BAR ──────────────────── */
 .bar{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:16px 22px;pointer-events:none}
@@ -36,10 +36,12 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100dv
 @keyframes bPulse{0%,100%{box-shadow:0 0 0 0 rgba(46,232,165,.4)}50%{box-shadow:0 0 0 7px rgba(46,232,165,0)}}
 
 /* ── FILTERS ──────────────────── */
-.flt{position:fixed;top:58px;left:50%;transform:translateX(-50%);z-index:100;display:flex;gap:2px;background:rgba(20,26,56,.7);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.06);border-radius:100px;padding:3px}
+.flt{position:fixed;top:58px;left:50%;transform:translateX(-50%);z-index:100;display:flex;flex-direction:column;align-items:center;gap:6px}
+.flt-tabs{display:flex;gap:2px;background:rgba(20,26,56,.7);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.06);border-radius:100px;padding:3px}
 .fb{font-family:var(--sans);font-size:12px;font-weight:600;color:var(--text3);padding:7px 18px;border-radius:100px;cursor:pointer;border:none;background:none;transition:all .25s}
 .fb:hover{color:var(--text2)}
 .fb.on{color:var(--text);background:var(--accent-soft)}
+.flt-hint{font-size:10px;color:var(--text3);font-weight:400;letter-spacing:.01em;text-align:center;transition:opacity .3s;pointer-events:none}
 
 /* ── LANDING (left side) ──────── */
 .landing{position:fixed;top:50%;left:40px;transform:translateY(-55%);z-index:90;max-width:260px;pointer-events:none;transition:opacity 1s,transform 1s}
@@ -65,7 +67,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100dv
 .mk-core{transition:r .2s ease}
 
 /* ── BOTTOM TRAY ──────────────── */
-.tray{position:fixed;bottom:0;left:0;right:0;z-index:90;padding:0 16px 14px;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;mask-image:linear-gradient(90deg,transparent,#000 24px,#000 calc(100% - 24px),transparent);transition:transform .4s cubic-bezier(.4,0,.2,1),opacity .3s}
+.tray{position:fixed;bottom:0;left:0;right:0;z-index:90;padding:0 16px 14px;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;mask-image:linear-gradient(90deg,transparent,#000 24px,#000 calc(100% - 24px),transparent);transition:transform .4s cubic-bezier(.4,0,.2,1),opacity .3s;touch-action:pan-x;-webkit-overflow-scrolling:touch}
 .tray::-webkit-scrollbar{display:none}
 .tray.hide{transform:translateY(90px);opacity:0;pointer-events:none}
 
@@ -78,13 +80,14 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100dv
 .cd-count{margin-left:auto;color:var(--text3);font-weight:500;font-size:9px;letter-spacing:.03em}
 .cd-h{font-size:13px;font-weight:600;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:8px;color:var(--text)}
 .cd-f{font-size:10px;color:var(--text3);display:flex;justify-content:space-between}
+.cd-n{display:none}
 
 /* ── EVENT CARD (right side, small) ── */
 .ev{position:fixed;top:50%;right:20px;transform:translateY(-50%) translateX(20px);z-index:150;width:320px;max-height:75vh;background:rgba(16,20,48,.88);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.06);border-radius:var(--r);box-shadow:0 8px 48px rgba(0,0,0,.35);overflow:hidden;opacity:0;pointer-events:none;transition:opacity .35s,transform .4s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column}
 .ev.on{opacity:1;pointer-events:auto;transform:translateY(-50%) translateX(0)}
 .ev-close{position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:50%;border:none;background:rgba(255,255,255,.06);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--text2);transition:background .2s;z-index:5}
 .ev-close:hover{background:rgba(255,255,255,.12)}
-.ev-body{padding:20px;overflow-y:auto;flex:1;scrollbar-width:thin;scrollbar-color:rgba(0,0,0,.06) transparent}
+.ev-body{padding:20px;overflow-y:auto;flex:1;scrollbar-width:thin;scrollbar-color:rgba(0,0,0,.06) transparent;touch-action:pan-y;-webkit-overflow-scrolling:touch}
 .ev-cat{display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;padding:4px 10px;border-radius:100px}
 .ev-h{font-size:17px;font-weight:700;line-height:1.3;letter-spacing:-.02em;margin-bottom:10px}
 .ev-meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
@@ -120,11 +123,44 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100dv
 .ld-t{font-size:12px;color:var(--text2)}
 
 @media(max-width:700px){
-  .landing{left:20px;max-width:200px;top:110px;transform:none}
-  .landing-h{font-size:30px}
-  .ev{right:10px;left:10px;width:auto;top:auto;bottom:10px;transform:translateY(20px);max-height:55vh}
+  /* On mobile: globe top half, vertical event list bottom half */
+  body{overflow:hidden}
+  .bar{padding:10px 16px}
+  .brand{font-size:15px}
+
+  /* Tabs: bigger touch targets, full width */
+  .flt{top:auto;bottom:0;left:0;right:0;transform:none;z-index:200;flex-direction:column;gap:0}
+  .flt-tabs{width:100%;justify-content:center;border-radius:0;border:none;border-top:1px solid rgba(255,255,255,.06);background:rgba(13,17,39,.95);padding:6px 8px;gap:0}
+  .fb{font-size:12px;padding:10px 0;flex:1;text-align:center;border-radius:0}
+  .fb.on{background:none;border-bottom:2px solid var(--accent)}
+  .flt-hint{display:none}
+
+  /* No landing text on mobile */
+  .landing{display:none}
+
+  /* Globe: top half of screen */
+  .gl{position:fixed;top:0;left:0;right:0;height:45vh;bottom:auto}
+
+  /* Event cards: vertical scrollable list */
+  .tray{position:fixed;top:45vh;left:0;right:0;bottom:52px;z-index:90;padding:8px 12px;flex-direction:column;gap:6px;overflow-y:auto;overflow-x:hidden;mask-image:linear-gradient(180deg,transparent,#000 8px,#000 calc(100% - 8px),transparent);touch-action:pan-y;-webkit-overflow-scrolling:touch}
+  .tray.hide{transform:translateY(20px);opacity:0}
+  .cd{width:100%;flex-shrink:0;padding:12px;display:flex;flex-direction:row;align-items:center;gap:10px;animation:none;opacity:1}
+  .cd:hover{transform:none}
+  .cd-tag{margin-bottom:0;font-size:8px;flex-shrink:0}
+  .cd-h{font-size:13px;margin-bottom:0;flex:1;-webkit-line-clamp:1}
+  .cd-f{display:none}
+  .cd-n{display:block;flex-shrink:0;font-size:11px;font-weight:600;color:var(--text3);white-space:nowrap}
+
+  /* Event detail: bottom sheet */
+  .ev{right:0;left:0;width:100%;top:auto;bottom:52px;transform:translateY(100%);max-height:55vh;border-radius:var(--r) var(--r) 0 0}
   .ev.on{transform:translateY(0)}
-  .cd{width:180px}
+  .ev-body{padding:16px}
+  .ev-h{font-size:15px}
+  .ev-close{top:10px;right:10px;width:32px;height:32px;font-size:18px}
+
+  /* Timeline */
+  .tl{bottom:52px;padding:0 16px 16px}
+  .tl input::-webkit-slider-thumb{width:22px;height:22px}
 }
 </style>
 </head>
@@ -137,10 +173,13 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100dv
 </div>
 
 <div class="flt" id="flt">
-  <button class="fb on" data-m="live">Live</button>
-  <button class="fb" data-m="rising">Rising</button>
-  <button class="fb" data-m="silent">Silent</button>
-  <button class="fb" data-m="timeline">Timeline</button>
+  <div class="flt-tabs">
+    <button class="fb on" data-m="live">Live</button>
+    <button class="fb" data-m="rising">Rising</button>
+    <button class="fb" data-m="silent">Silent</button>
+    <button class="fb" data-m="timeline">Timeline</button>
+  </div>
+  <div class="flt-hint" id="flt-hint">Hottest stories right now</div>
 </div>
 
 <div class="landing" id="landing">
@@ -176,27 +215,29 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100dv
 
 const C={conflict:"#e74c4c",economy:"#e6a817",politics:"#5b6abf",health:"#1db88a",environment:"#1aafbf",technology:"#8b5cf6",society:"#e67e22",general:"#8893a7"};
 const L={conflict:"Conflict",economy:"Economy",politics:"Politics",health:"Health",environment:"Environment",technology:"Technology",society:"Society",general:"General"};
+const HINTS={live:"Hottest stories right now",rising:"Stories gaining momentum",silent:"Big stories that went quiet",timeline:"Scrub through the last 6 hours"};
 const META_COL={loc:"#3b82f6",person:"#e74c4c",org:"#8b5cf6",theme:"#e6a817"};
 
 let mode="live",data=[],allTL=[],act=null,countries=null;
-let proj,ph,svg,g,rot=[-10,-20,0],zm=1,autoR=true,af=null,W,H,R;
+let proj,ph,svg,g,rot=[-10,-20,0],zm=1,autoR=true,af=null,W,H,R,mob=false;
 
 async function boot(){
   sz();mkG();await world();await pull();
   document.getElementById("ld").classList.add("out");
   setTimeout(()=>document.getElementById("ld").style.display="none",600);
   spin();wire();
-  window.addEventListener("resize",()=>{sz();proj.translate([W/2,H*.46]).scale(R*zm);svg.attr("width",W).attr("height",H);draw()});
+  window.addEventListener("resize",()=>{sz();const gH=mob?H*.45:H;proj.translate([W/2,mob?gH*.48:H*.46]).scale(R*zm);svg.attr("width",W).attr("height",H);draw()});
   // fade landing after first interaction or 6s
   const fadeLanding=()=>document.getElementById("landing").classList.add("away");
   setTimeout(fadeLanding,6000);
   svg.on("mousedown.landing touchstart.landing",()=>{fadeLanding();svg.on("mousedown.landing touchstart.landing",null)});
 }
 
-function sz(){W=innerWidth;H=innerHeight;R=Math.min(W,H*.82)*.42}
+function sz(){W=innerWidth;H=innerHeight;mob=W<=700;const gH=mob?H*.45:H;R=Math.min(W*(mob?.85:1),gH*.82)*(mob?.4:.42)}
 
 function mkG(){
-  proj=d3.geoOrthographic().translate([W/2,H*.46]).scale(R).rotate(rot).clipAngle(90);
+  const gH=mob?H*.45:H;
+  proj=d3.geoOrthographic().translate([W/2,mob?gH*.48:H*.46]).scale(R).rotate(rot).clipAngle(90);
   ph=d3.geoPath().projection(proj);
   svg=d3.select("#gl").append("svg").attr("width",W).attr("height",H);
   const df=svg.append("defs");
@@ -239,7 +280,8 @@ async function world(){
 }
 
 function draw(){
-  const cx=W/2,cy=H*.46,r=R*zm;
+  const gH=mob?H*.45:H;
+  const cx=W/2,cy=mob?gH*.48:H*.46,r=R*zm;
   g.select(".c-atmo").attr("cx",cx).attr("cy",cy).attr("r",r+22);
   g.select(".c-oc").attr("cx",cx).attr("cy",cy).attr("r",r);
   proj.translate([cx,cy]).scale(r);
@@ -251,7 +293,8 @@ function draw(){
 function dots(){
   const mg=g.select(".c-mk");mg.selectAll("*").remove();
   if(!data.length)return;
-  const cen=proj.invert([W/2,H*.46]);
+  const gH=mob?H*.45:H;
+  const cen=proj.invert([W/2,mob?gH*.48:H*.46]);
 
   data.forEach(c=>{
     if(c.lat==null||c.lon==null)return;
@@ -320,7 +363,11 @@ function mkCards(){
       const rc=c.recent_count||0;
       meta=`<span>${esc(c.location_name||c.country_code||"")}</span><span>${rc>0?rc+" in 2h · ":""}${countLabel} total</span>`;
     }
-    el.innerHTML=`<div class="cd-tag"><span class="cd-dot" style="background:${col}"></span><span style="color:${col}">${L[c.category]||"General"}</span></div><div class="cd-h">${esc(c.title||"")}</div><div class="cd-f">${meta}</div>`;
+    if(mob){
+      el.innerHTML=`<div class="cd-tag"><span class="cd-dot" style="background:${col}"></span><span style="color:${col}">${L[c.category]||"General"}</span></div><div class="cd-h">${esc(c.title||"")}</div><span class="cd-n">${countLabel}</span>`;
+    }else{
+      el.innerHTML=`<div class="cd-tag"><span class="cd-dot" style="background:${col}"></span><span style="color:${col}">${L[c.category]||"General"}</span></div><div class="cd-h">${esc(c.title||"")}</div><div class="cd-f">${meta}</div>`;
+    }
     el.onclick=()=>pick(c);
     t.appendChild(el);
   });
@@ -420,6 +467,7 @@ function wire(){
     b.onclick=()=>{
       const m=b.dataset.m;if(m===mode)return;mode=m;
       document.querySelectorAll(".fb").forEach(x=>x.classList.remove("on"));b.classList.add("on");
+      document.getElementById("flt-hint").textContent=HINTS[m]||"";
       closeEv();
       document.getElementById("tl").classList.toggle("vis",m==="timeline");
       document.getElementById("tray").style.display=m==="timeline"?"none":"";
