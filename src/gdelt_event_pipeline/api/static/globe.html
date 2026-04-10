@@ -124,30 +124,29 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100dv
 .ld-t{font-size:12px;color:var(--text2)}
 
 @media(max-width:700px){
-  /* On mobile: globe top half, vertical event list bottom half */
   body{overflow:hidden}
   .bar{padding:10px 16px}
   .brand{font-size:15px}
 
-  /* Tabs: bigger touch targets, full width */
+  /* Tabs: bottom tab bar, big touch targets */
   .flt{top:auto;bottom:0;left:0;right:0;transform:none;z-index:200;flex-direction:column;gap:0}
   .flt-tabs{width:100%;justify-content:center;border-radius:0;border:none;border-top:1px solid rgba(255,255,255,.06);background:rgba(13,17,39,.95);padding:6px 8px;gap:0}
   .fb{font-size:12px;padding:10px 0;flex:1;text-align:center;border-radius:0}
   .fb.on{background:none;border-bottom:2px solid var(--accent)}
 
-  /* Landing: compact, above the globe */
-  .landing{left:16px;right:16px;max-width:none;top:42px;transform:none;text-align:center}
+  /* Landing: below brand bar, doesn't overlap globe */
+  .landing{left:0;right:0;max-width:none;top:38px;transform:none;text-align:center;padding:0 16px}
   .landing.away{opacity:0;transform:translateY(-10px)}
-  .landing-h{font-size:18px;margin-bottom:4px;display:inline}
+  .landing-h{font-size:14px;margin-bottom:0;display:inline}
   .landing-h br{display:none}
   .landing-p{display:none}
-  .landing-mode{margin-top:4px;font-size:10px}
+  .landing-mode{margin-top:2px;font-size:9px}
 
-  /* Globe: top portion, pushed down to make room for brand + landing */
-  .gl{position:fixed;top:70px;left:0;right:0;height:calc(50vh - 30px);bottom:auto;overflow:hidden}
+  /* Globe: upper portion, SVG sized by JS to match container */
+  .gl{position:fixed;top:75px;left:0;right:0;height:calc(45vh - 30px);bottom:auto;overflow:hidden}
 
-  /* Event cards: vertical scrollable list */
-  .tray{position:fixed;top:calc(50vh + 40px);left:0;right:0;bottom:52px;z-index:90;padding:8px 12px;flex-direction:column;gap:6px;overflow-y:auto;overflow-x:hidden;mask-image:linear-gradient(180deg,transparent,#000 8px,#000 calc(100% - 8px),transparent);touch-action:pan-y;-webkit-overflow-scrolling:touch}
+  /* Event cards: vertical list below globe */
+  .tray{position:fixed;top:calc(45vh + 45px);left:0;right:0;bottom:52px;z-index:90;padding:8px 12px;flex-direction:column;gap:6px;overflow-y:auto;overflow-x:hidden;mask-image:linear-gradient(180deg,transparent,#000 8px,#000 calc(100% - 8px),transparent);touch-action:pan-y;-webkit-overflow-scrolling:touch}
   .tray.hide{transform:translateY(20px);opacity:0}
   .cd{width:100%;flex-shrink:0;padding:12px;display:flex;flex-direction:row;align-items:center;gap:10px;animation:none;opacity:1}
   .cd:hover{transform:none}
@@ -224,7 +223,7 @@ const HINTS={live:"Showing the hottest stories right now",rising:"Showing storie
 const META_COL={loc:"#3b82f6",person:"#e74c4c",org:"#8b5cf6",theme:"#e6a817"};
 
 let mode="live",data=[],allTL=[],act=null,countries=null;
-let proj,ph,svg,g,rot=[-10,-20,0],zm=1,autoR=true,af=null,W,H,R,mob=false;
+let proj,ph,svg,g,rot=[-10,-20,0],zm=1,autoR=true,af=null,W,H,R,mob=false,gW,gH;
 
 async function boot(){
   sz();mkG();await world();await pull();
@@ -233,16 +232,16 @@ async function boot(){
   spin();wire();
   /* Force browser to compute event card layout so first transition is smooth */
   const ev=document.getElementById("ev");ev.offsetHeight;
-  window.addEventListener("resize",()=>{sz();const gH=mob?(H*.5-30):H;proj.translate([W/2,mob?70+gH*.5:H*.46]).scale(R*zm);svg.attr("width",W).attr("height",H);draw()});
+  window.addEventListener("resize",()=>{sz();const cy=mob?gH*.5:H*.46;proj.translate([gW/2,cy]).scale(R*zm);svg.attr("width",gW).attr("height",mob?gH:H);draw()});
 }
 
-function sz(){W=innerWidth;H=innerHeight;mob=W<=700;const gH=mob?(H*.5-30):H;R=Math.min(W*(mob?.85:1),gH*.82)*(mob?.4:.42)}
+function sz(){W=innerWidth;H=innerHeight;mob=W<=700;gW=mob?W:W;gH=mob?(H*.45-30):H;R=Math.min(gW*(mob?.85:1),gH*.82)*(mob?.4:.42)}
 
 function mkG(){
-  const gH=mob?(H*.5-30):H;
-  proj=d3.geoOrthographic().translate([W/2,mob?70+gH*.5:H*.46]).scale(R).rotate(rot).clipAngle(90);
+  const cy=mob?gH*.5:H*.46;
+  proj=d3.geoOrthographic().translate([gW/2,cy]).scale(R).rotate(rot).clipAngle(90);
   ph=d3.geoPath().projection(proj);
-  svg=d3.select("#gl").append("svg").attr("width",W).attr("height",H);
+  svg=d3.select("#gl").append("svg").attr("width",gW).attr("height",mob?gH:H);
   const df=svg.append("defs");
 
   // ocean gradient - deep indigo
@@ -283,8 +282,7 @@ async function world(){
 }
 
 function draw(){
-  const gH=mob?(H*.5-30):H;
-  const cx=W/2,cy=mob?70+gH*.5:H*.46,r=R*zm;
+  const cx=gW/2,cy=mob?gH*.5:H*.46,r=R*zm;
   g.select(".c-atmo").attr("cx",cx).attr("cy",cy).attr("r",r+22);
   g.select(".c-oc").attr("cx",cx).attr("cy",cy).attr("r",r);
   proj.translate([cx,cy]).scale(r);
@@ -296,8 +294,7 @@ function draw(){
 function dots(){
   const mg=g.select(".c-mk");mg.selectAll("*").remove();
   if(!data.length)return;
-  const gH=mob?(H*.5-30):H;
-  const cen=proj.invert([W/2,mob?70+gH*.5:H*.46]);
+  const cen=proj.invert([gW/2,mob?gH*.5:H*.46]);
 
   data.forEach(c=>{
     if(c.lat==null||c.lon==null)return;
@@ -453,9 +450,9 @@ function openEv(c){
     <div class="ev-cat" style="background:${col}12;color:${col}"><span class="cd-dot" style="background:${col};width:6px;height:6px;border-radius:50%"></span>${lbl}</div>
     <h3 class="ev-h">${esc(c.title||"")}</h3>
     <div class="ev-meta">${pillsHtml}</div>
-    <div style="font-size:11px;color:var(--text3);margin-bottom:4px;display:flex;align-items:center;gap:4px">
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      ${ago(c.last_article_at)}
+    <div style="font-size:11px;color:var(--text3);margin-bottom:4px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span style="display:flex;align-items:center;gap:4px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>${c.article_count||0} articles</span>
+      <span style="display:flex;align-items:center;gap:4px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Last updated ${ago(c.last_article_at)}</span>
     </div>
     ${srcHtml}
     ${cta}`;
