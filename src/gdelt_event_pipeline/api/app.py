@@ -411,7 +411,7 @@ def globe_clusters(
     Modes:
     - live:   Clusters with articles in the last 2 hours, sorted by article_count.
     - rising: Clusters whose article count grew fastest in the last 6 hours.
-    - silent: Large clusters that have gone quiet (no new articles for 6-48h).
+    - silent: Large clusters that have gone quiet (no new articles for 6-72h).
     """
     from gdelt_event_pipeline.storage.database import get_pool
 
@@ -421,8 +421,9 @@ def globe_clusters(
 
         with conn.cursor(row_factory=dict_row) as cur:
             if mode == "rising":
-                # Clusters whose article count grew fastest in the last 6h,
-                # ranked by recent article velocity.
+                # Stories picking up steam: clusters that existed for a while
+                # but got a burst of new articles in the last 2 hours.
+                # Ranked by recent article count — the surge signal.
                 cur.execute(
                     """
                     SELECT c.id, c.representative_title, c.article_count,
@@ -431,44 +432,53 @@ def globe_clusters(
                            recent.recent_count,
                            CASE WHEN c.article_count > 0
                                 THEN recent.recent_count::float / c.article_count
-                                ELSE 0 END AS velocity
+                                ELSE 0 END AS velocity,
+                           EXTRACT(EPOCH FROM (now() - c.first_article_at)) / 3600
+                               AS age_hours
                     FROM clusters c
                     JOIN (
                         SELECT cm.cluster_id, count(*) AS recent_count
                         FROM cluster_memberships cm
                         JOIN articles a ON a.id = cm.article_id
-                        WHERE a.gdelt_timestamp >= now() - interval '6 hours'
+                        WHERE a.gdelt_timestamp >= now() - interval '2 hours'
                         GROUP BY cm.cluster_id
                         HAVING count(*) >= 2
                     ) recent ON recent.cluster_id = c.id
-                    WHERE c.is_active = true AND c.article_count >= 3
+                    WHERE c.is_active = true
+                      AND c.article_count >= 5
+                      AND c.first_article_at <= now() - interval '1 hour'
                     ORDER BY recent.recent_count DESC, velocity DESC
                     LIMIT %s
                     """,
                     (limit,),
                 )
             elif mode == "silent":
-                # Large clusters that have gone quiet — no new articles
-                # in the last 6h but were active within the last 48h.
+                # Big stories that went quiet — no new articles in 3h+
+                # but were active within the last 48h.
+                # Shows hours since last article so the UI can display
+                # "quiet for 8h" etc.
                 cur.execute(
                     """
                     SELECT c.id, c.representative_title, c.article_count,
                            c.first_article_at, c.last_article_at,
                            c.created_at, c.updated_at,
-                           0 AS recent_count, 0 AS velocity
+                           0 AS recent_count, 0 AS velocity,
+                           EXTRACT(EPOCH FROM (now() - c.last_article_at)) / 3600
+                               AS silent_hours
                     FROM clusters c
                     WHERE c.is_active = true
                       AND c.article_count >= 5
                       AND c.last_article_at < now() - interval '6 hours'
-                      AND c.last_article_at >= now() - interval '48 hours'
+                      AND c.last_article_at >= now() - interval '72 hours'
                     ORDER BY c.article_count DESC
                     LIMIT %s
                     """,
                     (limit,),
                 )
             else:
-                # live: most active clusters right now (articles in last 2h),
-                # sorted by article count.
+                # live: what newsrooms are writing about RIGHT NOW.
+                # Clusters ranked by how many articles arrived in the
+                # last 2 hours — the hottest stories this moment.
                 cur.execute(
                     """
                     SELECT c.id, c.representative_title, c.article_count,
@@ -477,15 +487,16 @@ def globe_clusters(
                            COALESCE(recent.recent_count, 0) AS recent_count,
                            0 AS velocity
                     FROM clusters c
-                    LEFT JOIN (
+                    JOIN (
                         SELECT cm.cluster_id, count(*) AS recent_count
                         FROM cluster_memberships cm
                         JOIN articles a ON a.id = cm.article_id
                         WHERE a.gdelt_timestamp >= now() - interval '2 hours'
                         GROUP BY cm.cluster_id
                     ) recent ON recent.cluster_id = c.id
-                    WHERE c.is_active = true AND c.article_count >= 2
-                    ORDER BY c.last_article_at DESC NULLS LAST
+                    WHERE c.is_active = true
+                      AND c.article_count >= 2
+                    ORDER BY recent.recent_count DESC, c.article_count DESC
                     LIMIT %s
                     """,
                     (limit,),
@@ -569,7 +580,11 @@ def globe_clusters(
             if art.get("themes") and isinstance(art["themes"], list):
                 for t in art["themes"][:5]:
                     tn = t.get("theme", "")
-                    if tn and not tn.startswith("TAX_"):
+                    if (
+                        tn
+                        and not tn.startswith("TAX_ETHNICITY")
+                        and not tn.startswith("TAX_WORLDLANGUAGE")
+                    ):
                         theme_counts[tn] = theme_counts.get(tn, 0) + 1
         top_themes = sorted(theme_counts, key=theme_counts.get, reverse=True)[:5]
 
@@ -594,6 +609,8 @@ def globe_clusters(
                 "article_count": c["article_count"],
                 "recent_count": c.get("recent_count", 0),
                 "velocity": round(c.get("velocity", 0), 3),
+                "silent_hours": round(c["silent_hours"], 1) if c.get("silent_hours") else None,
+                "age_hours": round(c["age_hours"], 1) if c.get("age_hours") else None,
                 "lat": lat,
                 "lon": lon,
                 "location_name": location_name,
@@ -612,19 +629,150 @@ def globe_clusters(
 def _categorize_themes(themes: list[str]) -> str:
     """Map GDELT themes to a simple category for color coding."""
     theme_str = " ".join(themes).upper()
-    if any(k in theme_str for k in ["MILITARY", "WAR", "ARMED", "TERROR", "CONFLICT"]):
+    if any(
+        k in theme_str
+        for k in [
+            "MILITARY",
+            "WAR",
+            "ARMED",
+            "TERROR",
+            "CONFLICT",
+            "KILL",
+            "WOUND",
+            "ARREST",
+            "CRIME",
+            "ATTACK",
+            "REBELLION",
+            "INSURGENT",
+            "DRONE",
+            "WEAPON",
+            "BOMB",
+            "SHOOT",
+            "HOSTAGE",
+            "SIEGE",
+        ]
+    ):
         return "conflict"
-    if any(k in theme_str for k in ["ECON", "MARKET", "TRADE", "FINANCE", "BUSINESS"]):
+    if any(
+        k in theme_str
+        for k in [
+            "ECON",
+            "MARKET",
+            "TRADE",
+            "FINANCE",
+            "BUSINESS",
+            "TAX_FNCACT",
+            "STOCK",
+            "INVEST",
+            "BANKRUPT",
+            "INFLATION",
+            "GDP",
+            "UNEMPLOY",
+            "CRYPTO",
+            "TARIFF",
+            "DEBT",
+            "REVENUE",
+        ]
+    ):
         return "economy"
-    if any(k in theme_str for k in ["ELECT", "POLITIC", "GOVERN", "DIPLOMAT", "LEGISLAT"]):
+    if any(
+        k in theme_str
+        for k in [
+            "ELECT",
+            "POLITIC",
+            "GOVERN",
+            "DIPLOMAT",
+            "LEGISLAT",
+            "VOTE",
+            "PARLIAMENT",
+            "CONGRESS",
+            "PRESIDENT",
+            "MINISTER",
+            "SANCTION",
+            "TREATY",
+            "SUMMIT",
+            "CAUCUS",
+            "CAMPAIGN",
+            "PARTY",
+        ]
+    ):
         return "politics"
-    if any(k in theme_str for k in ["HEALTH", "DISEASE", "MEDICAL", "PANDEMIC"]):
+    if any(
+        k in theme_str
+        for k in [
+            "HEALTH",
+            "DISEASE",
+            "MEDICAL",
+            "PANDEMIC",
+            "HOSPITAL",
+            "VACCINE",
+            "DRUG",
+            "VIRUS",
+            "OUTBREAK",
+            "WHO_",
+            "SURGEON",
+            "CANCER",
+        ]
+    ):
         return "health"
-    if any(k in theme_str for k in ["ENVIRON", "CLIMATE", "DISASTER", "QUAKE", "FLOOD"]):
+    if any(
+        k in theme_str
+        for k in [
+            "ENV_",
+            "ENVIRON",
+            "CLIMATE",
+            "DISASTER",
+            "QUAKE",
+            "FLOOD",
+            "HURRICANE",
+            "WILDFIRE",
+            "DROUGHT",
+            "EMISSION",
+            "CARBON",
+            "STORM",
+            "TSUNAMI",
+            "TORNADO",
+            "VOLCANO",
+        ]
+    ):
         return "environment"
-    if any(k in theme_str for k in ["TECH", "CYBER", "AI ", "DIGITAL", "SCIENCE"]):
+    if any(
+        k in theme_str
+        for k in [
+            "TECH",
+            "CYBER",
+            "AI_",
+            "DIGITAL",
+            "SCIENCE",
+            "ROBOT",
+            "SPACE",
+            "INTERNET",
+            "SOFTWARE",
+            "HACK",
+            "DATA_",
+            "COMPUTING",
+        ]
+    ):
         return "technology"
-    if any(k in theme_str for k in ["HUMAN_RIGHTS", "PROTEST", "REFUGEE", "MIGRATION"]):
+    if any(
+        k in theme_str
+        for k in [
+            "HUMAN_RIGHTS",
+            "PROTEST",
+            "REFUGEE",
+            "MIGRATION",
+            "EDUCATION",
+            "WOMEN",
+            "CHILD",
+            "POVERTY",
+            "DISCRIMINATION",
+            "RIGHTS",
+            "RELIGION",
+            "CULTURE",
+            "SPORT",
+            "ENTERTAINMENT",
+        ]
+    ):
         return "society"
     return "general"
 

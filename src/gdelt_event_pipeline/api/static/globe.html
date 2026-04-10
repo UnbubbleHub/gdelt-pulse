@@ -73,8 +73,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100dv
 .cd:hover{transform:translateY(-3px);background:rgba(30,38,72,.85);border-color:rgba(255,255,255,.09)}
 .cd.pick{border-color:var(--accent);background:rgba(46,232,165,.08)}
 @keyframes cdIn{to{opacity:1}}
-.cd-tag{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+.cd-tag{display:flex;align-items:center;gap:4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
 .cd-dot{width:6px;height:6px;border-radius:50%}
+.cd-count{margin-left:auto;color:var(--text3);font-weight:500;font-size:9px;letter-spacing:.03em}
 .cd-h{font-size:13px;font-weight:600;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:8px;color:var(--text)}
 .cd-f{font-size:10px;color:var(--text3);display:flex;justify-content:space-between}
 
@@ -298,11 +299,28 @@ async function pull(){
 
 function mkCards(){
   const t=document.getElementById("tray");t.innerHTML="";t.classList.remove("hide");
+  const m=mode==="timeline"?"live":mode;
   data.forEach((c,i)=>{
     const col=C[c.category]||C.general;
     const el=document.createElement("div");el.className="cd";el.style.animationDelay=i*.04+"s";
     if(act&&act.id===c.id)el.classList.add("pick");
-    el.innerHTML=`<div class="cd-tag"><span class="cd-dot" style="background:${col}"></span><span style="color:${col}">${L[c.category]||"General"}</span></div><div class="cd-h">${esc(c.title||"")}</div><div class="cd-f"><span>${esc(c.location_name||c.country_code||"")}</span><span>${ago(c.last_article_at)}</span></div>`;
+    const artCount=c.article_count||0;
+    const countLabel=artCount>=1000?(artCount/1000).toFixed(1)+"k":artCount;
+    /* Mode-specific bottom row info */
+    let meta="";
+    if(m==="rising"){
+      const rc=c.recent_count||0;
+      const vel=c.velocity?Math.round(c.velocity*100):0;
+      meta=`<span style="color:#2ee8a5">▲ ${rc} new in 2h</span><span>${countLabel} total</span>`;
+    }else if(m==="silent"){
+      const sh=c.silent_hours?Math.round(c.silent_hours):0;
+      const silentLabel=sh>=24?Math.round(sh/24)+"d quiet":sh+"h quiet";
+      meta=`<span style="color:#f59e0b">● ${silentLabel}</span><span>${countLabel} articles</span>`;
+    }else{
+      const rc=c.recent_count||0;
+      meta=`<span>${esc(c.location_name||c.country_code||"")}</span><span>${rc>0?rc+" in 2h · ":""}${countLabel} total</span>`;
+    }
+    el.innerHTML=`<div class="cd-tag"><span class="cd-dot" style="background:${col}"></span><span style="color:${col}">${L[c.category]||"General"}</span></div><div class="cd-h">${esc(c.title||"")}</div><div class="cd-f">${meta}</div>`;
     el.onclick=()=>pick(c);
     t.appendChild(el);
   });
