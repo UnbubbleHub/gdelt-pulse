@@ -13,6 +13,7 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from gdelt_event_pipeline.config.settings import get_settings
@@ -137,6 +138,8 @@ app.add_middleware(
     allow_methods=["GET"],
     allow_headers=["*"],
 )
+
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
 # ── Rate limiting ────────────────────────────────────────────────────
@@ -1153,6 +1156,16 @@ def get_asymmetry():
                 """)
             overcovered = cur.fetchall()
 
+            # True distinct article count (articles can mention multiple countries)
+            cur.execute("""
+                SELECT COUNT(DISTINCT a.id) AS cnt
+                FROM articles a, jsonb_array_elements(a.locations) AS loc
+                WHERE a.locations IS NOT NULL
+                  AND loc->>'country_code' IS NOT NULL
+                  AND a.tone IS NOT NULL
+                """)
+            true_total_articles = cur.fetchone()["cnt"]
+
             # Underreported: clusters where MOST articles are crisis-tagged
             # but total coverage is low
             cur.execute("""
@@ -1190,8 +1203,10 @@ def get_asymmetry():
     # Build crisis map
     crisis_map = {r["code"]: r["crisis_articles"] for r in crisis_rows}
 
-    # Total articles for percentage calculation
-    total_articles = sum(c["article_count"] for c in countries)
+    # Use the true distinct count for the headline stat;
+    # per-country sum is kept for coverage_pct (share of mentions)
+    total_articles = true_total_articles
+    total_mentions = sum(c["article_count"] for c in countries)
 
     country_data = []
     for c in countries:
@@ -1201,7 +1216,7 @@ def get_asymmetry():
                 "code": c["code"],
                 "article_count": c["article_count"],
                 "coverage_pct": (
-                    round(c["article_count"] / total_articles * 100, 3) if total_articles else 0
+                    round(c["article_count"] / total_mentions * 100, 3) if total_mentions else 0
                 ),
                 "crisis_articles": crisis_count,
                 "crisis_ratio": (
@@ -1243,7 +1258,7 @@ def get_asymmetry():
 
 @app.get("/api/gravity/graph")
 def gravity_graph(
-    min_weight: int = Query(50, ge=10, le=5000, description="Minimum co-mention count for edges"),
+    min_weight: int = Query(50, ge=10, description="Minimum co-mention count for edges"),
     limit_edges: int = Query(80, ge=10, le=300, description="Max edges to return"),
 ):
     """Return country co-mention graph for the geopolitical gravity map.
@@ -1258,6 +1273,11 @@ def gravity_graph(
         from psycopg.rows import dict_row
 
         with conn.cursor(row_factory=dict_row) as cur:
+            # Max weight (for dynamic slider range)
+            cur.execute("SELECT MAX(weight) AS mw FROM mv_country_comentions")
+            max_weight_row = cur.fetchone()
+            max_weight = max_weight_row["mw"] if max_weight_row and max_weight_row["mw"] else 0
+
             # Edges from materialized view
             cur.execute(
                 """
@@ -1310,7 +1330,7 @@ def gravity_graph(
         for e in edges
     ]
 
-    return {"nodes": nodes, "edges": edge_list}
+    return {"nodes": nodes, "edges": edge_list, "max_weight": max_weight}
 
 
 @app.get("/api/gravity/country/{code}")
