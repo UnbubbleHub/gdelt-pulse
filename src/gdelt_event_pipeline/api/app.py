@@ -96,7 +96,9 @@ def _ensure_schema() -> None:
                 ")"
             )
             row = cur.fetchone()
-            exists = row[0] if isinstance(row, (tuple, list)) else row.get("exists", False)
+            exists = (
+                row[0] if isinstance(row, (tuple, list)) else row.get("exists", False)
+            )
         if not exists:
             logger.info("Tables not found — running schema initialization...")
             schema_path = Path(__file__).resolve().parents[3] / "sql" / "001_schema.sql"
@@ -168,7 +170,9 @@ async def rate_limit_middleware(request: Request, call_next) -> Response:
 
     # Prune old entries
     timestamps = _rate_limit_store[client_ip]
-    _rate_limit_store[client_ip] = [t for t in timestamps if now - t < RATE_LIMIT_WINDOW]
+    _rate_limit_store[client_ip] = [
+        t for t in timestamps if now - t < RATE_LIMIT_WINDOW
+    ]
 
     if len(_rate_limit_store[client_ip]) >= RATE_LIMIT_MAX:
         return Response(
@@ -236,16 +240,26 @@ def velocity_page():
 def search(
     q: str = Query(..., description="Search query text"),
     limit: int = Query(20, ge=1, le=100, description="Max results"),
-    semantic_weight: float = Query(0.5, ge=0.0, le=1.0, description="Semantic vs keyword weight"),
+    semantic_weight: float = Query(
+        0.5, ge=0.0, le=1.0, description="Semantic vs keyword weight"
+    ),
     clusters: bool = Query(False, description="Also search cluster centroids"),
-    location: str | None = Query(None, description="Filter by location (comma-separated)"),
+    location: str | None = Query(
+        None, description="Filter by location (comma-separated)"
+    ),
     person: str | None = Query(None, description="Filter by person (comma-separated)"),
-    org: str | None = Query(None, description="Filter by organization (comma-separated)"),
+    org: str | None = Query(
+        None, description="Filter by organization (comma-separated)"
+    ),
     theme: str | None = Query(None, description="Filter by theme (comma-separated)"),
     domain: str | None = Query(None, description="Filter by domain (comma-separated)"),
     source: str | None = Query(None, description="Filter by source (comma-separated)"),
-    date_from: datetime | None = Query(None, description="Start date (ISO format)"),  # noqa: B008
-    date_to: datetime | None = Query(None, description="End date (ISO format)"),  # noqa: B008
+    date_from: datetime | None = Query(
+        None, description="Start date (ISO format)"
+    ),  # noqa: B008
+    date_to: datetime | None = Query(
+        None, description="End date (ISO format)"
+    ),  # noqa: B008
 ):
     """Hybrid semantic + keyword search over articles and clusters."""
     filters = SearchFilters(
@@ -258,7 +272,9 @@ def search(
         date_from=date_from,
         date_to=date_to,
     )
-    has_filters = any(getattr(filters, f) is not None for f in filters.__dataclass_fields__)
+    has_filters = any(
+        getattr(filters, f) is not None for f in filters.__dataclass_fields__
+    )
 
     request = SearchRequest(
         query=q,
@@ -306,11 +322,15 @@ def get_stats():
             total_articles = cur.fetchone()["cnt"]
             cur.execute("SELECT count(*) AS cnt FROM articles WHERE title IS NOT NULL")
             titled = cur.fetchone()["cnt"]
-            cur.execute("SELECT count(*) AS cnt FROM articles WHERE embedding IS NOT NULL")
+            cur.execute(
+                "SELECT count(*) AS cnt FROM articles WHERE embedding IS NOT NULL"
+            )
             embedded = cur.fetchone()["cnt"]
             cur.execute("SELECT count(*) AS cnt FROM clusters WHERE is_active = true")
             total_clusters = cur.fetchone()["cnt"]
-            cur.execute("SELECT max(article_count) AS val FROM clusters WHERE is_active = true")
+            cur.execute(
+                "SELECT max(article_count) AS val FROM clusters WHERE is_active = true"
+            )
             largest_cluster = cur.fetchone()["val"] or 0
             cur.execute("SELECT count(*) AS cnt FROM cluster_memberships")
             total_memberships = cur.fetchone()["cnt"]
@@ -337,14 +357,22 @@ def list_articles(
 def list_clusters(
     limit: int = Query(100, ge=1, le=500, description="Max clusters to return"),
     sort: str = Query("recent", description="Sort: recent, articles, oldest"),
-    location: str | None = Query(None, description="Filter by location (comma-separated)"),
+    location: str | None = Query(
+        None, description="Filter by location (comma-separated)"
+    ),
     person: str | None = Query(None, description="Filter by person (comma-separated)"),
-    org: str | None = Query(None, description="Filter by organization (comma-separated)"),
+    org: str | None = Query(
+        None, description="Filter by organization (comma-separated)"
+    ),
     theme: str | None = Query(None, description="Filter by theme (comma-separated)"),
     domain: str | None = Query(None, description="Filter by domain (comma-separated)"),
     source: str | None = Query(None, description="Filter by source (comma-separated)"),
-    date_from: datetime | None = Query(None, description="Start date (ISO format)"),  # noqa: B008
-    date_to: datetime | None = Query(None, description="End date (ISO format)"),  # noqa: B008
+    date_from: datetime | None = Query(
+        None, description="Start date (ISO format)"
+    ),  # noqa: B008
+    date_to: datetime | None = Query(
+        None, description="End date (ISO format)"
+    ),  # noqa: B008
 ):
     """List active clusters, optionally filtered by article metadata."""
     locations = _split_csv(location)
@@ -355,7 +383,16 @@ def list_clusters(
     sources = _split_csv(source)
 
     has_filters = any(
-        [locations, persons, organizations, themes, domains, sources, date_from, date_to]
+        [
+            locations,
+            persons,
+            organizations,
+            themes,
+            domains,
+            sources,
+            date_from,
+            date_to,
+        ]
     )
 
     if not has_filters:
@@ -388,7 +425,9 @@ def list_clusters(
         article_conditions.append("a.domain ILIKE %s")
         params.append(f"%{domains[0]}%")
     if sources:
-        article_conditions.append("(a.source_common_name ILIKE %s OR a.canonical_source ILIKE %s)")
+        article_conditions.append(
+            "(a.source_common_name ILIKE %s OR a.canonical_source ILIKE %s)"
+        )
         params.extend([f"%{sources[0]}%", f"%{sources[0]}%"])
     if date_from:
         article_conditions.append("a.gdelt_timestamp >= %s")
@@ -651,7 +690,9 @@ def globe_clusters(
                 "article_count": c["article_count"],
                 "recent_count": c.get("recent_count", 0),
                 "velocity": round(c.get("velocity", 0), 3),
-                "silent_hours": round(c["silent_hours"], 1) if c.get("silent_hours") else None,
+                "silent_hours": (
+                    round(c["silent_hours"], 1) if c.get("silent_hours") else None
+                ),
                 "age_hours": round(c["age_hours"], 1) if c.get("age_hours") else None,
                 "lat": lat,
                 "lon": lon,
@@ -825,7 +866,9 @@ def _categorize_themes(themes: list[str]) -> str:
 @app.get("/api/polarization")
 def get_polarization(
     limit: int = Query(30, ge=1, le=100, description="Max clusters to return"),
-    min_articles: int = Query(20, ge=5, le=500, description="Minimum articles per cluster"),
+    min_articles: int = Query(
+        20, ge=5, le=500, description="Minimum articles per cluster"
+    ),
 ):
     """Return the most narratively polarized story clusters.
 
@@ -1020,13 +1063,19 @@ def get_polarization_detail(cluster_id: str):
                 "domain": a["domain"],
                 "gdelt_timestamp": a["gdelt_timestamp"],
                 "tone": round(a["tone"], 3) if a["tone"] is not None else None,
-                "polarity": round(a["polarity"], 3) if a["polarity"] is not None else None,
-                "positive_score": round(a["positive_score"], 3)
-                if a["positive_score"] is not None
-                else None,
-                "negative_score": round(a["negative_score"], 3)
-                if a["negative_score"] is not None
-                else None,
+                "polarity": (
+                    round(a["polarity"], 3) if a["polarity"] is not None else None
+                ),
+                "positive_score": (
+                    round(a["positive_score"], 3)
+                    if a["positive_score"] is not None
+                    else None
+                ),
+                "negative_score": (
+                    round(a["negative_score"], 3)
+                    if a["negative_score"] is not None
+                    else None
+                ),
             }
         )
 
@@ -1048,7 +1097,9 @@ def get_polarization_detail(cluster_id: str):
     # Overall stats
     all_tones = [a["tone"] for a in articles if a["tone"] is not None]
     avg = sum(all_tones) / len(all_tones) if all_tones else 0
-    variance = sum((t - avg) ** 2 for t in all_tones) / len(all_tones) if all_tones else 0
+    variance = (
+        sum((t - avg) ** 2 for t in all_tones) / len(all_tones) if all_tones else 0
+    )
     stddev = variance**0.5
 
     return {
@@ -1084,8 +1135,7 @@ def get_asymmetry():
 
         with conn.cursor(row_factory=dict_row) as cur:
             # Coverage volume per country
-            cur.execute(
-                """
+            cur.execute("""
                 SELECT
                     loc->>'country_code' AS code,
                     COUNT(DISTINCT a.id) AS article_count,
@@ -1096,14 +1146,12 @@ def get_asymmetry():
                   AND a.tone IS NOT NULL
                 GROUP BY 1
                 ORDER BY 2 DESC
-                """
-            )
+                """)
             countries = cur.fetchall()
 
             # Crisis-tagged articles per country (themes indicating conflict,
             # disaster, or humanitarian issues)
-            cur.execute(
-                """
+            cur.execute("""
                 SELECT
                     loc->>'country_code' AS code,
                     COUNT(DISTINCT a.id) AS crisis_articles
@@ -1126,27 +1174,23 @@ def get_asymmetry():
                     OR theme->>'theme' ILIKE '%%WOUND%%'
                   )
                 GROUP BY 1
-                """
-            )
+                """)
             crisis_rows = cur.fetchall()
 
             # Top overcovered clusters (most articles, any country)
-            cur.execute(
-                """
+            cur.execute("""
                 SELECT id, representative_title, article_count,
                        first_article_at, last_article_at
                 FROM clusters
                 WHERE is_active = true
                 ORDER BY article_count DESC
                 LIMIT 10
-                """
-            )
+                """)
             overcovered = cur.fetchall()
 
             # Underreported: clusters where MOST articles are crisis-tagged
             # but total coverage is low
-            cur.execute(
-                """
+            cur.execute("""
                 SELECT c.id, c.representative_title, c.article_count,
                        c.first_article_at, c.last_article_at,
                        crisis.crisis_count,
@@ -1175,8 +1219,7 @@ def get_asymmetry():
                   AND crisis.crisis_count::float / c.article_count >= 0.6
                 ORDER BY crisis.crisis_count DESC, c.article_count ASC
                 LIMIT 20
-                """
-            )
+                """)
             underreported = cur.fetchall()
 
     # Build crisis map
@@ -1192,13 +1235,17 @@ def get_asymmetry():
             {
                 "code": c["code"],
                 "article_count": c["article_count"],
-                "coverage_pct": round(c["article_count"] / total_articles * 100, 3)
-                if total_articles
-                else 0,
+                "coverage_pct": (
+                    round(c["article_count"] / total_articles * 100, 3)
+                    if total_articles
+                    else 0
+                ),
                 "crisis_articles": crisis_count,
-                "crisis_ratio": round(crisis_count / c["article_count"], 3)
-                if c["article_count"]
-                else 0,
+                "crisis_ratio": (
+                    round(crisis_count / c["article_count"], 3)
+                    if c["article_count"]
+                    else 0
+                ),
                 "avg_tone": float(c["avg_tone"]) if c["avg_tone"] is not None else 0,
             }
         )
@@ -1235,7 +1282,9 @@ def get_asymmetry():
 
 @app.get("/api/gravity/graph")
 def gravity_graph(
-    min_weight: int = Query(50, ge=10, le=5000, description="Minimum co-mention count for edges"),
+    min_weight: int = Query(
+        50, ge=10, le=5000, description="Minimum co-mention count for edges"
+    ),
     limit_edges: int = Query(80, ge=10, le=300, description="Max edges to return"),
 ):
     """Return country co-mention graph for the geopolitical gravity map.
@@ -1367,8 +1416,7 @@ def gravity_country_detail(code: str):
         "article_count": stats["article_count"],
         "avg_tone": float(stats["avg_tone"]) if stats["avg_tone"] is not None else 0,
         "connections": [
-            {"code": c["connected_code"], "weight": c["weight"]}
-            for c in connections
+            {"code": c["connected_code"], "weight": c["weight"]} for c in connections
         ],
         "top_clusters": [
             {
@@ -1390,8 +1438,12 @@ def gravity_country_detail(code: str):
 @app.get("/api/sources/fingerprints")
 def source_fingerprints(
     limit: int = Query(50, ge=1, le=200, description="Max sources to return"),
-    sort: str = Query("articles", description="Sort: articles, tone_positive, tone_negative"),
-    min_articles: int = Query(10, ge=1, description="Minimum articles to include source"),
+    sort: str = Query(
+        "articles", description="Sort: articles, tone_positive, tone_negative"
+    ),
+    min_articles: int = Query(
+        10, ge=1, description="Minimum articles to include source"
+    ),
 ):
     """Per-source fingerprints: article count, avg tone, top themes, top countries."""
     from gdelt_event_pipeline.storage.database import get_pool
@@ -1647,10 +1699,16 @@ def source_detail(domain: str):
         "first_article": stats["first_article"],
         "last_article": stats["last_article"],
         "themes": [
-            {"theme": t["theme"], "count": t["cnt"], "category": _categorize_themes([t["theme"]])}
+            {
+                "theme": t["theme"],
+                "count": t["cnt"],
+                "category": _categorize_themes([t["theme"]]),
+            }
             for t in themes
         ],
-        "countries": [{"country_code": c["country_code"], "count": c["cnt"]} for c in countries],
+        "countries": [
+            {"country_code": c["country_code"], "count": c["cnt"]} for c in countries
+        ],
         "categories": categories,
         "tone_timeline": [
             {
@@ -1782,7 +1840,9 @@ def propagation_timeline(cluster_id: str):
                 "domain": domain,
                 "source_name": a["source_name"],
                 "timestamp": a["gdelt_timestamp"],
-                "tone": round(a["tone_score"], 2) if a["tone_score"] is not None else None,
+                "tone": (
+                    round(a["tone_score"], 2) if a["tone_score"] is not None else None
+                ),
                 "location": loc_name,
                 "is_first_from_source": is_first,
                 "order": i,
@@ -1821,7 +1881,9 @@ def propagation_timeline(cluster_id: str):
             hour = int((ts - first_ts).total_seconds() / 3600)
             hourly[hour] += 1
         max_hour = max(hourly.keys()) if hourly else 0
-        histogram = [{"hour": h, "count": hourly.get(h, 0)} for h in range(max_hour + 1)]
+        histogram = [
+            {"hour": h, "count": hourly.get(h, 0)} for h in range(max_hour + 1)
+        ]
     else:
         histogram = []
 
@@ -1987,7 +2049,6 @@ def velocity_timeline(
     }
 
 
-
 # ── Runner ────────────────────────────────────────────────────────────
 
 
@@ -1995,7 +2056,9 @@ def run() -> None:
     """Convenience entry point: uvicorn gdelt_event_pipeline.api.app:app"""
     import uvicorn
 
-    uvicorn.run("gdelt_event_pipeline.api.app:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(
+        "gdelt_event_pipeline.api.app:app", host="0.0.0.0", port=8000, reload=True
+    )
 
 
 if __name__ == "__main__":
