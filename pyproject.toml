@@ -40,3 +40,4 @@ force-exclude = true
 
 [tool.ruff.lint]
 select = ["E", "F", "B", "I", "UP"]
+ignore = ["B008"]  # Query() in FastAPI defaults is idiomatic
