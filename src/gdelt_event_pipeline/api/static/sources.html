@@ -3,198 +3,313 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#0d1127">
-<title>Source DNA — Pulse</title>
+<meta name="theme-color" content="#09090b">
+<title>Source DNA — GDELT Pulse</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;450;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/pulse.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --bg:#0d1127;
-  --bg2:#131838;
-  --card:rgba(20,26,56,.82);
-  --card-sh:0 4px 24px rgba(0,0,0,.25),0 0 0 1px rgba(255,255,255,.04);
-  --text:#e8ecf8;
-  --text2:rgba(232,236,248,.55);
-  --text3:rgba(232,236,248,.3);
-  --accent:#2ee8a5;
-  --accent-soft:rgba(46,232,165,.1);
-  --conflict:#ff6b6b;--economy:#ffc844;--politics:#7b8aff;
-  --health:#2ee8a5;--environment:#22d4e6;--technology:#a78bfa;
-  --society:#ff9f43;--general:#8899bb;
-  --positive:#2ee8a5;--negative:#ff6b6b;
-  --sans:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
-  --mono:'JetBrains Mono',monospace;
-  --r:16px;
+/* ── Page-specific styles (extending pulse.css) ── */
+
+.sort-controls {
+  display: flex;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding: 0 var(--sp-5) var(--sp-6);
+  flex-wrap: wrap;
 }
-body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100dvh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-a{color:var(--accent);text-decoration:none}
 
-/* ── TOP BAR ──────────────────── */
-.bar{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:16px 28px;background:rgba(13,17,39,.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.04)}
-.brand{display:flex;align-items:center;gap:8px;font-size:18px;font-weight:700;color:var(--text);letter-spacing:-.02em;cursor:pointer}
-.brand i{width:10px;height:10px;border-radius:50%;background:var(--accent);animation:bPulse 2s ease-in-out infinite}
-@keyframes bPulse{0%,100%{box-shadow:0 0 0 0 rgba(46,232,165,.4)}50%{box-shadow:0 0 0 7px rgba(46,232,165,0)}}
-.bar-right{display:flex;align-items:center;gap:12px}
-.bar-btn{font-family:var(--sans);font-size:12px;font-weight:600;color:var(--text2);padding:7px 16px;border-radius:100px;cursor:pointer;border:1px solid rgba(255,255,255,.08);background:none;transition:all .2s}
-.bar-btn:hover{color:var(--text);border-color:rgba(255,255,255,.15);background:rgba(255,255,255,.03)}
+.sort-controls .btn.active {
+  color: var(--text);
+  background: var(--surface-2);
+  border-color: var(--border-active);
+}
 
-/* ── HERO ─────────────────────── */
-.hero{text-align:center;padding:48px 28px 32px}
-.hero h1{font-size:36px;font-weight:700;letter-spacing:-.03em;line-height:1.1;margin-bottom:10px}
-.hero h1 span{color:var(--accent)}
-.hero p{font-size:14px;color:var(--text2);max-width:520px;margin:0 auto;line-height:1.6}
+/* ── Stats row ── */
+.stats-row {
+  display: flex;
+  gap: var(--sp-3);
+  padding: 0 var(--sp-5) var(--sp-6);
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 1080px;
+  margin: 0 auto;
+}
 
-/* ── CONTROLS ─────────────────── */
-.controls{display:flex;justify-content:center;gap:8px;padding:0 28px 28px;flex-wrap:wrap}
-.ctrl-btn{font-family:var(--sans);font-size:12px;font-weight:600;color:var(--text3);padding:7px 18px;border-radius:100px;cursor:pointer;border:1px solid rgba(255,255,255,.06);background:none;transition:all .25s}
-.ctrl-btn:hover{color:var(--text2);border-color:rgba(255,255,255,.12)}
-.ctrl-btn.on{color:var(--text);background:var(--accent-soft);border-color:var(--accent)}
+/* ── Scatter section ── */
+.scatter-section {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 var(--sp-5) var(--sp-6);
+}
 
-/* ── OVERVIEW STATS ──────────── */
-.stats-row{display:flex;gap:12px;padding:0 28px 28px;flex-wrap:wrap;justify-content:center}
-.stat-box{background:var(--card);border:1px solid rgba(255,255,255,.05);border-radius:var(--r);padding:18px 24px;min-width:140px;text-align:center;box-shadow:var(--card-sh)}
-.stat-val{font-size:26px;font-weight:700;letter-spacing:-.02em;font-family:var(--mono)}
-.stat-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-top:4px}
+.scatter-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-5);
+}
 
-/* ── SCATTER CHART ───────────── */
-.chart-section{padding:0 28px 28px}
-.chart-card{background:var(--card);border:1px solid rgba(255,255,255,.05);border-radius:var(--r);padding:24px;box-shadow:var(--card-sh)}
-.chart-title{font-size:14px;font-weight:700;margin-bottom:4px}
-.chart-sub{font-size:11px;color:var(--text3);margin-bottom:16px}
-.chart-wrap{position:relative;height:360px}
+.scatter-card .chart-wrap {
+  position: relative;
+  height: 360px;
+}
 
-/* ── SOURCE TABLE ────────────── */
-.table-section{padding:0 28px 40px}
-.table-wrap{background:var(--card);border:1px solid rgba(255,255,255,.05);border-radius:var(--r);overflow:hidden;box-shadow:var(--card-sh)}
-.table-header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;border-bottom:1px solid rgba(255,255,255,.04)}
-.table-header h3{font-size:14px;font-weight:700}
-.table-search{font-family:var(--sans);font-size:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:100px;padding:7px 16px;color:var(--text);outline:none;width:220px;transition:border-color .2s}
-.table-search:focus{border-color:var(--accent)}
-.table-search::placeholder{color:var(--text3)}
-table{width:100%;border-collapse:collapse}
-thead th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);text-align:left;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;user-select:none;white-space:nowrap;transition:color .2s}
-thead th:hover{color:var(--text2)}
-thead th.sorted{color:var(--accent)}
-thead th .arrow{font-size:8px;margin-left:4px}
-tbody tr{border-bottom:1px solid rgba(255,255,255,.02);transition:background .15s;cursor:pointer}
-tbody tr:hover{background:rgba(46,232,165,.03)}
-tbody td{padding:12px 16px;font-size:13px;white-space:nowrap}
-.src-name{font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis}
-.tone-bar{display:flex;height:6px;border-radius:3px;overflow:hidden;width:100px;background:rgba(255,255,255,.04)}
-.tone-pos{background:var(--positive);height:100%}
-.tone-neg{background:var(--negative);height:100%}
-.theme-tags{display:flex;gap:4px;flex-wrap:nowrap;max-width:200px;overflow:hidden}
-.theme-tag{font-size:9px;font-weight:600;padding:2px 7px;border-radius:100px;white-space:nowrap}
+/* ── Table extras ── */
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-4) var(--sp-4) var(--sp-3);
+  border-bottom: 1px solid var(--border);
+}
 
-/* ── DETAIL MODAL ────────────── */
-.modal-bg{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);opacity:0;pointer-events:none;transition:opacity .3s}
-.modal-bg.on{opacity:1;pointer-events:auto}
-.modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.95);z-index:201;width:min(720px,92vw);max-height:85vh;background:var(--bg2);border:1px solid rgba(255,255,255,.06);border-radius:calc(var(--r) + 4px);overflow:hidden;opacity:0;pointer-events:none;transition:all .35s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column}
-.modal-bg.on+.modal,.modal.on{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
-.modal-head{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid rgba(255,255,255,.04)}
-.modal-head h2{font-size:18px;font-weight:700;letter-spacing:-.02em}
-.modal-head .domain-tag{font-size:11px;font-weight:500;color:var(--text2);font-family:var(--mono);margin-left:12px}
-.modal-close{width:32px;height:32px;border-radius:50%;border:none;background:rgba(255,255,255,.06);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text2);transition:background .2s}
-.modal-close:hover{background:rgba(255,255,255,.12)}
-.modal-body{padding:24px;overflow-y:auto;flex:1}
-.modal-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
-.m-stat{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px;padding:14px;text-align:center}
-.m-stat-val{font-size:20px;font-weight:700;font-family:var(--mono)}
-.m-stat-lbl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-top:2px}
-.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
-.modal-chart-card{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);border-radius:12px;padding:16px}
-.modal-chart-card h4{font-size:12px;font-weight:700;margin-bottom:12px}
-.modal-chart-wrap{position:relative;height:200px}
-.recent-list{display:flex;flex-direction:column;gap:8px}
-.recent-item{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);border-radius:12px;padding:12px 16px;transition:background .15s}
-.recent-item:hover{background:rgba(255,255,255,.04)}
-.recent-title{font-size:13px;font-weight:600;margin-bottom:4px;line-height:1.4}
-.recent-meta{font-size:10px;color:var(--text3);display:flex;gap:12px;align-items:center}
-.tone-chip{font-size:10px;font-weight:700;font-family:var(--mono);padding:2px 8px;border-radius:100px}
+.table-toolbar h3 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
 
-/* ── LOADING ─────────────────── */
-.loading{display:flex;align-items:center;justify-content:center;padding:60px;color:var(--text3);gap:10px;font-size:13px}
-.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.08);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
+.src-name {
+  font-weight: 600;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
-/* ── RESPONSIVE ──────────────── */
-@media(max-width:768px){
-  .hero h1{font-size:26px}
-  .stats-row{gap:8px}
-  .stat-box{min-width:100px;padding:14px 16px}
-  .stat-val{font-size:20px}
-  .chart-wrap{height:260px}
-  .modal-stats{grid-template-columns:repeat(2,1fr)}
-  .modal-grid{grid-template-columns:1fr}
-  .table-search{width:160px}
-  .theme-tags{display:none}
+.tone-bar {
+  display: flex;
+  height: 5px;
+  border-radius: 3px;
+  overflow: hidden;
+  width: 100px;
+  background: var(--surface-3);
+}
+
+.tone-pos { background: var(--positive); height: 100%; }
+.tone-neg { background: var(--negative); height: 100%; }
+
+.theme-tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: nowrap;
+  max-width: 200px;
+  overflow: hidden;
+}
+
+.theme-tag {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+/* ── Modal internals ── */
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--sp-5);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--sp-5);
+}
+
+.modal-head h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.modal-head .domain-tag {
+  font-size: 0.75rem;
+  font-weight: 450;
+  color: var(--text-3);
+  margin-left: var(--sp-3);
+}
+
+.modal-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-5);
+}
+
+.m-stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--sp-4);
+  text-align: center;
+}
+
+.m-stat-val {
+  font-size: 1.25rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.m-stat-lbl {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+
+.modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-5);
+}
+
+.modal-chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--sp-4);
+}
+
+.modal-chart-card h4 {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-2);
+  margin-bottom: var(--sp-3);
+}
+
+.modal-chart-wrap {
+  position: relative;
+  height: 200px;
+}
+
+.recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.recent-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--sp-3) var(--sp-4);
+  transition: border-color var(--duration) var(--ease);
+}
+
+.recent-item:hover {
+  border-color: var(--border-hover);
+}
+
+.recent-title {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.recent-meta {
+  font-size: 0.6875rem;
+  color: var(--text-3);
+  display: flex;
+  gap: var(--sp-3);
+  align-items: center;
+}
+
+.tone-chip {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .stats-row { gap: var(--sp-2); }
+  .scatter-card .chart-wrap { height: 260px; }
+  .modal-stats { grid-template-columns: repeat(2, 1fr); }
+  .modal-grid { grid-template-columns: 1fr; }
+  .theme-tags { display: none; }
 }
 </style>
 </head>
 <body>
 
-<!-- TOP BAR -->
-<header class="bar">
-  <div class="brand" onclick="location.href='/'"><i></i> Pulse</div>
-  <div class="bar-right">
-    <button class="bar-btn" onclick="location.href='/globe'">Globe</button>
-    <button class="bar-btn" onclick="location.href='/'">Home</button>
-  </div>
-</header>
+<!-- TOPBAR -->
+<nav class="topbar">
+  <a class="topbar-back" href="/">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    GDELT Pulse
+  </a>
+</nav>
 
-<!-- HERO -->
-<section class="hero">
-  <h1>Source <span>DNA</span></h1>
-  <p>Fingerprint every news source by what they cover, how they cover it, and where they focus. Compare editorial DNA across thousands of outlets.</p>
+<!-- PAGE INTRO -->
+<section class="page-intro">
+  <h1>Source DNA</h1>
+  <p>Fingerprint every news source by what they cover, how they cover it, and where they focus.</p>
 </section>
 
 <!-- OVERVIEW STATS -->
 <div class="stats-row" id="statsRow">
-  <div class="stat-box"><div class="stat-val" id="statSources">--</div><div class="stat-lbl">Sources</div></div>
-  <div class="stat-box"><div class="stat-val" id="statArticles">--</div><div class="stat-lbl">Articles</div></div>
-  <div class="stat-box"><div class="stat-val" id="statAvgTone">--</div><div class="stat-lbl">Avg Tone</div></div>
-  <div class="stat-box"><div class="stat-val" id="statMostPositive">--</div><div class="stat-lbl">Most Positive</div></div>
+  <div class="stat-card">
+    <div class="stat-value t-num" id="statSources">--</div>
+    <div class="stat-label">Sources</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value t-num" id="statArticles">--</div>
+    <div class="stat-label">Articles</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value t-num" id="statAvgTone">--</div>
+    <div class="stat-label">Avg Tone</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" id="statMostPositive">--</div>
+    <div class="stat-label">Most Positive</div>
+  </div>
 </div>
 
 <!-- SORT CONTROLS -->
-<div class="controls">
-  <button class="ctrl-btn on" data-sort="articles" onclick="setSort('articles')">Most Articles</button>
-  <button class="ctrl-btn" data-sort="tone_positive" onclick="setSort('tone_positive')">Most Positive</button>
-  <button class="ctrl-btn" data-sort="tone_negative" onclick="setSort('tone_negative')">Most Negative</button>
+<div class="sort-controls">
+  <button class="btn btn-sm active" data-sort="articles" onclick="setSort('articles')">Most Articles</button>
+  <button class="btn btn-sm" data-sort="tone_positive" onclick="setSort('tone_positive')">Most Positive</button>
+  <button class="btn btn-sm" data-sort="tone_negative" onclick="setSort('tone_negative')">Most Negative</button>
 </div>
 
 <!-- SCATTER CHART -->
-<section class="chart-section">
-  <div class="chart-card">
-    <div class="chart-title">Source Landscape</div>
-    <div class="chart-sub">Bubble size = article count. X = avg tone. Y = polarity (spread between positive &amp; negative).</div>
+<section class="scatter-section">
+  <div class="scatter-card">
+    <h3 class="t-overline">Source Landscape</h3>
+    <p class="t-caption t-dim" style="margin-bottom:var(--sp-4)">Bubble size = article count. X = avg tone. Y = polarity (spread between positive &amp; negative).</p>
     <div class="chart-wrap"><canvas id="scatterChart"></canvas></div>
   </div>
 </section>
 
 <!-- SOURCE TABLE -->
-<section class="table-section">
+<section class="container" style="padding-bottom:var(--sp-7)">
   <div class="table-wrap">
-    <div class="table-header">
+    <div class="table-toolbar">
       <h3>All Sources</h3>
-      <input type="text" class="table-search" placeholder="Filter sources..." oninput="filterTable(this.value)">
+      <input type="text" class="input" style="width:220px;padding:7px 14px;font-size:0.8125rem" placeholder="Filter sources..." oninput="filterTable(this.value)">
     </div>
     <div style="overflow-x:auto">
-      <table>
+      <table class="table">
         <thead>
           <tr>
-            <th class="sorted" data-col="article_count" onclick="sortTable('article_count')">Articles <span class="arrow">▼</span></th>
-            <th data-col="source_name" onclick="sortTable('source_name')">Source</th>
-            <th data-col="avg_tone" onclick="sortTable('avg_tone')">Tone</th>
-            <th data-col="avg_polarity" onclick="sortTable('avg_polarity')">Polarity</th>
+            <th class="sortable sorted" data-col="article_count" onclick="sortTable('article_count')">Articles <span class="arrow">&#9660;</span></th>
+            <th class="sortable" data-col="source_name" onclick="sortTable('source_name')">Source</th>
+            <th class="sortable" data-col="avg_tone" onclick="sortTable('avg_tone')">Tone</th>
+            <th class="sortable" data-col="avg_polarity" onclick="sortTable('avg_polarity')">Polarity</th>
             <th>Tone Balance</th>
             <th>Top Themes</th>
           </tr>
         </thead>
         <tbody id="srcBody">
-          <tr><td colspan="6"><div class="loading">Loading<span class="spinner"></span></div></td></tr>
+          <tr><td colspan="6"><div class="loading"><span class="spinner"></span> Loading</div></td></tr>
         </tbody>
       </table>
     </div>
@@ -202,19 +317,21 @@ tbody td{padding:12px 16px;font-size:13px;white-space:nowrap}
 </section>
 
 <!-- DETAIL MODAL -->
-<div class="modal-bg" id="modalBg" onclick="closeModal()"></div>
-<div class="modal" id="modal">
-  <div class="modal-head">
-    <div style="display:flex;align-items:center"><h2 id="modalTitle"></h2><span class="domain-tag" id="modalDomain"></span></div>
-    <button class="modal-close" onclick="closeModal()">&#10005;</button>
-  </div>
-  <div class="modal-body" id="modalBody">
-    <div class="loading">Loading<span class="spinner"></span></div>
+<div class="overlay" id="modalBg" onclick="closeModal()"></div>
+<div class="overlay" id="modalWrap" onclick="closeModal()" style="pointer-events:none">
+  <div class="modal" id="modal" onclick="event.stopPropagation()" style="pointer-events:auto">
+    <div class="modal-head">
+      <div style="display:flex;align-items:center"><h2 id="modalTitle"></h2><span class="domain-tag" id="modalDomain"></span></div>
+      <button class="modal-close" onclick="closeModal()">&#10005;</button>
+    </div>
+    <div id="modalBody">
+      <div class="loading"><span class="spinner"></span> Loading</div>
+    </div>
   </div>
 </div>
 
 <script>
-const CAT_COLORS = {conflict:'#ff6b6b',economy:'#ffc844',politics:'#7b8aff',health:'#2ee8a5',environment:'#22d4e6',technology:'#a78bfa',society:'#ff9f43',general:'#8899bb'};
+const CAT_COLORS = {conflict:'#f87171',economy:'#fbbf24',politics:'#818cf8',health:'#34d399',environment:'#22d3ee',technology:'#a78bfa',society:'#fb923c',general:'#71717a'};
 
 let allSources = [];
 let currentSort = 'articles';
@@ -229,7 +346,7 @@ async function init() {
     renderScatter();
     renderTable(allSources);
   } catch (e) {
-    document.getElementById('srcBody').innerHTML = '<tr><td colspan="6" style="padding:40px;text-align:center;color:var(--text3)">Failed to load sources</td></tr>';
+    document.getElementById('srcBody').innerHTML = '<tr><td colspan="6"><div class="empty">Failed to load sources</div></td></tr>';
   }
 }
 
@@ -266,11 +383,11 @@ function renderScatter() {
         data: data,
         backgroundColor: data.map(d => {
           const c = CAT_COLORS[d.category] || CAT_COLORS.general;
-          return c + '66';
+          return c + '44';
         }),
         borderColor: data.map(d => {
           const c = CAT_COLORS[d.category] || CAT_COLORS.general;
-          return c + 'cc';
+          return c + '99';
         }),
         borderWidth: 1.5,
         hoverBorderWidth: 2.5
@@ -282,11 +399,11 @@ function renderScatter() {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: 'rgba(13,17,39,.95)',
-          borderColor: 'rgba(255,255,255,.08)',
+          backgroundColor: 'rgba(15,15,17,.95)',
+          borderColor: 'rgba(255,255,255,.06)',
           borderWidth: 1,
-          titleFont: { family: "'DM Sans'", weight: '700', size: 13 },
-          bodyFont: { family: "'DM Sans'", size: 11 },
+          titleFont: { family: "'Inter'", weight: '600', size: 13 },
+          bodyFont: { family: "'Inter'", size: 11 },
           padding: 12,
           cornerRadius: 10,
           callbacks: {
@@ -301,14 +418,14 @@ function renderScatter() {
       },
       scales: {
         x: {
-          title: { display: true, text: 'Average Tone', color: 'rgba(232,236,248,.3)', font: { family: "'DM Sans'", size: 11, weight: '600' } },
-          grid: { color: 'rgba(255,255,255,.03)' },
-          ticks: { color: 'rgba(232,236,248,.3)', font: { family: "'JetBrains Mono'", size: 10 } }
+          title: { display: true, text: 'Average Tone', color: '#63636e', font: { family: "'Inter'", size: 11, weight: '500' } },
+          grid: { color: 'rgba(255,255,255,.04)' },
+          ticks: { color: '#63636e', font: { family: "'Inter'", size: 10 } }
         },
         y: {
-          title: { display: true, text: 'Polarity', color: 'rgba(232,236,248,.3)', font: { family: "'DM Sans'", size: 11, weight: '600' } },
-          grid: { color: 'rgba(255,255,255,.03)' },
-          ticks: { color: 'rgba(232,236,248,.3)', font: { family: "'JetBrains Mono'", size: 10 } }
+          title: { display: true, text: 'Polarity', color: '#63636e', font: { family: "'Inter'", size: 11, weight: '500' } },
+          grid: { color: 'rgba(255,255,255,.04)' },
+          ticks: { color: '#63636e', font: { family: "'Inter'", size: 10 } }
         }
       },
       onClick: (evt, els) => {
@@ -325,20 +442,20 @@ function renderScatter() {
 function renderTable(sources) {
   const tbody = document.getElementById('srcBody');
   if (!sources.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="padding:40px;text-align:center;color:var(--text3)">No sources found</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty">No sources found</div></td></tr>';
     return;
   }
   tbody.innerHTML = sources.map(s => {
     const posW = s.avg_positive ? Math.round(s.avg_positive / (s.avg_positive + s.avg_negative) * 100) : 50;
     const themes = (s.top_themes || []).slice(0, 3).map(t => {
       const col = CAT_COLORS[t.category] || CAT_COLORS.general;
-      return `<span class="theme-tag" style="background:${col}22;color:${col}">${humanTheme(t.theme)}</span>`;
+      return `<span class="theme-tag" style="background:${col}18;color:${col}">${humanTheme(t.theme)}</span>`;
     }).join('');
-    return `<tr onclick="openModal('${s.domain}')">
-      <td style="font-family:var(--mono);font-weight:600">${s.article_count.toLocaleString()}</td>
+    return `<tr onclick="openModal('${s.domain}')" style="cursor:pointer">
+      <td class="t-num" style="font-weight:600">${s.article_count.toLocaleString()}</td>
       <td class="src-name">${esc(s.source_name)}</td>
-      <td style="font-family:var(--mono);color:${s.avg_tone >= 0 ? 'var(--positive)' : 'var(--negative)'}">${s.avg_tone >= 0 ? '+' : ''}${s.avg_tone.toFixed(2)}</td>
-      <td style="font-family:var(--mono)">${s.avg_polarity.toFixed(2)}</td>
+      <td class="t-num" style="color:${s.avg_tone >= 0 ? 'var(--positive)' : 'var(--negative)'}">${s.avg_tone >= 0 ? '+' : ''}${s.avg_tone.toFixed(2)}</td>
+      <td class="t-num">${s.avg_polarity.toFixed(2)}</td>
       <td><div class="tone-bar"><div class="tone-pos" style="width:${posW}%"></div><div class="tone-neg" style="width:${100 - posW}%"></div></div></td>
       <td><div class="theme-tags">${themes}</div></td>
     </tr>`;
@@ -358,7 +475,7 @@ function sortTable(col) {
   document.querySelectorAll('thead th').forEach(th => {
     th.classList.toggle('sorted', th.dataset.col === col);
     const arrow = th.querySelector('.arrow');
-    if (arrow) arrow.textContent = th.dataset.col === col ? (tableSortAsc ? '▲' : '▼') : '';
+    if (arrow) arrow.textContent = th.dataset.col === col ? (tableSortAsc ? '\u25B2' : '\u25BC') : '';
   });
   const sorted = [...allSources].sort((a, b) => {
     let va = a[col], vb = b[col];
@@ -377,7 +494,7 @@ function filterTable(q) {
 // ── SORT CONTROLS ────────────────────────────────────────────────────
 function setSort(sort) {
   currentSort = sort;
-  document.querySelectorAll('.ctrl-btn').forEach(b => b.classList.toggle('on', b.dataset.sort === sort));
+  document.querySelectorAll('.sort-controls .btn').forEach(b => b.classList.toggle('active', b.dataset.sort === sort));
   fetch(`/api/sources/fingerprints?limit=100&min_articles=5&sort=${sort}`)
     .then(r => r.json())
     .then(data => {
@@ -395,18 +512,19 @@ let toneTimelineChart = null;
 let categoryChart = null;
 
 async function openModal(domain) {
-  document.getElementById('modalBg').classList.add('on');
-  document.getElementById('modal').classList.add('on');
+  document.getElementById('modalBg').classList.add('open');
+  document.getElementById('modalWrap').classList.add('open');
+  document.getElementById('modalWrap').style.pointerEvents = 'auto';
   document.getElementById('modalTitle').textContent = 'Loading...';
   document.getElementById('modalDomain').textContent = '';
-  document.getElementById('modalBody').innerHTML = '<div class="loading">Loading<span class="spinner"></span></div>';
+  document.getElementById('modalBody').innerHTML = '<div class="loading"><span class="spinner"></span> Loading</div>';
 
   try {
     const res = await fetch(`/api/sources/${encodeURIComponent(domain)}/detail`);
     const d = await res.json();
     renderModal(d);
   } catch (e) {
-    document.getElementById('modalBody').innerHTML = '<p style="color:var(--text3);text-align:center;padding:40px">Failed to load source details</p>';
+    document.getElementById('modalBody').innerHTML = '<div class="empty">Failed to load source details</div>';
   }
 }
 
@@ -418,10 +536,10 @@ function renderModal(d) {
 
   let html = `
     <div class="modal-stats">
-      <div class="m-stat"><div class="m-stat-val">${d.article_count.toLocaleString()}</div><div class="m-stat-lbl">Articles</div></div>
-      <div class="m-stat"><div class="m-stat-val" style="color:${toneColor}">${d.avg_tone >= 0 ? '+' : ''}${d.avg_tone.toFixed(2)}</div><div class="m-stat-lbl">Avg Tone</div></div>
-      <div class="m-stat"><div class="m-stat-val">${d.avg_polarity.toFixed(2)}</div><div class="m-stat-lbl">Polarity</div></div>
-      <div class="m-stat"><div class="m-stat-val">${d.countries.length}</div><div class="m-stat-lbl">Countries</div></div>
+      <div class="m-stat"><div class="m-stat-val t-num">${d.article_count.toLocaleString()}</div><div class="m-stat-lbl">Articles</div></div>
+      <div class="m-stat"><div class="m-stat-val t-num" style="color:${toneColor}">${d.avg_tone >= 0 ? '+' : ''}${d.avg_tone.toFixed(2)}</div><div class="m-stat-lbl">Avg Tone</div></div>
+      <div class="m-stat"><div class="m-stat-val t-num">${d.avg_polarity.toFixed(2)}</div><div class="m-stat-lbl">Polarity</div></div>
+      <div class="m-stat"><div class="m-stat-val t-num">${d.countries.length}</div><div class="m-stat-lbl">Countries</div></div>
     </div>
 
     <div class="modal-grid">
@@ -435,12 +553,12 @@ function renderModal(d) {
       </div>
     </div>
 
-    <div class="modal-chart-card" style="margin-bottom:24px">
+    <div class="modal-chart-card" style="margin-bottom:var(--sp-5)">
       <h4>Top Themes</h4>
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
         ${d.themes.slice(0, 15).map(t => {
           const col = CAT_COLORS[t.category] || CAT_COLORS.general;
-          return `<span class="theme-tag" style="background:${col}22;color:${col};padding:4px 10px;font-size:11px">${humanTheme(t.theme)} <span style="opacity:.5;margin-left:2px">${t.count}</span></span>`;
+          return `<span class="theme-tag" style="background:${col}18;color:${col};padding:4px 10px;font-size:0.6875rem">${humanTheme(t.theme)} <span style="opacity:.5;margin-left:2px">${t.count}</span></span>`;
         }).join('')}
       </div>
     </div>
@@ -450,7 +568,7 @@ function renderModal(d) {
       <div class="recent-list" style="margin-top:12px">
         ${d.recent_articles.map(a => {
           const tone = a.tone_score;
-          const col = tone != null ? (tone >= 0 ? 'var(--positive)' : 'var(--negative)') : 'var(--text3)';
+          const col = tone != null ? (tone >= 0 ? 'var(--positive)' : 'var(--negative)') : 'var(--text-3)';
           const ts = a.gdelt_timestamp ? new Date(a.gdelt_timestamp).toLocaleDateString('en-US', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
           return `<a href="${esc(a.url)}" target="_blank" class="recent-item" style="text-decoration:none;color:var(--text)">
             <div class="recent-title">${esc(a.title)}</div>
@@ -489,8 +607,8 @@ function renderToneTimeline(timeline) {
       }),
       datasets: [{
         data: timeline.map(t => t.avg_tone),
-        borderColor: '#2ee8a5',
-        backgroundColor: 'rgba(46,232,165,.1)',
+        borderColor: '#8b8bf5',
+        backgroundColor: 'rgba(139,139,245,.08)',
         fill: true,
         tension: 0.4,
         pointRadius: 2,
@@ -502,11 +620,11 @@ function renderToneTimeline(timeline) {
       responsive: true,
       maintainAspectRatio: false,
       plugins: { legend: { display: false }, tooltip: {
-        backgroundColor: 'rgba(13,17,39,.95)',
-        borderColor: 'rgba(255,255,255,.08)',
+        backgroundColor: 'rgba(15,15,17,.95)',
+        borderColor: 'rgba(255,255,255,.06)',
         borderWidth: 1,
-        titleFont: { family: "'DM Sans'", size: 11 },
-        bodyFont: { family: "'JetBrains Mono'", size: 11 },
+        titleFont: { family: "'Inter'", size: 11 },
+        bodyFont: { family: "'Inter'", size: 11 },
         padding: 10,
         cornerRadius: 8,
         callbacks: {
@@ -514,8 +632,8 @@ function renderToneTimeline(timeline) {
         }
       }},
       scales: {
-        x: { grid: { color: 'rgba(255,255,255,.03)' }, ticks: { color: 'rgba(232,236,248,.3)', font: { size: 9 }, maxTicksLimit: 8 } },
-        y: { grid: { color: 'rgba(255,255,255,.03)' }, ticks: { color: 'rgba(232,236,248,.3)', font: { family: "'JetBrains Mono'", size: 9 } } }
+        x: { grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: '#63636e', font: { family: "'Inter'", size: 9 }, maxTicksLimit: 8 } },
+        y: { grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: '#63636e', font: { family: "'Inter'", size: 9 } } }
       }
     }
   });
@@ -532,7 +650,7 @@ function renderCategoryChart(categories) {
       labels: categories.map(c => c.category.charAt(0).toUpperCase() + c.category.slice(1)),
       datasets: [{
         data: categories.map(c => c.pct),
-        backgroundColor: categories.map(c => (CAT_COLORS[c.category] || CAT_COLORS.general) + '88'),
+        backgroundColor: categories.map(c => (CAT_COLORS[c.category] || CAT_COLORS.general) + '66'),
         borderColor: categories.map(c => (CAT_COLORS[c.category] || CAT_COLORS.general)),
         borderWidth: 1.5
       }]
@@ -544,11 +662,11 @@ function renderCategoryChart(categories) {
       plugins: {
         legend: {
           position: 'right',
-          labels: { color: 'rgba(232,236,248,.55)', font: { family: "'DM Sans'", size: 10, weight: '600' }, padding: 8, boxWidth: 10, boxHeight: 10, borderRadius: 3 }
+          labels: { color: '#a1a1aa', font: { family: "'Inter'", size: 10, weight: '500' }, padding: 8, boxWidth: 10, boxHeight: 10, borderRadius: 3 }
         },
         tooltip: {
-          backgroundColor: 'rgba(13,17,39,.95)',
-          bodyFont: { family: "'DM Sans'", size: 11 },
+          backgroundColor: 'rgba(15,15,17,.95)',
+          bodyFont: { family: "'Inter'", size: 11 },
           padding: 10,
           cornerRadius: 8,
           callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}%` }
@@ -559,8 +677,9 @@ function renderCategoryChart(categories) {
 }
 
 function closeModal() {
-  document.getElementById('modalBg').classList.remove('on');
-  document.getElementById('modal').classList.remove('on');
+  document.getElementById('modalBg').classList.remove('open');
+  document.getElementById('modalWrap').classList.remove('open');
+  document.getElementById('modalWrap').style.pointerEvents = 'none';
   if (toneTimelineChart) { toneTimelineChart.destroy(); toneTimelineChart = null; }
   if (categoryChart) { categoryChart.destroy(); categoryChart = null; }
 }

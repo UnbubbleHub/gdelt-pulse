@@ -6,480 +6,239 @@
 <title>GDELT Pulse</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;450;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/pulse.css">
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
+/* ── Page transitions ─────────────────────────────── */
+.page { display: none; min-height: 100vh; }
+.page.active { display: block; animation: slideUp 0.45s var(--ease) both; }
 
-:root {
-  --bg: #050507;
-  --bg-raised: #0c0c10;
-  --surface: #111116;
-  --surface-2: #17171d;
-  --surface-3: #1d1d25;
-  --border: #222230;
-  --border-dim: #1a1a24;
-  --text: #ededf0;
-  --text-2: #b0b0be;
-  --text-3: #6e6e82;
-  --primary: #7c6aef;
-  --primary-light: #9d8ff5;
-  --primary-dim: rgba(124, 106, 239, 0.1);
-  --primary-glow: rgba(124, 106, 239, 0.06);
-  --teal: #2dd4a8;
-  --teal-dim: rgba(45, 212, 168, 0.1);
-  --amber: #e5a63e;
-  --amber-dim: rgba(229, 166, 62, 0.1);
-  --rose: #e5637a;
-  --rose-dim: rgba(229, 99, 122, 0.1);
-  --glass-bg: rgba(17, 17, 22, 0.4);
-  --glass-border: rgba(255, 255, 255, 0.06);
-  --glass-blur: 20px;
-  --ease: cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-body {
-  font-family: 'DM Sans', -apple-system, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  line-height: 1.55;
-  -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
-}
-
-::selection { background: var(--primary-dim); color: var(--primary-light); }
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border-dim); border-radius: 3px; }
-
-.glass {
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
-  border: 1px solid var(--glass-border);
-}
-
-/* ── Back button (inner pages) ─────────────────────── */
-
-.back-btn {
-  position: fixed;
-  top: 18px;
-  left: 22px;
-  z-index: 100;
-  display: none;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border-radius: 22px;
-  border: none;
-  font-family: inherit;
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--text-2);
-  cursor: pointer;
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px) saturate(1.6);
-  -webkit-backdrop-filter: blur(16px) saturate(1.6);
-  border: 1px solid var(--glass-border);
-  transition: all 0.25s var(--ease);
-}
-
-.back-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.12); }
-.back-btn svg { width: 14px; height: 14px; }
-.back-btn.visible { display: inline-flex; }
-
-/* ── Pages ─────────────────────────────────────────── */
-
-.page {
-  display: none;
-  min-height: 100vh;
-}
-
-.page.active {
-  display: block;
-  animation: pageIn 0.5s var(--ease);
-}
-
-@keyframes pageIn {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* ── LANDING ───────────────────────────────────────── */
-
+/* ── Landing ──────────────────────────────────────── */
 .landing {
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Ambient glow */
-.landing::before {
-  content: '';
-  position: fixed;
-  top: -40%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 140%;
-  height: 80%;
-  background: radial-gradient(ellipse 50% 60% at 50% 20%, rgba(124, 106, 239, 0.07) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.hero {
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 60px 24px 40px;
-  position: relative;
-  z-index: 1;
+  padding: var(--sp-5);
 }
 
-.hero h1 {
-  font-size: clamp(2.8rem, 7vw, 5rem);
-  font-weight: 700;
-  letter-spacing: -0.05em;
-  line-height: 1.05;
-  margin-bottom: 20px;
-  animation: heroText 0.8s var(--ease) both;
-}
-
-@keyframes heroText {
-  from { opacity: 0; transform: translateY(24px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.hero h1 .accent {
-  background: linear-gradient(135deg, var(--primary-light), #b8a5ff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.hero-sub {
-  font-size: clamp(1rem, 2.2vw, 1.2rem);
-  color: var(--text-3);
-  max-width: 500px;
-  margin-bottom: 40px;
-  font-weight: 400;
-  animation: heroText 0.8s var(--ease) 0.15s both;
-}
-
-.hero-buttons {
-  display: flex;
-  gap: 14px;
-  animation: heroText 0.8s var(--ease) 0.3s both;
-}
-
-.hero-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 16px 36px;
-  border: none;
-  border-radius: 16px;
-  font-size: 0.95rem;
-  font-family: inherit;
+.landing-title {
+  font-size: clamp(3.2rem, 8vw, 6rem);
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s var(--ease);
-  position: relative;
+  letter-spacing: -0.045em;
+  line-height: 0.95;
+  margin-bottom: var(--sp-4);
+  animation: slideUp 0.6s var(--ease) both;
+}
+
+.landing-title span {
+  color: var(--text-3);
+}
+
+.landing-sub {
+  font-size: clamp(0.9375rem, 1.5vw, 1.0625rem);
+  color: var(--text-3);
+  max-width: 400px;
+  margin-bottom: var(--sp-7);
+  font-weight: 400;
+  animation: slideUp 0.6s var(--ease) 0.08s both;
+}
+
+.landing-actions {
+  display: flex;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-9);
+  animation: slideUp 0.6s var(--ease) 0.16s both;
+}
+
+/* ── Feature grid ─────────────────────────────────── */
+.features {
+  width: 100%;
+  max-width: 680px;
+  animation: slideUp 0.6s var(--ease) 0.24s both;
+}
+
+.features-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: var(--sp-4);
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   overflow: hidden;
 }
 
-.hero-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
-
-.hero-btn-primary {
-  background: var(--primary);
-  color: white;
-  box-shadow: 0 4px 30px rgba(124, 106, 239, 0.25);
-}
-
-.hero-btn-primary:hover {
-  background: var(--primary-light);
-  box-shadow: 0 8px 40px rgba(124, 106, 239, 0.4);
-  transform: translateY(-2px);
-}
-
-.hero-btn-primary:active { transform: translateY(0); }
-
-.hero-btn-glass {
-  color: var(--text-2);
-  background: var(--glass-bg);
-  backdrop-filter: blur(20px) saturate(1.6);
-  -webkit-backdrop-filter: blur(20px) saturate(1.6);
-  border: 1px solid var(--glass-border);
-}
-
-.hero-btn-glass:hover {
-  color: var(--text);
-  border-color: rgba(255,255,255,0.12);
-  background: rgba(17, 17, 22, 0.6);
-  transform: translateY(-2px);
-}
-
-.hero-btn-glass:active { transform: translateY(0); }
-
-/* ── Stats ribbon ──────────────────────────────────── */
-
-.stats-ribbon {
-  padding: 0 24px 36px;
-  max-width: 640px;
-  margin: 0 auto;
-  width: 100%;
-  position: relative;
-  z-index: 1;
-  animation: heroText 0.8s var(--ease) 0.45s both;
-}
-
-.stats-row {
+.feature-link {
   display: flex;
-  gap: 10px;
-}
-
-.stat-card {
-  flex: 1;
-  border-radius: 16px;
-  padding: 20px 18px;
-  text-align: center;
-  transition: all 0.3s var(--ease);
-}
-
-.stat-card:hover {
-  border-color: rgba(255,255,255,0.1);
-  transform: translateY(-2px);
-}
-
-.stat-value {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 1.6rem;
-  font-weight: 600;
-  color: var(--text);
-  letter-spacing: -0.02em;
-  margin-bottom: 4px;
-}
-
-.stat-label {
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: var(--sp-5) var(--sp-3);
+  background: var(--bg);
   color: var(--text-3);
-  font-weight: 500;
+  font-size: 0.75rem;
+  font-weight: 450;
+  text-decoration: none;
+  transition: background var(--duration) var(--ease), color var(--duration);
+  cursor: pointer;
 }
 
-/* ── Top clusters preview ──────────────────────────── */
+.feature-link:hover {
+  background: var(--surface);
+  color: var(--text);
+}
 
+.feature-link svg { width: 20px; height: 20px; opacity: 0.5; transition: opacity var(--duration); }
+.feature-link:hover svg { opacity: 0.9; }
+
+/* ── Top stories (landing preview) ────────────────── */
 .preview-section {
-  padding: 0 24px 80px;
-  max-width: 820px;
-  margin: 0 auto;
   width: 100%;
-  position: relative;
-  z-index: 1;
-  animation: heroText 0.8s var(--ease) 0.55s both;
+  max-width: 680px;
+  margin-top: var(--sp-6);
+  animation: slideUp 0.6s var(--ease) 0.32s both;
 }
 
 .section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: var(--sp-4);
 }
 
-.section-title {
-  font-size: 0.72rem;
+.section-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
   color: var(--text-3);
-  font-weight: 600;
 }
 
-.section-action {
-  font-size: 0.76rem;
-  color: var(--primary-light);
+.section-link {
+  font-size: 0.75rem;
+  color: var(--text-3);
   cursor: pointer;
   background: none;
   border: none;
-  font-family: inherit;
-  font-weight: 500;
-  transition: color 0.15s;
+  font-family: var(--font);
+  font-weight: 450;
+  transition: color var(--duration);
 }
+.section-link:hover { color: var(--text); }
 
-.section-action:hover { color: white; }
-
-.preview-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 10px;
-}
-
-.preview-card {
-  border-radius: 16px;
-  padding: 20px;
-  cursor: pointer;
-  transition: all 0.3s var(--ease);
-  position: relative;
+.preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   overflow: hidden;
 }
 
-.preview-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--primary), var(--primary-light));
-  opacity: 0;
-  transition: opacity 0.3s;
+.preview-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-5);
+  background: var(--bg);
+  cursor: pointer;
+  transition: background var(--duration) var(--ease);
 }
 
-.preview-card:hover {
-  border-color: rgba(124, 106, 239, 0.3);
-  transform: translateY(-3px);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-}
-
-.preview-card:hover::before { opacity: 1; }
+.preview-item:hover { background: var(--surface); }
 
 .preview-title {
-  font-size: 0.88rem;
-  font-weight: 500;
+  font-size: 0.875rem;
+  font-weight: 450;
   line-height: 1.4;
-  margin-bottom: 10px;
-  letter-spacing: -0.01em;
+  color: var(--text-2);
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  transition: color var(--duration);
 }
 
-.preview-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+.preview-item:hover .preview-title { color: var(--text); }
 
-.preview-badge {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.68rem;
-  font-weight: 500;
-  color: var(--primary-light);
-  background: var(--primary-dim);
-  padding: 3px 10px;
-  border-radius: 20px;
-}
-
-.preview-date {
-  font-size: 0.7rem;
+.preview-meta {
+  font-size: 0.6875rem;
   color: var(--text-3);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
-/* ── CLUSTERS PAGE ─────────────────────────────────── */
-
+/* ── Clusters page ────────────────────────────────── */
 .page-container {
-  max-width: 900px;
+  max-width: 860px;
   margin: 0 auto;
-  padding: 72px 28px 60px;
+  padding: 80px var(--sp-5) var(--sp-8);
 }
 
 .page-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: var(--sp-5);
   flex-wrap: wrap;
-  gap: 12px;
+  gap: var(--sp-3);
 }
 
-.page-header-left h1 {
-  font-size: 1.4rem;
+.page-header h1 {
+  font-size: 1.25rem;
   font-weight: 600;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
 }
 
-.page-header-left p {
-  font-size: 0.8rem;
+.page-header p {
+  font-size: 0.8125rem;
   color: var(--text-3);
   margin-top: 2px;
 }
 
 .page-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--sp-2);
   align-items: center;
 }
 
-/* Filter toggle button */
-.filter-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border-radius: 10px;
-  border: 1px solid var(--border-dim);
-  background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  color: var(--text-3);
-  font-size: 0.8rem;
-  font-family: inherit;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.25s var(--ease);
-}
-
-.filter-toggle svg { width: 14px; height: 14px; }
-.filter-toggle:hover { color: var(--text-2); border-color: var(--border); }
-.filter-toggle.active { color: var(--primary-light); border-color: var(--primary); background: var(--primary-dim); }
-
-/* Sort dropdown */
-.sort-select {
-  padding: 8px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--border-dim);
-  background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  color: var(--text-2);
-  font-size: 0.8rem;
-  font-family: inherit;
-  font-weight: 500;
-  outline: none;
-  cursor: pointer;
-  transition: border-color 0.15s;
-}
-
-.sort-select:focus { border-color: var(--primary); }
-
-/* Collapsible filter panel */
+/* Filter panel */
 .filter-panel {
   max-height: 0;
   overflow: hidden;
   opacity: 0;
-  transition: max-height 0.4s var(--ease), opacity 0.3s ease, margin 0.4s var(--ease);
-  border-radius: 16px;
+  transition: max-height 0.35s var(--ease), opacity 0.25s, margin 0.35s var(--ease);
+  border-radius: var(--radius-lg);
   margin-bottom: 0;
 }
 
 .filter-panel.open {
-  max-height: 260px;
+  max-height: 280px;
   opacity: 1;
-  padding: 18px 20px;
-  margin-bottom: 16px;
-  border: 1px solid var(--glass-border);
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
+  padding: var(--sp-4) var(--sp-5);
+  margin-bottom: var(--sp-4);
+  border: 1px solid var(--border);
+  background: var(--surface);
 }
 
 .filter-grid {
   display: flex;
-  gap: 8px;
+  gap: var(--sp-2);
   flex-wrap: wrap;
-  margin-bottom: 12px;
+  margin-bottom: var(--sp-3);
 }
 
 .filter-item {
@@ -490,95 +249,134 @@ body {
 }
 
 .filter-item label {
-  font-size: 0.62rem;
+  font-size: 0.625rem;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.06em;
   color: var(--text-3);
-  font-weight: 600;
+  font-weight: 500;
 }
-
-.filter-item input,
-.filter-item select {
-  padding: 8px 10px;
-  background: rgba(5, 5, 7, 0.6);
-  border: 1px solid var(--border-dim);
-  border-radius: 10px;
-  color: var(--text);
-  font-size: 0.8rem;
-  font-family: inherit;
-  outline: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-.filter-item input:focus,
-.filter-item select:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-glow);
-}
-
-.filter-item input::placeholder { color: var(--text-3); }
 
 .filter-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--sp-2);
 }
-
-.btn {
-  padding: 9px 18px;
-  border: none;
-  border-radius: 10px;
-  font-size: 0.82rem;
-  font-family: inherit;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.25s var(--ease);
-}
-
-.btn-primary { background: var(--primary); color: white; }
-.btn-primary:hover { background: var(--primary-light); box-shadow: 0 4px 20px rgba(124,106,239,0.3); }
-.btn-primary:disabled { opacity: 0.3; cursor: not-allowed; }
-.btn-ghost { background: none; border: 1px solid var(--border-dim); color: var(--text-3); }
-.btn-ghost:hover { color: var(--text-2); border-color: var(--border); }
-.btn-sm { padding: 7px 14px; font-size: 0.78rem; }
 
 /* Active filter pills */
-.active-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.active-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--sp-4); }
 .active-filters:empty { display: none; }
 
 .filter-pill {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 5px 12px;
-  border-radius: 20px;
-  background: var(--primary-dim);
-  color: var(--primary-light);
-  font-size: 0.72rem;
-  font-weight: 500;
-  border: 1px solid rgba(124, 106, 239, 0.15);
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 0.6875rem;
+  font-weight: 450;
+  border: 1px solid var(--border);
 }
 
 .filter-pill button {
-  background: none; border: none; color: var(--primary-light);
+  background: none; border: none; color: var(--text-3);
   cursor: pointer; font-size: 0.85rem; line-height: 1; padding: 0;
-  opacity: 0.6; transition: opacity 0.15s;
+  transition: color var(--duration);
 }
-.filter-pill button:hover { opacity: 1; }
+.filter-pill button:hover { color: var(--text); }
 
-/* ── SEARCH PAGE ───────────────────────────────────── */
+/* ── Cluster cards ────────────────────────────────── */
+.cl-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--sp-4) var(--sp-5);
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: all var(--duration) var(--ease);
+}
 
+.cl-card:hover {
+  border-color: var(--border-active);
+  background: var(--surface-2);
+}
+
+.cl-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  margin-bottom: 4px;
+}
+
+.cl-title {
+  font-size: 0.875rem;
+  font-weight: 450;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+}
+
+.cl-badge {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cl-meta { font-size: 0.75rem; color: var(--text-3); }
+.cl-sim { font-size: 0.6875rem; color: var(--text-3); margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+
+/* ── Article cards ────────────────────────────────── */
+.card-article {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--sp-4) var(--sp-5);
+  margin-bottom: 6px;
+  transition: border-color var(--duration) var(--ease);
+}
+
+.card-article:hover { border-color: var(--border-hover); }
+
+.card-rank {
+  font-size: 0.6875rem;
+  color: var(--text-3);
+  margin-bottom: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.card-rank .hi { color: var(--text-2); font-weight: 500; }
+
+.card-title {
+  font-size: 0.875rem;
+  font-weight: 450;
+  margin-bottom: 4px;
+  line-height: 1.45;
+}
+
+.card-title a { color: var(--text); text-decoration: none; transition: color var(--duration); }
+.card-title a:hover { color: var(--text-2); text-decoration: underline; text-underline-offset: 2px; }
+
+.card-meta {
+  display: flex;
+  gap: var(--sp-3);
+  font-size: 0.75rem;
+  color: var(--text-3);
+  margin-bottom: var(--sp-2);
+}
+
+.tags { display: flex; gap: 4px; flex-wrap: wrap; }
+
+/* ── Search ───────────────────────────────────────── */
 .search-container {
-  border-radius: 20px;
-  padding: 24px;
-  margin-bottom: 24px;
-  max-width: 680px;
-  margin-left: auto;
-  margin-right: auto;
+  max-width: 600px;
+  margin: 0 auto var(--sp-5);
 }
 
 .search-row {
   display: flex;
-  gap: 10px;
+  gap: var(--sp-2);
 }
 
 .search-input-wrap {
@@ -588,376 +386,200 @@ body {
 
 .search-input-wrap svg {
   position: absolute;
-  left: 18px;
+  left: 16px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-3);
   pointer-events: none;
 }
 
-.search-input {
-  width: 100%;
-  padding: 16px 22px 16px 50px;
-  background: rgba(5, 5, 7, 0.5);
-  border: 1px solid var(--border-dim);
-  border-radius: 14px;
-  color: var(--text);
-  font-size: 1.05rem;
-  font-family: inherit;
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.search-input:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 4px var(--primary-glow);
-}
-
-.search-input::placeholder { color: var(--text-3); }
-
 .search-controls {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  margin-top: 16px;
+  gap: var(--sp-4);
+  margin-top: var(--sp-3);
   flex-wrap: wrap;
 }
 
 .weight-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--sp-2);
   font-size: 0.75rem;
   color: var(--text-3);
-  font-weight: 500;
 }
 
-.weight-row input[type="range"] { width: 100px; accent-color: var(--primary); }
-
 .weight-val {
-  font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
   color: var(--text-2);
   font-size: 0.75rem;
   min-width: 26px;
   text-align: center;
 }
 
-/* Search filter panel */
 .search-filter-panel {
   max-height: 0;
   overflow: hidden;
   opacity: 0;
-  transition: max-height 0.4s var(--ease), opacity 0.3s ease, padding 0.4s var(--ease);
-  border-radius: 16px;
-  max-width: 680px;
-  margin: 4px auto 0;
+  transition: max-height 0.35s var(--ease), opacity 0.25s, padding 0.35s var(--ease);
+  border-radius: var(--radius-lg);
+  max-width: 600px;
+  margin: var(--sp-1) auto 0;
 }
 
 .search-filter-panel.open {
   max-height: 240px;
   opacity: 1;
-  padding: 16px 18px;
-  margin-bottom: 20px;
+  padding: var(--sp-4) var(--sp-5);
+  margin-bottom: var(--sp-5);
+  border: 1px solid var(--border);
+  background: var(--surface);
 }
 
-/* ── Results ───────────────────────────────────────── */
-
-.results-wrap { max-width: 900px; margin: 0 auto; }
+/* Results */
+.results-wrap { max-width: 860px; margin: 0 auto; }
 
 .results-meta {
-  display: flex; gap: 16px; margin-bottom: 16px;
-  font-size: 0.78rem; color: var(--text-3); justify-content: center;
+  display: flex; gap: var(--sp-4); margin-bottom: var(--sp-4);
+  font-size: 0.75rem; color: var(--text-3); justify-content: center;
 }
-
-.results-meta strong {
-  font-family: 'JetBrains Mono', monospace;
-  color: var(--text-2); font-weight: 500;
-}
+.results-meta strong { color: var(--text-2); font-weight: 500; font-variant-numeric: tabular-nums; }
 
 /* Segmented control */
 .segmented {
-  display: inline-flex; gap: 2px; padding: 3px;
-  border-radius: 22px; margin-bottom: 24px;
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  margin-bottom: var(--sp-5);
 }
 
 .seg-btn {
-  padding: 9px 22px; border: none; background: none;
-  border-radius: 18px; font-size: 0.82rem; font-family: inherit;
-  font-weight: 500; color: var(--text-3); cursor: pointer;
-  transition: all 0.25s var(--ease);
+  padding: 7px 18px;
+  border: none;
+  background: none;
+  border-radius: var(--radius-full);
+  font-size: 0.8125rem;
+  font-family: var(--font);
+  font-weight: 450;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: all var(--duration) var(--ease);
 }
 
 .seg-btn:hover { color: var(--text-2); }
-.seg-btn.active { background: var(--surface-3); color: var(--text); }
+.seg-btn.active { background: var(--surface-2); color: var(--text); }
 
 .seg-count {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.7rem; margin-left: 5px; color: var(--text-3);
+  font-size: 0.6875rem;
+  margin-left: 4px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
 }
-.seg-btn.active .seg-count { color: var(--primary-light); }
+.seg-btn.active .seg-count { color: var(--text-2); }
 
-/* ── Article cards ─────────────────────────────────── */
+/* ── Card animations ──────────────────────────────── */
+.card-anim { animation: slideUp 0.3s var(--ease) both; }
 
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border-dim);
-  border-radius: 14px;
-  padding: 18px 20px;
-  margin-bottom: 8px;
-  transition: all 0.2s var(--ease);
-}
-
-.card:hover { background: var(--surface-2); border-color: var(--border); }
-
-.card-rank {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.72rem; color: var(--text-3); margin-bottom: 6px;
-  display: flex; gap: 10px;
-}
-.card-rank .hi { color: var(--primary-light); font-weight: 500; }
-
-.card-title {
-  font-size: 0.95rem; font-weight: 500; margin-bottom: 6px;
-  line-height: 1.45; letter-spacing: -0.01em;
-}
-
-.card-title a { color: var(--text); text-decoration: none; transition: color 0.15s; }
-.card-title a:hover { color: var(--primary-light); }
-
-.card-meta {
-  display: flex; gap: 12px; font-size: 0.76rem;
-  color: var(--text-3); margin-bottom: 8px;
-}
-
-.tags { display: flex; gap: 5px; flex-wrap: wrap; }
-
-.tag {
-  padding: 3px 8px; font-size: 0.68rem;
-  font-weight: 500; border-radius: 6px;
-}
-
-.tag-loc { color: var(--teal); background: var(--teal-dim); }
-.tag-per { color: var(--amber); background: var(--amber-dim); }
-.tag-org { color: var(--rose); background: var(--rose-dim); }
-
-/* ── Cluster cards ─────────────────────────────────── */
-
-.cl-card {
-  background: var(--surface);
-  border: 1px solid var(--border-dim);
-  border-radius: 14px;
-  padding: 18px 20px;
-  margin-bottom: 8px;
-  cursor: pointer;
-  transition: all 0.25s var(--ease);
-}
-
-.cl-card:hover {
-  border-color: rgba(124, 106, 239, 0.4);
-  background: var(--surface-2);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-  transform: translateY(-1px);
-}
-
-.cl-top {
-  display: flex; justify-content: space-between;
-  align-items: flex-start; gap: 12px; margin-bottom: 5px;
-}
-
-.cl-title {
-  font-size: 0.92rem; font-weight: 500;
-  letter-spacing: -0.01em; line-height: 1.4;
-}
-
-.cl-badge {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.7rem; font-weight: 500;
-  color: var(--primary-light); background: var(--primary-dim);
-  padding: 4px 10px; border-radius: 20px;
-  white-space: nowrap; flex-shrink: 0;
-}
-
-.cl-meta { font-size: 0.74rem; color: var(--text-3); }
-
-.cl-sim {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.7rem; color: var(--text-3); margin-bottom: 5px;
-}
-
-/* ── Card stagger animation ────────────────────────── */
-
-.card-anim { animation: cardIn 0.35s var(--ease) both; }
-
-@keyframes cardIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* ── Modal ─────────────────────────────────────────── */
-
-.overlay {
-  display: none; position: fixed; inset: 0;
-  background: rgba(5, 5, 7, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  z-index: 200; align-items: center; justify-content: center; padding: 24px;
-}
-
-.overlay.open { display: flex; animation: fadeIn 0.2s ease; }
-
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-.modal {
-  background: var(--bg-raised);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  width: 100%; max-width: 700px; max-height: 80vh;
-  overflow-y: auto; padding: 32px;
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
-  animation: modalIn 0.25s var(--ease);
-}
-
-@keyframes modalIn {
-  from { opacity: 0; transform: translateY(12px) scale(0.97); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.modal::-webkit-scrollbar { width: 5px; }
-.modal::-webkit-scrollbar-thumb { background: var(--border-dim); border-radius: 3px; }
-
-.modal-x {
-  float: right; width: 32px; height: 32px; border-radius: 10px;
-  border: 1px solid var(--border-dim); background: var(--surface);
-  color: var(--text-3); font-size: 1rem; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: all 0.15s;
-}
-
-.modal-x:hover { color: var(--text); border-color: var(--border); }
-
-.modal h2 {
-  font-size: 1.1rem; font-weight: 600; margin-bottom: 4px;
-  padding-right: 44px; letter-spacing: -0.02em;
-}
-
-.modal .cl-meta { margin-bottom: 18px; }
-
-/* ── States ────────────────────────────────────────── */
-
-.loading, .empty {
-  text-align: center; padding: 48px 20px;
-  color: var(--text-3); font-size: 0.84rem;
-}
-
-.spinner {
-  display: inline-block; width: 16px; height: 16px;
-  border: 2px solid var(--border); border-top-color: var(--primary);
-  border-radius: 50%; animation: spin 0.5s linear infinite;
-  margin-left: 8px; vertical-align: middle;
-}
-
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* ── Responsive ────────────────────────────────────── */
-
+/* ── Responsive ───────────────────────────────────── */
 @media (max-width: 768px) {
-  .hero h1 { font-size: clamp(2.2rem, 8vw, 3.5rem); }
-  .hero-buttons { flex-direction: column; gap: 10px; }
-  .hero-btn { justify-content: center; }
-  .stats-row { flex-direction: column; }
-  .preview-grid { grid-template-columns: 1fr; }
-  .page-container { padding: 64px 16px 40px; }
+  .landing-title { font-size: clamp(2.5rem, 10vw, 3.5rem); }
+  .landing-actions { flex-direction: column; }
+  .features-grid { grid-template-columns: repeat(2, 1fr); }
+  .page-container { padding: 64px var(--sp-4) var(--sp-6); }
   .page-header { flex-direction: column; align-items: flex-start; }
-  .filter-grid .filter-item { flex: 1 1 calc(50% - 4px); }
   .cl-top { flex-direction: column; gap: 4px; }
   .search-row { flex-direction: column; }
-  .search-controls { gap: 10px; }
+}
+
+@media (max-width: 480px) {
+  .features-grid { grid-template-columns: repeat(2, 1fr); }
 }
 </style>
 </head>
 <body>
 
-<!-- Back button for inner pages -->
-<button class="back-btn" id="backBtn" onclick="navTo('landing')">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-  GDELT Pulse
-</button>
-
 <!-- LANDING -->
 <div class="page active" id="pg-landing">
   <div class="landing">
-    <section class="hero">
-      <h1>Global News<br><span class="accent">Intelligence</span></h1>
-      <p class="hero-sub">Real-time clustering and semantic search across world events, powered by GDELT.</p>
-      <div class="hero-buttons">
-        <button class="hero-btn hero-btn-primary" onclick="navTo('clusters')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><circle cx="5" cy="19" r="2"/><line x1="14.5" y1="9.5" x2="17.5" y2="6.5"/><line x1="9.5" y1="9.5" x2="6.5" y2="6.5"/><line x1="14.5" y1="14.5" x2="17.5" y2="17.5"/><line x1="9.5" y1="14.5" x2="6.5" y2="17.5"/></svg>
-          Explore Clusters
-        </button>
-        <button class="hero-btn hero-btn-glass" onclick="navTo('search')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          Search Events
-        </button>
-        <button class="hero-btn hero-btn-glass" onclick="location.href='/polarization'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="10"/></svg>
-          Polarization
-        </button>
-        <button class="hero-btn hero-btn-glass" onclick="location.href='/gravity'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-          Gravity Map
-        </button>
-        <button class="hero-btn hero-btn-glass" onclick="location.href='/asymmetry'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-          Asymmetry
-        </button>
-        <button class="hero-btn hero-btn-glass" onclick="location.href='/sources'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M12 6v6l4 2"/></svg>
-          Source DNA
-        </button>
-        <button class="hero-btn hero-btn-glass" onclick="location.href='/propagation'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          Propagation
-        </button>
-        <button class="hero-btn hero-btn-glass" onclick="location.href='/velocity'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-          Topic Velocity
-        </button>
-      </div>
-    </section>
+    <h1 class="landing-title">GDELT <span>Pulse</span></h1>
+    <p class="landing-sub">Real-time clustering and semantic search across world events.</p>
+    <div class="landing-actions">
+      <button class="btn btn-primary btn-lg" onclick="navTo('clusters')">Explore Clusters</button>
+      <button class="btn btn-lg" onclick="navTo('search')">Search Events</button>
+    </div>
 
-    <section class="stats-ribbon">
-      <div class="stats-row">
-        <div class="stat-card glass"><div class="stat-value" data-counter="total_articles">--</div><div class="stat-label">Articles</div></div>
-        <div class="stat-card glass"><div class="stat-value" data-counter="embedded_articles">--</div><div class="stat-label">Embedded</div></div>
-        <div class="stat-card glass"><div class="stat-value" data-counter="total_clusters">--</div><div class="stat-label">Clusters</div></div>
+    <div class="features">
+      <div class="features-grid">
+        <a class="feature-link" href="/globe">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          Globe
+        </a>
+        <a class="feature-link" href="/polarization">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="10"/></svg>
+          Polarization
+        </a>
+        <a class="feature-link" href="/gravity">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><circle cx="5" cy="19" r="2"/><line x1="14.5" y1="9.5" x2="17.5" y2="6.5"/><line x1="9.5" y1="9.5" x2="6.5" y2="6.5"/><line x1="14.5" y1="14.5" x2="17.5" y2="17.5"/><line x1="9.5" y1="14.5" x2="6.5" y2="17.5"/></svg>
+          Gravity
+        </a>
+        <a class="feature-link" href="/asymmetry">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          Asymmetry
+        </a>
+        <a class="feature-link" href="/sources">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7V4a2 2 0 0 1 2-2h8.5L20 7.5V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3"/><polyline points="14 2 14 8 20 8"/><line x1="2" y1="15" x2="12" y2="15"/><polyline points="9 12 12 15 9 18"/></svg>
+          Sources
+        </a>
+        <a class="feature-link" href="/propagation">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Propagation
+        </a>
+        <a class="feature-link" href="/velocity">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+          Velocity
+        </a>
+        <a class="feature-link" onclick="navTo('clusters')" style="cursor:pointer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Search
+        </a>
       </div>
-    </section>
+    </div>
 
     <section class="preview-section">
       <div class="section-header">
-        <span class="section-title">Top Clusters</span>
-        <button class="section-action" onclick="navTo('clusters')">View all &rarr;</button>
+        <span class="section-label">Trending stories</span>
+        <button class="section-link" onclick="navTo('clusters')">View all &rarr;</button>
       </div>
-      <div class="preview-grid" id="previewClusters"><div class="loading">Loading<span class="spinner"></span></div></div>
+      <div id="previewClusters" class="preview-list">
+        <div class="loading">Loading<span class="spinner"></span></div>
+      </div>
     </section>
   </div>
 </div>
 
 <!-- CLUSTERS -->
 <div class="page" id="pg-clusters">
+  <div class="topbar">
+    <a class="topbar-back" onclick="navTo('landing')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      GDELT Pulse
+    </a>
+  </div>
   <div class="page-container">
     <div class="page-header">
-      <div class="page-header-left">
+      <div>
         <h1>Event Clusters</h1>
         <p id="clusterCount">Groups of related articles about the same event</p>
       </div>
       <div class="page-actions">
-        <button class="filter-toggle" id="cfToggle">
+        <button class="btn btn-sm" id="cfToggle">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
           Filters
         </button>
-        <select class="sort-select" id="cfSort">
+        <select class="select" id="cfSort">
           <option value="articles">Most articles</option>
           <option value="recent">Most recent</option>
           <option value="oldest">Oldest first</option>
@@ -967,18 +589,18 @@ body {
 
     <div class="filter-panel" id="cfPanel">
       <div class="filter-grid">
-        <div class="filter-item"><label>Location</label><input type="text" id="cfLoc" placeholder="e.g. Turkey"></div>
-        <div class="filter-item"><label>Person</label><input type="text" id="cfPer" placeholder="e.g. Biden"></div>
-        <div class="filter-item"><label>Organization</label><input type="text" id="cfOrg" placeholder="e.g. NATO"></div>
-        <div class="filter-item"><label>Theme</label><input type="text" id="cfThm" placeholder="e.g. ARMEDCONFLICT"></div>
-        <div class="filter-item"><label>Domain</label><input type="text" id="cfDom" placeholder="e.g. bbc.co.uk"></div>
-        <div class="filter-item"><label>Source</label><input type="text" id="cfSrc" placeholder="e.g. reuters"></div>
-        <div class="filter-item"><label>Date from</label><input type="date" id="cfDF"></div>
-        <div class="filter-item"><label>Date to</label><input type="date" id="cfDT"></div>
+        <div class="filter-item"><label>Location</label><input class="input" type="text" id="cfLoc" placeholder="e.g. Turkey"></div>
+        <div class="filter-item"><label>Person</label><input class="input" type="text" id="cfPer" placeholder="e.g. Biden"></div>
+        <div class="filter-item"><label>Organization</label><input class="input" type="text" id="cfOrg" placeholder="e.g. NATO"></div>
+        <div class="filter-item"><label>Theme</label><input class="input" type="text" id="cfThm" placeholder="e.g. ARMEDCONFLICT"></div>
+        <div class="filter-item"><label>Domain</label><input class="input" type="text" id="cfDom" placeholder="e.g. bbc.co.uk"></div>
+        <div class="filter-item"><label>Source</label><input class="input" type="text" id="cfSrc" placeholder="e.g. reuters"></div>
+        <div class="filter-item"><label>Date from</label><input class="input" type="date" id="cfDF"></div>
+        <div class="filter-item"><label>Date to</label><input class="input" type="date" id="cfDT"></div>
       </div>
       <div class="filter-actions">
-        <button class="btn btn-primary btn-sm" id="cfApply">Apply filters</button>
-        <button class="btn btn-ghost btn-sm" id="cfClear">Clear</button>
+        <button class="btn btn-primary btn-sm" id="cfApply">Apply</button>
+        <button class="btn btn-sm" id="cfClear">Clear</button>
       </div>
     </div>
 
@@ -989,19 +611,25 @@ body {
 
 <!-- SEARCH -->
 <div class="page" id="pg-search">
+  <div class="topbar">
+    <a class="topbar-back" onclick="navTo('landing')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      GDELT Pulse
+    </a>
+  </div>
   <div class="page-container">
-    <div style="text-align:center; margin-bottom: 12px">
-      <h1 class="page-header-left" style="font-size:1.4rem;font-weight:600;letter-spacing:-0.03em">Search</h1>
-      <p style="font-size:0.82rem;color:var(--text-3);margin-top:4px">Hybrid semantic + keyword search across events</p>
+    <div style="text-align:center; margin-bottom: var(--sp-4)">
+      <h1 style="font-size:1.25rem;font-weight:600;letter-spacing:-0.02em">Search</h1>
+      <p style="font-size:0.8125rem;color:var(--text-3);margin-top:2px">Hybrid semantic + keyword search across events</p>
     </div>
 
-    <div class="search-container glass">
+    <div class="search-container">
       <div class="search-row">
         <div class="search-input-wrap">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input class="search-input" type="text" id="searchInput" placeholder="Search articles and events..." autocomplete="off">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="input input-lg" type="text" id="searchInput" placeholder="Search articles and events..." autocomplete="off" style="padding-left:44px">
         </div>
-        <button class="btn btn-primary" style="padding:16px 24px;font-size:0.9rem;border-radius:14px" id="searchBtn">Search</button>
+        <button class="btn btn-primary" style="padding:14px 24px;border-radius:var(--radius-lg)" id="searchBtn">Search</button>
       </div>
 
       <div class="search-controls">
@@ -1011,23 +639,23 @@ body {
           <span class="weight-val" id="wVal">0.5</span>
           <span>Keyword</span>
         </div>
-        <button class="filter-toggle" id="searchFilterToggle">
+        <button class="btn btn-sm" id="searchFilterToggle">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
           Filters
         </button>
       </div>
     </div>
 
-    <div class="search-filter-panel glass" id="searchFilterPanel">
+    <div class="search-filter-panel" id="searchFilterPanel">
       <div class="filter-grid" style="margin-bottom:0">
-        <div class="filter-item"><label>Location</label><input type="text" id="sfLoc" placeholder="e.g. Turkey"></div>
-        <div class="filter-item"><label>Person</label><input type="text" id="sfPer" placeholder="e.g. Biden"></div>
-        <div class="filter-item"><label>Organization</label><input type="text" id="sfOrg" placeholder="e.g. NATO"></div>
-        <div class="filter-item"><label>Theme</label><input type="text" id="sfThm" placeholder="e.g. ECON"></div>
-        <div class="filter-item"><label>Domain</label><input type="text" id="sfDom" placeholder="e.g. bbc.co.uk"></div>
-        <div class="filter-item"><label>Source</label><input type="text" id="sfSrc" placeholder="e.g. reuters"></div>
-        <div class="filter-item"><label>Date from</label><input type="date" id="sfDF"></div>
-        <div class="filter-item"><label>Date to</label><input type="date" id="sfDT"></div>
+        <div class="filter-item"><label>Location</label><input class="input" type="text" id="sfLoc" placeholder="e.g. Turkey"></div>
+        <div class="filter-item"><label>Person</label><input class="input" type="text" id="sfPer" placeholder="e.g. Biden"></div>
+        <div class="filter-item"><label>Organization</label><input class="input" type="text" id="sfOrg" placeholder="e.g. NATO"></div>
+        <div class="filter-item"><label>Theme</label><input class="input" type="text" id="sfThm" placeholder="e.g. ECON"></div>
+        <div class="filter-item"><label>Domain</label><input class="input" type="text" id="sfDom" placeholder="e.g. bbc.co.uk"></div>
+        <div class="filter-item"><label>Source</label><input class="input" type="text" id="sfSrc" placeholder="e.g. reuters"></div>
+        <div class="filter-item"><label>Date from</label><input class="input" type="date" id="sfDF"></div>
+        <div class="filter-item"><label>Date to</label><input class="input" type="date" id="sfDT"></div>
       </div>
     </div>
 
@@ -1035,7 +663,7 @@ body {
       <div class="results-wrap">
         <div class="results-meta" id="searchMeta"></div>
         <div style="text-align:center">
-          <div class="segmented glass">
+          <div class="segmented">
             <button class="seg-btn active" data-stab="s-arts">Articles<span class="seg-count" id="sArtCnt"></span></button>
             <button class="seg-btn" data-stab="s-cls">Clusters<span class="seg-count" id="sClCnt"></span></button>
           </div>
@@ -1050,9 +678,9 @@ body {
 <!-- Modal -->
 <div class="overlay" id="overlay">
   <div class="modal">
-    <button class="modal-x" id="modalX">&times;</button>
-    <h2 id="mTitle"></h2>
-    <div class="cl-meta" id="mMeta"></div>
+    <button class="modal-close" id="modalX">&times;</button>
+    <h2 id="mTitle" style="font-size:1.1rem;font-weight:600;margin-bottom:4px;padding-right:44px;letter-spacing:-0.02em"></h2>
+    <div class="cl-meta" id="mMeta" style="margin-bottom:var(--sp-4);font-size:0.75rem;color:var(--text-3)"></div>
     <div id="mBody"></div>
   </div>
 </div>
@@ -1064,7 +692,6 @@ const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s), API='/
 function navTo(page) {
   $$('.page').forEach(p => p.classList.remove('active'));
   $(`#pg-${page}`).classList.add('active');
-  $('#backBtn').classList.toggle('visible', page !== 'landing');
   if (page === 'landing') loadLanding();
   if (page === 'clusters') loadClustersPage();
   if (page === 'search') setTimeout(() => $('#searchInput').focus(), 100);
@@ -1074,36 +701,19 @@ function navTo(page) {
 const initPage = location.hash.replace('#', '') || 'landing';
 if (initPage !== 'landing') navTo(initPage);
 
-// ── Animated counter ────────────────────────────────────
-function animateValue(el, target, duration = 700) {
-  if (!target && target !== 0) { el.textContent = '--'; return; }
-  const start = performance.now();
-  const update = (now) => {
-    const progress = Math.min((now - start) / duration, 1);
-    const eased = 1 - Math.pow(1 - progress, 3);
-    el.textContent = Math.floor(eased * target).toLocaleString();
-    if (progress < 1) requestAnimationFrame(update);
-  };
-  requestAnimationFrame(update);
-}
-
 // ── Landing page ────────────────────────────────────────
 let _landingLoaded = false;
 async function loadLanding() {
   if (_landingLoaded) return;
   try {
-    const [stats, clusters] = await Promise.all([
-      fetch(`${API}/stats`).then(r => r.json()),
-      fetch(`${API}/clusters?limit=6&sort=articles`).then(r => r.json()),
-    ]);
+    const clusters = await fetch(`${API}/clusters?limit=6&sort=articles`).then(r => r.json());
     _landingLoaded = true;
 
-    $$('[data-counter]').forEach(el => animateValue(el, stats[el.dataset.counter]));
-
-    $('#previewClusters').innerHTML = clusters.length
-      ? clusters.map((c, i) => mkPreviewCard(c, i)).join('')
-      : '<div class="empty">No clusters yet &mdash; the pipeline is collecting data.</div>';
-    $$('#previewClusters .preview-card').forEach(el =>
+    const el = $('#previewClusters');
+    el.innerHTML = clusters.length
+      ? clusters.map((c, i) => mkPreviewItem(c, i)).join('')
+      : '<div class="empty">No clusters yet</div>';
+    el.querySelectorAll('.preview-item').forEach(el =>
       el.addEventListener('click', () => openCluster(el.dataset.id))
     );
   } catch (e) {
@@ -1112,14 +722,10 @@ async function loadLanding() {
 }
 loadLanding();
 
-function mkPreviewCard(c, idx) {
-  const delay = `style="animation-delay:${idx * 60}ms"`;
-  return `<div class="preview-card glass card-anim" data-id="${c.id}" ${delay}>
-    <div class="preview-title">${esc(c.representative_title || '(untitled)')}</div>
-    <div class="preview-footer">
-      <span class="preview-badge">${c.article_count} articles</span>
-      <span class="preview-date">${fmtDate(c.last_article_at)}</span>
-    </div>
+function mkPreviewItem(c, idx) {
+  return `<div class="preview-item" data-id="${c.id}" style="animation: slideUp 0.3s var(--ease) ${idx * 50}ms both">
+    <span class="preview-title">${esc(c.representative_title || '(untitled)')}</span>
+    <span class="preview-meta">${fmtDate(c.last_article_at)}</span>
   </div>`;
 }
 
@@ -1261,10 +867,10 @@ function mkCard(a, rank, scored, idx) {
   if (scored) {
     const sm = scored.semantic_rank ? `sem #${scored.semantic_rank}` : 'sem -';
     const kw = scored.keyword_rank ? `kw #${scored.keyword_rank}` : 'kw -';
-    rk = `<div class="card-rank"><span class="hi">#${rank} &middot; ${scored.rrf_score.toFixed(5)}</span><span>${sm}</span><span>${kw}</span></div>`;
+    rk = `<div class="card-rank"><span class="hi">#${rank} &middot; ${scored.rrf_score.toFixed(5)}</span> <span>${sm}</span> <span>${kw}</span></div>`;
   }
   let tg = tags(a.locations, 'loc', r => r.name || r) + tags(a.persons, 'per', r => r) + tags(a.organizations, 'org', r => r);
-  return `<div class="card card-anim" ${delay}>${rk}<div class="card-title"><a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${title}</a></div><div class="card-meta"><span>${esc(a.domain || '')}</span><span>${fmtDate(a.gdelt_timestamp)}</span></div>${tg ? `<div class="tags">${tg}</div>` : ''}</div>`;
+  return `<div class="card-article card-anim" ${delay}>${rk}<div class="card-title"><a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${title}</a></div><div class="card-meta"><span>${esc(a.domain || '')}</span><span>${fmtDate(a.gdelt_timestamp)}</span></div>${tg ? `<div class="tags">${tg}</div>` : ''}</div>`;
 }
 
 function mkClCard(c, idx) {
