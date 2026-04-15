@@ -471,6 +471,13 @@ def globe_clusters(
         from psycopg.rows import dict_row
 
         with conn.cursor(row_factory=dict_row) as cur:
+            # Use the latest article timestamp as reference instead of now(),
+            # because the database is a static snapshot (not live-fetched).
+            cur.execute("SELECT MAX(gdelt_timestamp) FROM articles")
+            ref_time = cur.fetchone()["max"]
+            if ref_time is None:
+                return []
+
             if mode == "rising":
                 # Stories picking up steam: clusters that existed for a while
                 # but got a burst of new articles in the last 2 hours.
@@ -484,24 +491,24 @@ def globe_clusters(
                            CASE WHEN c.article_count > 0
                                 THEN recent.recent_count::float / c.article_count
                                 ELSE 0 END AS velocity,
-                           EXTRACT(EPOCH FROM (now() - c.first_article_at)) / 3600
+                           EXTRACT(EPOCH FROM (%s - c.first_article_at)) / 3600
                                AS age_hours
                     FROM clusters c
                     JOIN (
                         SELECT cm.cluster_id, count(*) AS recent_count
                         FROM cluster_memberships cm
                         JOIN articles a ON a.id = cm.article_id
-                        WHERE a.gdelt_timestamp >= now() - interval '2 hours'
+                        WHERE a.gdelt_timestamp >= %s - interval '2 hours'
                         GROUP BY cm.cluster_id
                         HAVING count(*) >= 2
                     ) recent ON recent.cluster_id = c.id
                     WHERE c.is_active = true
                       AND c.article_count >= 5
-                      AND c.first_article_at <= now() - interval '1 hour'
+                      AND c.first_article_at <= %s - interval '1 hour'
                     ORDER BY recent.recent_count DESC, velocity DESC
                     LIMIT %s
                     """,
-                    (limit,),
+                    (ref_time, ref_time, ref_time, limit),
                 )
             elif mode == "silent":
                 # Big stories that went quiet — no new articles in 3h+
@@ -514,17 +521,17 @@ def globe_clusters(
                            c.first_article_at, c.last_article_at,
                            c.created_at, c.updated_at,
                            0 AS recent_count, 0 AS velocity,
-                           EXTRACT(EPOCH FROM (now() - c.last_article_at)) / 3600
+                           EXTRACT(EPOCH FROM (%s - c.last_article_at)) / 3600
                                AS silent_hours
                     FROM clusters c
                     WHERE c.is_active = true
                       AND c.article_count >= 5
-                      AND c.last_article_at < now() - interval '6 hours'
-                      AND c.last_article_at >= now() - interval '72 hours'
+                      AND c.last_article_at < %s - interval '6 hours'
+                      AND c.last_article_at >= %s - interval '72 hours'
                     ORDER BY c.article_count DESC
                     LIMIT %s
                     """,
-                    (limit,),
+                    (ref_time, ref_time, ref_time, limit),
                 )
             else:
                 # live: what newsrooms are writing about RIGHT NOW.
@@ -542,7 +549,7 @@ def globe_clusters(
                         SELECT cm.cluster_id, count(*) AS recent_count
                         FROM cluster_memberships cm
                         JOIN articles a ON a.id = cm.article_id
-                        WHERE a.gdelt_timestamp >= now() - interval '2 hours'
+                        WHERE a.gdelt_timestamp >= %s - interval '2 hours'
                         GROUP BY cm.cluster_id
                     ) recent ON recent.cluster_id = c.id
                     WHERE c.is_active = true
@@ -550,7 +557,7 @@ def globe_clusters(
                     ORDER BY recent.recent_count DESC, c.article_count DESC
                     LIMIT %s
                     """,
-                    (limit,),
+                    (ref_time, limit),
                 )
 
             clusters = cur.fetchall()
