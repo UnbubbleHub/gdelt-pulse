@@ -3,131 +3,344 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#0d1127">
-<title>Story Propagation — Pulse</title>
+<meta name="theme-color" content="#09090b">
+<title>Story Propagation — GDELT Pulse</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;450;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/pulse.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --bg:#0d1127;
-  --bg2:#131838;
-  --card:rgba(20,26,56,.82);
-  --card-sh:0 4px 24px rgba(0,0,0,.25),0 0 0 1px rgba(255,255,255,.04);
-  --text:#e8ecf8;
-  --text2:rgba(232,236,248,.55);
-  --text3:rgba(232,236,248,.3);
-  --accent:#2ee8a5;
-  --accent-soft:rgba(46,232,165,.1);
-  --positive:#2ee8a5;--negative:#ff6b6b;
-  --conflict:#ff6b6b;--economy:#ffc844;--politics:#7b8aff;
-  --health:#2ee8a5;--environment:#22d4e6;--technology:#a78bfa;
-  --society:#ff9f43;--general:#8899bb;
-  --sans:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
-  --mono:'JetBrains Mono',monospace;
-  --r:16px;
+/* ── Page-specific layout ─────────────────────────────── */
+.prop-layout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 0;
+  min-height: calc(100dvh - 180px);
 }
-body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100dvh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-a{color:var(--accent);text-decoration:none}
+@media (max-width: 900px) {
+  .prop-layout { grid-template-columns: 1fr; min-height: auto; }
+}
 
-/* ── TOP BAR ──────────────────── */
-.bar{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:16px 28px;background:rgba(13,17,39,.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.04)}
-.brand{display:flex;align-items:center;gap:8px;font-size:18px;font-weight:700;color:var(--text);letter-spacing:-.02em;cursor:pointer}
-.brand i{width:10px;height:10px;border-radius:50%;background:var(--accent);animation:bPulse 2s ease-in-out infinite}
-@keyframes bPulse{0%,100%{box-shadow:0 0 0 0 rgba(46,232,165,.4)}50%{box-shadow:0 0 0 7px rgba(46,232,165,0)}}
-.bar-right{display:flex;align-items:center;gap:12px}
-.bar-btn{font-family:var(--sans);font-size:12px;font-weight:600;color:var(--text2);padding:7px 16px;border-radius:100px;cursor:pointer;border:1px solid rgba(255,255,255,.08);background:none;transition:all .2s}
-.bar-btn:hover{color:var(--text);border-color:rgba(255,255,255,.15);background:rgba(255,255,255,.03)}
+/* ── Story list (left panel) ──────────────────────────── */
+.story-list {
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  max-height: calc(100dvh - 180px);
+  padding: var(--sp-4);
+}
+@media (max-width: 900px) {
+  .story-list {
+    max-height: 300px;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+}
 
-/* ── LAYOUT ──────────────────── */
-.hero{text-align:center;padding:48px 28px 32px}
-.hero h1{font-size:36px;font-weight:700;letter-spacing:-.03em;line-height:1.1;margin-bottom:10px}
-.hero h1 span{color:var(--accent)}
-.hero p{font-size:14px;color:var(--text2);max-width:540px;margin:0 auto;line-height:1.6}
+.story-list-heading {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  padding: 0 var(--sp-2) var(--sp-3);
+}
 
-.two-col{display:grid;grid-template-columns:340px 1fr;gap:0;min-height:calc(100dvh - 180px)}
-@media(max-width:900px){.two-col{grid-template-columns:1fr;min-height:auto}}
+.story-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--sp-3) var(--sp-4);
+  margin-bottom: var(--sp-2);
+  cursor: pointer;
+  transition: border-color var(--duration) var(--ease), background var(--duration) var(--ease);
+}
+.story-card:hover {
+  border-color: var(--border-hover);
+  background: var(--surface-2);
+}
+.story-card.active {
+  border-color: var(--border-active);
+  background: var(--surface-2);
+}
 
-/* ── STORY LIST (left) ───────── */
-.story-list{border-right:1px solid rgba(255,255,255,.04);overflow-y:auto;max-height:calc(100dvh - 180px);padding:16px}
-@media(max-width:900px){.story-list{max-height:300px;border-right:none;border-bottom:1px solid rgba(255,255,255,.04)}}
-.story-list h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);padding:0 8px 12px}
-.story-card{background:var(--card);border:1px solid rgba(255,255,255,.05);border-radius:var(--r);padding:14px 16px;margin-bottom:8px;cursor:pointer;transition:all .2s;box-shadow:var(--card-sh)}
-.story-card:hover{background:rgba(30,38,72,.85);border-color:rgba(255,255,255,.09)}
-.story-card.active{border-color:var(--accent);background:rgba(46,232,165,.06)}
-.story-title{font-size:13px;font-weight:600;line-height:1.35;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.story-meta{display:flex;gap:10px;font-size:10px;color:var(--text3);font-family:var(--mono)}
-.story-meta .pill{background:rgba(46,232,165,.1);color:var(--accent);padding:2px 8px;border-radius:100px;font-weight:600}
+.story-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: var(--sp-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: var(--text);
+}
 
-/* ── DETAIL PANEL (right) ────── */
-.detail{padding:24px;overflow-y:auto;max-height:calc(100dvh - 180px)}
-@media(max-width:900px){.detail{max-height:none}}
-.detail-empty{display:flex;align-items:center;justify-content:center;height:300px;color:var(--text3);font-size:14px}
-.detail-head{margin-bottom:24px}
-.detail-head h2{font-size:20px;font-weight:700;letter-spacing:-.02em;line-height:1.3;margin-bottom:8px}
-.detail-stats{display:flex;gap:16px;flex-wrap:wrap}
-.d-stat{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px;padding:12px 18px;text-align:center}
-.d-stat-val{font-size:22px;font-weight:700;font-family:var(--mono)}
-.d-stat-lbl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-top:2px}
+.story-meta {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: center;
+  font-size: 0.6875rem;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
 
-/* ── HISTOGRAM ───────────────── */
-.chart-card{background:var(--card);border:1px solid rgba(255,255,255,.05);border-radius:var(--r);padding:20px;margin-bottom:20px;box-shadow:var(--card-sh)}
-.chart-card h4{font-size:13px;font-weight:700;margin-bottom:4px}
-.chart-card .chart-sub{font-size:10px;color:var(--text3);margin-bottom:14px}
-.chart-wrap{position:relative;height:200px}
+.story-meta .pill {
+  background: var(--accent-dim);
+  color: var(--accent-text);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-weight: 500;
+  font-size: 0.6875rem;
+}
 
-/* ── TIMELINE ────────────────── */
-.timeline{position:relative;padding-left:24px;margin-top:24px}
-.timeline::before{content:'';position:absolute;left:7px;top:0;bottom:0;width:2px;background:linear-gradient(180deg,var(--accent),rgba(46,232,165,.1))}
-.tl-item{position:relative;padding-bottom:20px}
-.tl-dot{position:absolute;left:-21px;top:4px;width:12px;height:12px;border-radius:50%;border:2px solid var(--accent);background:var(--bg)}
-.tl-item.first .tl-dot{background:var(--accent);box-shadow:0 0 8px rgba(46,232,165,.4)}
-.tl-time{font-size:10px;font-family:var(--mono);color:var(--text3);margin-bottom:4px}
-.tl-source{font-size:11px;font-weight:700;color:var(--accent);margin-bottom:2px}
-.tl-title{font-size:13px;font-weight:500;line-height:1.4;color:var(--text)}
-.tl-title a{color:var(--text);transition:color .15s}
-.tl-title a:hover{color:var(--accent)}
-.tl-tone{display:inline-block;font-size:10px;font-weight:700;font-family:var(--mono);padding:1px 7px;border-radius:100px;margin-top:4px}
+/* ── Detail panel (right) ─────────────────────────────── */
+.detail {
+  padding: var(--sp-5);
+  overflow-y: auto;
+  max-height: calc(100dvh - 180px);
+}
+@media (max-width: 900px) {
+  .detail { max-height: none; }
+}
 
-/* ── SOURCE SPREAD ───────────── */
-.source-spread{margin-top:20px}
-.source-spread h4{font-size:13px;font-weight:700;margin-bottom:14px}
-.spread-bar{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-.spread-name{font-size:12px;font-weight:600;width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.spread-track{flex:1;height:8px;background:rgba(255,255,255,.04);border-radius:4px;position:relative;overflow:hidden}
-.spread-fill{height:100%;border-radius:4px;transition:width .4s ease}
-.spread-count{font-size:11px;font-family:var(--mono);color:var(--text3);width:40px;text-align:right}
+.detail-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  color: var(--text-3);
+  font-size: 0.875rem;
+}
 
-/* ── LOADING ─────────────────── */
-.loading{display:flex;align-items:center;justify-content:center;padding:60px;color:var(--text3);gap:10px;font-size:13px}
-.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.08);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
+.detail-head {
+  margin-bottom: var(--sp-5);
+}
+
+.detail-head h2 {
+  font-size: clamp(1.125rem, 2vw, 1.25rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  margin-bottom: var(--sp-3);
+  color: var(--text);
+}
+
+.detail-stats {
+  display: flex;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+.d-stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--sp-3) var(--sp-4);
+  text-align: center;
+}
+
+.d-stat-val {
+  font-size: 1.25rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.d-stat-lbl {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+
+/* ── Chart card ───────────────────────────────────────── */
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-5);
+  margin-bottom: var(--sp-5);
+}
+
+.chart-card h4 {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  margin-bottom: var(--sp-1);
+  color: var(--text);
+}
+
+.chart-card .chart-sub {
+  font-size: 0.6875rem;
+  color: var(--text-3);
+  margin-bottom: var(--sp-4);
+}
+
+.chart-wrap {
+  position: relative;
+  height: 200px;
+}
+
+/* ── Source spread ────────────────────────────────────── */
+.source-spread {
+  margin-top: var(--sp-5);
+}
+
+.source-spread h4 {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  margin-bottom: var(--sp-4);
+  color: var(--text);
+}
+
+.spread-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-2);
+}
+
+.spread-name {
+  font-size: 0.75rem;
+  font-weight: 500;
+  width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.spread-track {
+  flex: 1;
+  height: 6px;
+  background: var(--surface-2);
+  border-radius: 3px;
+  position: relative;
+  overflow: hidden;
+}
+
+.spread-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s var(--ease);
+}
+
+.spread-count {
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+  width: 40px;
+  text-align: right;
+}
+
+/* ── Timeline ─────────────────────────────────────────── */
+.timeline {
+  position: relative;
+  padding-left: 24px;
+  margin-top: var(--sp-5);
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border);
+}
+
+.tl-item {
+  position: relative;
+  padding-bottom: var(--sp-5);
+}
+
+.tl-dot {
+  position: absolute;
+  left: -21px;
+  top: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--text-3);
+  background: var(--bg);
+}
+
+.tl-item.first .tl-dot {
+  background: var(--text-2);
+  border-color: var(--text-2);
+}
+
+.tl-time {
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+  margin-bottom: 3px;
+}
+
+.tl-source {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.tl-title {
+  font-size: 0.8125rem;
+  font-weight: 450;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.tl-title a {
+  color: var(--text);
+  transition: color var(--duration);
+}
+.tl-title a:hover {
+  color: var(--text-2);
+}
+
+.tl-tone {
+  display: inline-block;
+  font-size: 0.625rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
+  margin-top: var(--sp-1);
+}
+
+/* ── Section heading ──────────────────────────────────── */
+.section-heading {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  margin-bottom: var(--sp-4);
+  color: var(--text);
+}
 </style>
 </head>
 <body>
 
 <!-- TOP BAR -->
-<header class="bar">
-  <div class="brand" onclick="location.href='/'"><i></i> Pulse</div>
-  <div class="bar-right">
-    <button class="bar-btn" onclick="location.href='/globe'">Globe</button>
-    <button class="bar-btn" onclick="location.href='/'">Home</button>
-  </div>
-</header>
+<nav class="topbar">
+  <a class="topbar-back" href="/">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    GDELT Pulse
+  </a>
+</nav>
 
-<!-- HERO -->
-<section class="hero">
-  <h1>Story <span>Propagation</span></h1>
+<!-- PAGE INTRO -->
+<section class="page-intro">
+  <h1>Story <span style="color:var(--text-3)">Propagation</span></h1>
   <p>Track how breaking news spreads across media outlets over time. See which sources break stories first and how coverage cascades.</p>
 </section>
 
 <!-- MAIN LAYOUT -->
-<div class="two-col">
+<div class="prop-layout">
   <!-- LEFT: story list -->
   <div class="story-list" id="storyList">
-    <h3>Top Multi-Source Stories</h3>
-    <div class="loading">Loading<span class="spinner"></span></div>
+    <div class="story-list-heading">Top Multi-Source Stories</div>
+    <div class="loading"><span class="spinner"></span>Loading</div>
   </div>
 
   <!-- RIGHT: detail panel -->
@@ -149,14 +362,14 @@ async function init() {
     renderStoryList();
     if (stories.length > 0) selectStory(stories[0].id);
   } catch (e) {
-    document.getElementById('storyList').innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3)">Failed to load stories</div>';
+    document.getElementById('storyList').innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-3)">Failed to load stories</div>';
   }
 }
 
 // ── STORY LIST ───────────────────────────────────────────────────────
 function renderStoryList() {
   const el = document.getElementById('storyList');
-  el.innerHTML = '<h3>Top Multi-Source Stories</h3>' + stories.map(s => {
+  el.innerHTML = '<div class="story-list-heading">Top Multi-Source Stories</div>' + stories.map(s => {
     const span = s.span_hours > 24 ? `${Math.round(s.span_hours / 24)}d` : `${Math.round(s.span_hours)}h`;
     return `<div class="story-card" data-id="${s.id}" onclick="selectStory('${s.id}')">
       <div class="story-title">${esc(s.title)}</div>
@@ -174,7 +387,7 @@ async function selectStory(id) {
   activeStory = id;
   document.querySelectorAll('.story-card').forEach(c => c.classList.toggle('active', c.dataset.id === id));
   const detail = document.getElementById('detail');
-  detail.innerHTML = '<div class="loading">Loading<span class="spinner"></span></div>';
+  detail.innerHTML = '<div class="loading"><span class="spinner"></span>Loading</div>';
 
   try {
     const res = await fetch(`/api/propagation/${id}`);
@@ -192,9 +405,9 @@ function renderDetail(d) {
     ? Math.round((new Date(d.last_article_at) - new Date(d.first_article_at)) / 3600000)
     : 0;
 
-  // Source colors
+  // Source colors — muted palette matching design system
   const srcColors = {};
-  const palette = ['#2ee8a5','#7b8aff','#ff6b6b','#ffc844','#22d4e6','#a78bfa','#ff9f43','#60a5fa','#e879f9','#34d399','#f97316','#818cf8'];
+  const palette = ['#a1a1aa','#818cf8','#f87171','#fbbf24','#22d3ee','#a78bfa','#fb923c','#60a5fa','#e879f9','#34d399','#f97316','#71717a'];
   d.sources.forEach((s, i) => { srcColors[s.domain] = palette[i % palette.length]; });
 
   const maxArticles = Math.max(...d.sources.map(s => s.article_count));
@@ -231,13 +444,13 @@ function renderDetail(d) {
           <span class="spread-name" style="color:${col}">${esc(s.source_name)}</span>
           <div class="spread-track"><div class="spread-fill" style="width:${pct}%;background:${col}"></div></div>
           <span class="spread-count">${s.article_count}</span>
-          <span style="font-size:10px;font-family:var(--mono);color:${s.order === 0 ? 'var(--accent)' : 'var(--text3)'};width:50px;text-align:right;font-weight:${s.order === 0 ? '700' : '400'}">${delay}</span>
+          <span style="font-size:0.625rem;font-variant-numeric:tabular-nums;color:${s.order === 0 ? 'var(--text)' : 'var(--text-3)'};width:50px;text-align:right;font-weight:${s.order === 0 ? '600' : '400'}">${delay}</span>
         </div>`;
       }).join('')}
     </div>
 
-    <div style="margin-top:28px">
-      <h4 style="font-size:13px;font-weight:700;margin-bottom:16px">Propagation Timeline</h4>
+    <div style="margin-top:var(--sp-6)">
+      <h4 class="section-heading">Propagation Timeline</h4>
       <div class="timeline">
         ${d.timeline.map((e, i) => {
           const col = srcColors[e.domain];
@@ -248,7 +461,7 @@ function renderDetail(d) {
           return `<div class="tl-item ${e.is_first_from_source ? 'first' : ''}">
             <div class="tl-dot" style="border-color:${col};${e.is_first_from_source ? `background:${col}` : ''}"></div>
             <div class="tl-time">${time}</div>
-            <div class="tl-source" style="color:${col}">${esc(e.source_name)} ${e.is_first_from_source ? '<span style="font-size:9px;background:'+col+'22;padding:1px 6px;border-radius:100px">NEW SOURCE</span>' : ''}</div>
+            <div class="tl-source" style="color:${col}">${esc(e.source_name)} ${e.is_first_from_source ? '<span style="font-size:0.5625rem;background:'+col+'18;padding:1px 6px;border-radius:var(--radius-full);font-weight:500">NEW SOURCE</span>' : ''}</div>
             <div class="tl-title"><a href="${esc(e.url)}" target="_blank">${esc(e.title)}</a></div>
             ${e.tone != null ? `<span class="tl-tone" style="background:${toneCol}18;color:${toneCol}">${e.tone >= 0 ? '+' : ''}${e.tone}</span>` : ''}
           </div>`;
@@ -276,11 +489,11 @@ function renderHistogram(data) {
       labels: data.map(d => `+${d.hour}h`),
       datasets: [{
         data: data.map(d => d.count),
-        backgroundColor: 'rgba(46,232,165,.3)',
-        borderColor: '#2ee8a5',
-        borderWidth: 1.5,
+        backgroundColor: 'rgba(161,161,170,.15)',
+        borderColor: 'rgba(161,161,170,.4)',
+        borderWidth: 1,
         borderRadius: 4,
-        hoverBackgroundColor: 'rgba(46,232,165,.5)'
+        hoverBackgroundColor: 'rgba(161,161,170,.25)'
       }]
     },
     options: {
@@ -289,23 +502,26 @@ function renderHistogram(data) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: 'rgba(13,17,39,.95)',
-          borderColor: 'rgba(255,255,255,.08)',
+          backgroundColor: 'rgba(9,9,11,0.95)',
+          borderColor: 'rgba(255,255,255,0.06)',
           borderWidth: 1,
-          bodyFont: { family: "'JetBrains Mono'", size: 11 },
+          titleFont: { family: "'Inter'", size: 11, weight: 500 },
+          bodyFont: { family: "'Inter'", size: 11 },
           padding: 10,
           cornerRadius: 8,
+          titleColor: '#fafafa',
+          bodyColor: '#a1a1aa',
           callbacks: { label: ctx => `${ctx.raw} articles` }
         }
       },
       scales: {
         x: {
-          grid: { color: 'rgba(255,255,255,.03)' },
-          ticks: { color: 'rgba(232,236,248,.3)', font: { family: "'JetBrains Mono'", size: 9 }, maxTicksLimit: 12 }
+          grid: { color: 'rgba(255,255,255,0.03)' },
+          ticks: { color: '#63636e', font: { family: "'Inter'", size: 10 }, maxTicksLimit: 12 }
         },
         y: {
-          grid: { color: 'rgba(255,255,255,.03)' },
-          ticks: { color: 'rgba(232,236,248,.3)', font: { family: "'JetBrains Mono'", size: 9 }, stepSize: 1 }
+          grid: { color: 'rgba(255,255,255,0.03)' },
+          ticks: { color: '#63636e', font: { family: "'Inter'", size: 10 }, stepSize: 1 }
         }
       }
     }
