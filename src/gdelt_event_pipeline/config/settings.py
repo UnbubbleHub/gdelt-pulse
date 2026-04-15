@@ -18,9 +18,7 @@ class DatabaseSettings:
     port: int = field(default_factory=lambda: int(os.environ.get("PGPORT", "5432")))
     user: str = field(default_factory=lambda: os.environ.get("PGUSER", "postgres"))
     password: str = field(default_factory=lambda: os.environ.get("PGPASSWORD", ""))
-    database: str = field(
-        default_factory=lambda: os.environ.get("PGDATABASE", "gdelt_pulse")
-    )
+    database: str = field(default_factory=lambda: os.environ.get("PGDATABASE", "gdelt_pulse"))
     url: str = field(default_factory=lambda: os.environ.get("DATABASE_URL", ""))
 
     @property
@@ -59,9 +57,7 @@ class ClusteringSettings:
 class ApiSettings:
     cors_origins: list[str] = field(
         default_factory=lambda: [
-            o.strip()
-            for o in os.environ.get("CORS_ORIGINS", "").split(",")
-            if o.strip()
+            o.strip() for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip()
         ]
     )
 
