@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0d1127">
+<title>Story Propagation — Pulse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0d1127;
+  --bg2:#131838;
+  --card:rgba(20,26,56,.82);
+  --card-sh:0 4px 24px rgba(0,0,0,.25),0 0 0 1px rgba(255,255,255,.04);
+  --text:#e8ecf8;
+  --text2:rgba(232,236,248,.55);
+  --text3:rgba(232,236,248,.3);
+  --accent:#2ee8a5;
+  --accent-soft:rgba(46,232,165,.1);
+  --positive:#2ee8a5;--negative:#ff6b6b;
+  --conflict:#ff6b6b;--economy:#ffc844;--politics:#7b8aff;
+  --health:#2ee8a5;--environment:#22d4e6;--technology:#a78bfa;
+  --society:#ff9f43;--general:#8899bb;
+  --sans:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+  --mono:'JetBrains Mono',monospace;
+  --r:16px;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100dvh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:var(--accent);text-decoration:none}
+
+/* ── TOP BAR ──────────────────── */
+.bar{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:16px 28px;background:rgba(13,17,39,.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.04)}
+.brand{display:flex;align-items:center;gap:8px;font-size:18px;font-weight:700;color:var(--text);letter-spacing:-.02em;cursor:pointer}
+.brand i{width:10px;height:10px;border-radius:50%;background:var(--accent);animation:bPulse 2s ease-in-out infinite}
+@keyframes bPulse{0%,100%{box-shadow:0 0 0 0 rgba(46,232,165,.4)}50%{box-shadow:0 0 0 7px rgba(46,232,165,0)}}
+.bar-right{display:flex;align-items:center;gap:12px}
+.bar-btn{font-family:var(--sans);font-size:12px;font-weight:600;color:var(--text2);padding:7px 16px;border-radius:100px;cursor:pointer;border:1px solid rgba(255,255,255,.08);background:none;transition:all .2s}
+.bar-btn:hover{color:var(--text);border-color:rgba(255,255,255,.15);background:rgba(255,255,255,.03)}
+
+/* ── LAYOUT ──────────────────── */
+.hero{text-align:center;padding:48px 28px 32px}
+.hero h1{font-size:36px;font-weight:700;letter-spacing:-.03em;line-height:1.1;margin-bottom:10px}
+.hero h1 span{color:var(--accent)}
+.hero p{font-size:14px;color:var(--text2);max-width:540px;margin:0 auto;line-height:1.6}
+
+.two-col{display:grid;grid-template-columns:340px 1fr;gap:0;min-height:calc(100dvh - 180px)}
+@media(max-width:900px){.two-col{grid-template-columns:1fr;min-height:auto}}
+
+/* ── STORY LIST (left) ───────── */
+.story-list{border-right:1px solid rgba(255,255,255,.04);overflow-y:auto;max-height:calc(100dvh - 180px);padding:16px}
+@media(max-width:900px){.story-list{max-height:300px;border-right:none;border-bottom:1px solid rgba(255,255,255,.04)}}
+.story-list h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);padding:0 8px 12px}
+.story-card{background:var(--card);border:1px solid rgba(255,255,255,.05);border-radius:var(--r);padding:14px 16px;margin-bottom:8px;cursor:pointer;transition:all .2s;box-shadow:var(--card-sh)}
+.story-card:hover{background:rgba(30,38,72,.85);border-color:rgba(255,255,255,.09)}
+.story-card.active{border-color:var(--accent);background:rgba(46,232,165,.06)}
+.story-title{font-size:13px;font-weight:600;line-height:1.35;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.story-meta{display:flex;gap:10px;font-size:10px;color:var(--text3);font-family:var(--mono)}
+.story-meta .pill{background:rgba(46,232,165,.1);color:var(--accent);padding:2px 8px;border-radius:100px;font-weight:600}
+
+/* ── DETAIL PANEL (right) ────── */
+.detail{padding:24px;overflow-y:auto;max-height:calc(100dvh - 180px)}
+@media(max-width:900px){.detail{max-height:none}}
+.detail-empty{display:flex;align-items:center;justify-content:center;height:300px;color:var(--text3);font-size:14px}
+.detail-head{margin-bottom:24px}
+.detail-head h2{font-size:20px;font-weight:700;letter-spacing:-.02em;line-height:1.3;margin-bottom:8px}
+.detail-stats{display:flex;gap:16px;flex-wrap:wrap}
+.d-stat{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px;padding:12px 18px;text-align:center}
+.d-stat-val{font-size:22px;font-weight:700;font-family:var(--mono)}
+.d-stat-lbl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-top:2px}
+
+/* ── HISTOGRAM ───────────────── */
+.chart-card{background:var(--card);border:1px solid rgba(255,255,255,.05);border-radius:var(--r);padding:20px;margin-bottom:20px;box-shadow:var(--card-sh)}
+.chart-card h4{font-size:13px;font-weight:700;margin-bottom:4px}
+.chart-card .chart-sub{font-size:10px;color:var(--text3);margin-bottom:14px}
+.chart-wrap{position:relative;height:200px}
+
+/* ── TIMELINE ────────────────── */
+.timeline{position:relative;padding-left:24px;margin-top:24px}
+.timeline::before{content:'';position:absolute;left:7px;top:0;bottom:0;width:2px;background:linear-gradient(180deg,var(--accent),rgba(46,232,165,.1))}
+.tl-item{position:relative;padding-bottom:20px}
+.tl-dot{position:absolute;left:-21px;top:4px;width:12px;height:12px;border-radius:50%;border:2px solid var(--accent);background:var(--bg)}
+.tl-item.first .tl-dot{background:var(--accent);box-shadow:0 0 8px rgba(46,232,165,.4)}
+.tl-time{font-size:10px;font-family:var(--mono);color:var(--text3);margin-bottom:4px}
+.tl-source{font-size:11px;font-weight:700;color:var(--accent);margin-bottom:2px}
+.tl-title{font-size:13px;font-weight:500;line-height:1.4;color:var(--text)}
+.tl-title a{color:var(--text);transition:color .15s}
+.tl-title a:hover{color:var(--accent)}
+.tl-tone{display:inline-block;font-size:10px;font-weight:700;font-family:var(--mono);padding:1px 7px;border-radius:100px;margin-top:4px}
+
+/* ── SOURCE SPREAD ───────────── */
+.source-spread{margin-top:20px}
+.source-spread h4{font-size:13px;font-weight:700;margin-bottom:14px}
+.spread-bar{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.spread-name{font-size:12px;font-weight:600;width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spread-track{flex:1;height:8px;background:rgba(255,255,255,.04);border-radius:4px;position:relative;overflow:hidden}
+.spread-fill{height:100%;border-radius:4px;transition:width .4s ease}
+.spread-count{font-size:11px;font-family:var(--mono);color:var(--text3);width:40px;text-align:right}
+
+/* ── LOADING ─────────────────── */
+.loading{display:flex;align-items:center;justify-content:center;padding:60px;color:var(--text3);gap:10px;font-size:13px}
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.08);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<header class="bar">
+  <div class="brand" onclick="location.href='/'"><i></i> Pulse</div>
+  <div class="bar-right">
+    <button class="bar-btn" onclick="location.href='/globe'">Globe</button>
+    <button class="bar-btn" onclick="location.href='/'">Home</button>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <h1>Story <span>Propagation</span></h1>
+  <p>Track how breaking news spreads across media outlets over time. See which sources break stories first and how coverage cascades.</p>
+</section>
+
+<!-- MAIN LAYOUT -->
+<div class="two-col">
+  <!-- LEFT: story list -->
+  <div class="story-list" id="storyList">
+    <h3>Top Multi-Source Stories</h3>
+    <div class="loading">Loading<span class="spinner"></span></div>
+  </div>
+
+  <!-- RIGHT: detail panel -->
+  <div class="detail" id="detail">
+    <div class="detail-empty">Select a story to see its propagation timeline</div>
+  </div>
+</div>
+
+<script>
+let stories = [];
+let activeStory = null;
+let histoChart = null;
+
+// ── INIT ─────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    const res = await fetch('/api/propagation/stories?limit=30&min_sources=3');
+    stories = await res.json();
+    renderStoryList();
+    if (stories.length > 0) selectStory(stories[0].id);
+  } catch (e) {
+    document.getElementById('storyList').innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3)">Failed to load stories</div>';
+  }
+}
+
+// ── STORY LIST ───────────────────────────────────────────────────────
+function renderStoryList() {
+  const el = document.getElementById('storyList');
+  el.innerHTML = '<h3>Top Multi-Source Stories</h3>' + stories.map(s => {
+    const span = s.span_hours > 24 ? `${Math.round(s.span_hours / 24)}d` : `${Math.round(s.span_hours)}h`;
+    return `<div class="story-card" data-id="${s.id}" onclick="selectStory('${s.id}')">
+      <div class="story-title">${esc(s.title)}</div>
+      <div class="story-meta">
+        <span class="pill">${s.source_count} sources</span>
+        <span>${s.article_count} articles</span>
+        <span>${span} span</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── SELECT & LOAD DETAIL ─────────────────────────────────────────────
+async function selectStory(id) {
+  activeStory = id;
+  document.querySelectorAll('.story-card').forEach(c => c.classList.toggle('active', c.dataset.id === id));
+  const detail = document.getElementById('detail');
+  detail.innerHTML = '<div class="loading">Loading<span class="spinner"></span></div>';
+
+  try {
+    const res = await fetch(`/api/propagation/${id}`);
+    const d = await res.json();
+    renderDetail(d);
+  } catch (e) {
+    detail.innerHTML = '<div class="detail-empty">Failed to load propagation data</div>';
+  }
+}
+
+// ── RENDER DETAIL ────────────────────────────────────────────────────
+function renderDetail(d) {
+  const detail = document.getElementById('detail');
+  const spanH = d.first_article_at && d.last_article_at
+    ? Math.round((new Date(d.last_article_at) - new Date(d.first_article_at)) / 3600000)
+    : 0;
+
+  // Source colors
+  const srcColors = {};
+  const palette = ['#2ee8a5','#7b8aff','#ff6b6b','#ffc844','#22d4e6','#a78bfa','#ff9f43','#60a5fa','#e879f9','#34d399','#f97316','#818cf8'];
+  d.sources.forEach((s, i) => { srcColors[s.domain] = palette[i % palette.length]; });
+
+  const maxArticles = Math.max(...d.sources.map(s => s.article_count));
+
+  let html = `
+    <div class="detail-head">
+      <h2>${esc(d.title)}</h2>
+      <div class="detail-stats">
+        <div class="d-stat"><div class="d-stat-val">${d.article_count}</div><div class="d-stat-lbl">Articles</div></div>
+        <div class="d-stat"><div class="d-stat-val">${d.source_count}</div><div class="d-stat-lbl">Sources</div></div>
+        <div class="d-stat"><div class="d-stat-val">${spanH}h</div><div class="d-stat-lbl">Time Span</div></div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <h4>Article Volume Over Time</h4>
+      <div class="chart-sub">Hourly article count since first publication</div>
+      <div class="chart-wrap"><canvas id="histoChart"></canvas></div>
+    </div>
+
+    <div class="source-spread">
+      <h4>Source Cascade — Order of Pickup</h4>
+      ${d.sources.map(s => {
+        const col = srcColors[s.domain];
+        const pct = Math.round(s.article_count / maxArticles * 100);
+        const delay = s.order === 0 ? 'FIRST' :
+          (() => {
+            const firstTs = new Date(d.sources[0].first_timestamp);
+            const thisTs = new Date(s.first_timestamp);
+            const mins = Math.round((thisTs - firstTs) / 60000);
+            return mins < 60 ? `+${mins}m` : `+${Math.round(mins / 60)}h`;
+          })();
+        return `<div class="spread-bar">
+          <span class="spread-name" style="color:${col}">${esc(s.source_name)}</span>
+          <div class="spread-track"><div class="spread-fill" style="width:${pct}%;background:${col}"></div></div>
+          <span class="spread-count">${s.article_count}</span>
+          <span style="font-size:10px;font-family:var(--mono);color:${s.order === 0 ? 'var(--accent)' : 'var(--text3)'};width:50px;text-align:right;font-weight:${s.order === 0 ? '700' : '400'}">${delay}</span>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div style="margin-top:28px">
+      <h4 style="font-size:13px;font-weight:700;margin-bottom:16px">Propagation Timeline</h4>
+      <div class="timeline">
+        ${d.timeline.map((e, i) => {
+          const col = srcColors[e.domain];
+          const ts = new Date(e.timestamp);
+          const time = ts.toLocaleDateString('en-US', {month:'short',day:'numeric'}) + ' ' +
+                       ts.toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit'});
+          const toneCol = e.tone != null ? (e.tone >= 0 ? 'var(--positive)' : 'var(--negative)') : null;
+          return `<div class="tl-item ${e.is_first_from_source ? 'first' : ''}">
+            <div class="tl-dot" style="border-color:${col};${e.is_first_from_source ? `background:${col}` : ''}"></div>
+            <div class="tl-time">${time}</div>
+            <div class="tl-source" style="color:${col}">${esc(e.source_name)} ${e.is_first_from_source ? '<span style="font-size:9px;background:'+col+'22;padding:1px 6px;border-radius:100px">NEW SOURCE</span>' : ''}</div>
+            <div class="tl-title"><a href="${esc(e.url)}" target="_blank">${esc(e.title)}</a></div>
+            ${e.tone != null ? `<span class="tl-tone" style="background:${toneCol}18;color:${toneCol}">${e.tone >= 0 ? '+' : ''}${e.tone}</span>` : ''}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  `;
+
+  detail.innerHTML = html;
+
+  // Render histogram
+  if (d.hourly_histogram.length > 0) {
+    setTimeout(() => renderHistogram(d.hourly_histogram), 50);
+  }
+}
+
+function renderHistogram(data) {
+  const ctx = document.getElementById('histoChart');
+  if (!ctx) return;
+  if (histoChart) histoChart.destroy();
+
+  histoChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.map(d => `+${d.hour}h`),
+      datasets: [{
+        data: data.map(d => d.count),
+        backgroundColor: 'rgba(46,232,165,.3)',
+        borderColor: '#2ee8a5',
+        borderWidth: 1.5,
+        borderRadius: 4,
+        hoverBackgroundColor: 'rgba(46,232,165,.5)'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(13,17,39,.95)',
+          borderColor: 'rgba(255,255,255,.08)',
+          borderWidth: 1,
+          bodyFont: { family: "'JetBrains Mono'", size: 11 },
+          padding: 10,
+          cornerRadius: 8,
+          callbacks: { label: ctx => `${ctx.raw} articles` }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,.03)' },
+          ticks: { color: 'rgba(232,236,248,.3)', font: { family: "'JetBrains Mono'", size: 9 }, maxTicksLimit: 12 }
+        },
+        y: {
+          grid: { color: 'rgba(255,255,255,.03)' },
+          ticks: { color: 'rgba(232,236,248,.3)', font: { family: "'JetBrains Mono'", size: 9 }, stepSize: 1 }
+        }
+      }
+    }
+  });
+}
+
+function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+init();
+</script>
+</body>
+</html>
