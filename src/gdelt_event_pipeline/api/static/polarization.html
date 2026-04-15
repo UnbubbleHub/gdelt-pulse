@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Narrative Polarization | GDELT Pulse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+
+:root {
+  --bg: #050507;
+  --bg-raised: #0c0c10;
+  --surface: #111116;
+  --surface-2: #17171d;
+  --surface-3: #1d1d25;
+  --border: #222230;
+  --border-dim: #1a1a24;
+  --text: #ededf0;
+  --text-2: #b0b0be;
+  --text-3: #6e6e82;
+  --primary: #7c6aef;
+  --primary-light: #9d8ff5;
+  --primary-dim: rgba(124, 106, 239, 0.1);
+  --primary-glow: rgba(124, 106, 239, 0.06);
+  --teal: #2dd4a8;
+  --teal-dim: rgba(45, 212, 168, 0.1);
+  --amber: #e5a63e;
+  --amber-dim: rgba(229, 166, 62, 0.1);
+  --rose: #e5637a;
+  --rose-dim: rgba(229, 99, 122, 0.1);
+  --negative: #e5637a;
+  --positive: #2dd4a8;
+  --glass-bg: rgba(17, 17, 22, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.06);
+  --glass-blur: 20px;
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body {
+  font-family: 'DM Sans', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+::selection { background: var(--primary-dim); color: var(--primary-light); }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-dim); border-radius: 3px; }
+
+/* ── Top bar ──────────────────────────────────────── */
+
+.topbar {
+  position: fixed; top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex; align-items: center; gap: 16px;
+  padding: 14px 24px;
+  background: rgba(5, 5, 7, 0.8);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.topbar-back {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 20px;
+  border: 1px solid var(--border-dim); background: none;
+  color: var(--text-2); font-size: 0.78rem; font-family: inherit;
+  font-weight: 500; cursor: pointer; text-decoration: none;
+  transition: all 0.2s var(--ease);
+}
+.topbar-back:hover { color: var(--text); border-color: var(--border); }
+.topbar-back svg { width: 14px; height: 14px; }
+
+.topbar-title {
+  font-size: 0.9rem; font-weight: 600; letter-spacing: -0.02em;
+}
+.topbar-title .accent { color: var(--primary-light); }
+
+/* ── Page layout ──────────────────────────────────── */
+
+.page-wrap {
+  max-width: 1000px; margin: 0 auto;
+  padding: 80px 24px 60px;
+}
+
+.page-intro {
+  text-align: center; margin-bottom: 40px;
+  animation: fadeUp 0.6s var(--ease) both;
+}
+
+.page-intro h1 {
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-weight: 700; letter-spacing: -0.04em;
+  margin-bottom: 10px;
+}
+
+.page-intro h1 .accent {
+  background: linear-gradient(135deg, var(--negative), var(--primary-light), var(--positive));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.page-intro p {
+  font-size: 0.92rem; color: var(--text-3);
+  max-width: 540px; margin: 0 auto;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Overview stats ───────────────────────────────── */
+
+.overview-stats {
+  display: flex; gap: 10px; margin-bottom: 32px;
+  animation: fadeUp 0.6s var(--ease) 0.1s both;
+}
+
+.ov-stat {
+  flex: 1; text-align: center; padding: 18px 14px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+}
+
+.ov-stat-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.4rem; font-weight: 600; margin-bottom: 2px;
+}
+
+.ov-stat-label {
+  font-size: 0.66rem; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--text-3); font-weight: 500;
+}
+
+/* ── Overview chart ───────────────────────────────── */
+
+.overview-chart-wrap {
+  background: var(--surface); border: 1px solid var(--border-dim);
+  border-radius: 16px; padding: 24px; margin-bottom: 36px;
+  animation: fadeUp 0.6s var(--ease) 0.15s both;
+}
+
+.overview-chart-wrap h3 {
+  font-size: 0.78rem; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--text-3);
+  font-weight: 600; margin-bottom: 16px;
+}
+
+.chart-container { position: relative; height: 220px; }
+
+/* ── Polarization cards ───────────────────────────── */
+
+.section-label {
+  font-size: 0.72rem; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-3);
+  font-weight: 600; margin-bottom: 14px;
+  animation: fadeUp 0.6s var(--ease) 0.2s both;
+}
+
+.pol-card {
+  background: var(--surface); border: 1px solid var(--border-dim);
+  border-radius: 16px; padding: 22px 24px; margin-bottom: 10px;
+  cursor: pointer; transition: all 0.25s var(--ease);
+  animation: fadeUp 0.4s var(--ease) both;
+}
+
+.pol-card:hover {
+  border-color: rgba(124, 106, 239, 0.4);
+  background: var(--surface-2);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.25);
+  transform: translateY(-2px);
+}
+
+.pol-card-top {
+  display: flex; justify-content: space-between;
+  align-items: flex-start; gap: 16px; margin-bottom: 10px;
+}
+
+.pol-card-title {
+  font-size: 0.94rem; font-weight: 500; line-height: 1.4;
+  letter-spacing: -0.01em; flex: 1;
+}
+
+.pol-score {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem; font-weight: 600;
+  padding: 5px 12px; border-radius: 20px;
+  white-space: nowrap; flex-shrink: 0;
+}
+
+.pol-score-high { color: var(--negative); background: var(--rose-dim); }
+.pol-score-med { color: var(--amber); background: var(--amber-dim); }
+.pol-score-low { color: var(--teal); background: var(--teal-dim); }
+
+.pol-card-meta {
+  display: flex; gap: 16px; font-size: 0.76rem;
+  color: var(--text-3); margin-bottom: 12px;
+}
+
+.pol-card-meta .mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── Tone bar ─────────────────────────────────────── */
+
+.tone-bar-wrap {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 8px;
+}
+
+.tone-bar-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.66rem; color: var(--text-3);
+  min-width: 34px; text-align: right;
+}
+
+.tone-bar-label.pos { color: var(--positive); }
+.tone-bar-label.neg { color: var(--negative); }
+
+.tone-bar-track {
+  flex: 1; height: 6px; background: var(--surface-3);
+  border-radius: 3px; position: relative; overflow: hidden;
+}
+
+.tone-bar-fill {
+  position: absolute; top: 0; height: 100%; border-radius: 3px;
+}
+
+.tone-bar-avg {
+  position: absolute; top: -3px; width: 3px; height: 12px;
+  background: var(--text); border-radius: 1px;
+  transform: translateX(-50%);
+}
+
+/* ── Source mini-bars ──────────────────────────────── */
+
+.source-bars { margin-top: 6px; }
+
+.src-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 3px;
+}
+
+.src-name {
+  font-size: 0.7rem; color: var(--text-3);
+  min-width: 110px; max-width: 110px;
+  white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; text-align: right;
+}
+
+.src-bar-track {
+  flex: 1; height: 4px; background: var(--surface-3);
+  border-radius: 2px; position: relative;
+}
+
+.src-bar-fill {
+  position: absolute; top: 0; height: 100%; border-radius: 2px;
+}
+
+.src-tone {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.64rem; min-width: 36px;
+}
+
+.src-tone.pos { color: var(--positive); }
+.src-tone.neg { color: var(--negative); }
+
+/* ── Detail modal ─────────────────────────────────── */
+
+.overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(5, 5, 7, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 200; align-items: flex-start;
+  justify-content: center; padding: 24px;
+  overflow-y: auto;
+}
+
+.overlay.open { display: flex; animation: fadeIn 0.2s ease; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.detail-panel {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  width: 100%; max-width: 820px;
+  padding: 32px; margin: 40px 0;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.5);
+  animation: modalIn 0.25s var(--ease);
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.detail-panel::-webkit-scrollbar { width: 5px; }
+.detail-panel::-webkit-scrollbar-thumb { background: var(--border-dim); border-radius: 3px; }
+
+.detail-close {
+  float: right; width: 32px; height: 32px; border-radius: 10px;
+  border: 1px solid var(--border-dim); background: var(--surface);
+  color: var(--text-3); font-size: 1rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.detail-close:hover { color: var(--text); border-color: var(--border); }
+
+.detail-title {
+  font-size: 1.15rem; font-weight: 600; margin-bottom: 6px;
+  padding-right: 44px; letter-spacing: -0.02em;
+}
+
+.detail-meta {
+  font-size: 0.78rem; color: var(--text-3); margin-bottom: 20px;
+}
+
+.detail-stats {
+  display: flex; gap: 10px; margin-bottom: 24px;
+}
+
+.detail-stat {
+  flex: 1; text-align: center; padding: 14px 10px;
+  background: var(--surface); border: 1px solid var(--border-dim);
+  border-radius: 12px;
+}
+
+.detail-stat-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.1rem; font-weight: 600; margin-bottom: 2px;
+}
+
+.detail-stat-label {
+  font-size: 0.62rem; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--text-3); font-weight: 500;
+}
+
+.detail-section {
+  margin-bottom: 24px;
+}
+
+.detail-section h3 {
+  font-size: 0.72rem; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--text-3);
+  font-weight: 600; margin-bottom: 12px;
+}
+
+.detail-chart { position: relative; height: 200px; margin-bottom: 8px; }
+
+/* ── Source groups in detail ──────────────────────── */
+
+.source-group {
+  margin-bottom: 16px; padding: 16px;
+  background: var(--surface); border: 1px solid var(--border-dim);
+  border-radius: 12px;
+}
+
+.source-group-header {
+  display: flex; justify-content: space-between;
+  align-items: center; margin-bottom: 10px;
+  cursor: pointer;
+}
+
+.source-group-name {
+  font-size: 0.86rem; font-weight: 500;
+}
+
+.source-group-meta {
+  display: flex; gap: 12px; align-items: center;
+}
+
+.source-group-tone {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem; font-weight: 600;
+}
+
+.source-group-count {
+  font-size: 0.72rem; color: var(--text-3);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.source-articles { margin-top: 8px; }
+
+.source-article {
+  padding: 8px 0;
+  border-top: 1px solid var(--border-dim);
+  display: flex; justify-content: space-between;
+  align-items: flex-start; gap: 12px;
+}
+
+.source-article:first-child { border-top: none; padding-top: 0; }
+
+.source-article-title {
+  font-size: 0.82rem; flex: 1;
+}
+
+.source-article-title a {
+  color: var(--text-2); text-decoration: none;
+  transition: color 0.15s;
+}
+.source-article-title a:hover { color: var(--primary-light); }
+
+.source-article-tone {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.74rem; white-space: nowrap;
+}
+
+/* ── Loading / empty states ───────────────────────── */
+
+.loading, .empty-state {
+  text-align: center; padding: 48px 20px;
+  color: var(--text-3); font-size: 0.86rem;
+}
+
+.spinner {
+  display: inline-block; width: 16px; height: 16px;
+  border: 2px solid var(--border); border-top-color: var(--primary);
+  border-radius: 50%; animation: spin 0.5s linear infinite;
+  margin-left: 8px; vertical-align: middle;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Responsive ───────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .page-wrap { padding: 72px 14px 40px; }
+  .overview-stats { flex-direction: column; }
+  .detail-stats { flex-wrap: wrap; }
+  .detail-stat { flex: 1 1 calc(50% - 5px); }
+  .pol-card-top { flex-direction: column; gap: 6px; }
+  .src-name { min-width: 80px; max-width: 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <a href="/" class="topbar-back">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+    GDELT Pulse
+  </a>
+  <span class="topbar-title">Narrative <span class="accent">Polarization</span></span>
+</div>
+
+<!-- Page content -->
+<div class="page-wrap">
+  <div class="page-intro">
+    <h1>Narrative <span class="accent">Polarization</span></h1>
+    <p>Stories where the world disagrees on what happened. High polarization = same event, opposite framing across sources.</p>
+  </div>
+
+  <!-- Overview stats -->
+  <div class="overview-stats">
+    <div class="ov-stat"><div class="ov-stat-val" id="statStories">--</div><div class="ov-stat-label">Polarized Stories</div></div>
+    <div class="ov-stat"><div class="ov-stat-val" id="statAvgScore">--</div><div class="ov-stat-label">Avg Polarization</div></div>
+    <div class="ov-stat"><div class="ov-stat-val" id="statMaxScore">--</div><div class="ov-stat-label">Max Polarization</div></div>
+    <div class="ov-stat"><div class="ov-stat-val" id="statSources">--</div><div class="ov-stat-label">Avg Sources/Story</div></div>
+  </div>
+
+  <!-- Overview scatter chart: polarization vs article count -->
+  <div class="overview-chart-wrap">
+    <h3>Polarization Score Distribution</h3>
+    <div class="chart-container"><canvas id="overviewChart"></canvas></div>
+  </div>
+
+  <!-- Story list -->
+  <div class="section-label">Most Polarized Stories</div>
+  <div id="storyList"><div class="loading">Analyzing narrative polarization<span class="spinner"></span></div></div>
+</div>
+
+<!-- Detail overlay -->
+<div class="overlay" id="overlay">
+  <div class="detail-panel" id="detailPanel">
+    <button class="detail-close" id="detailClose">&times;</button>
+    <h2 class="detail-title" id="detailTitle"></h2>
+    <div class="detail-meta" id="detailMeta"></div>
+    <div class="detail-stats" id="detailStats"></div>
+    <div class="detail-section">
+      <h3>Tone Distribution</h3>
+      <div class="detail-chart"><canvas id="detailHistChart"></canvas></div>
+    </div>
+    <div class="detail-section">
+      <h3>Tone by Source</h3>
+      <div class="detail-chart" id="detailSourceChartWrap" style="height:auto;min-height:200px"><canvas id="detailSourceChart"></canvas></div>
+    </div>
+    <div class="detail-section">
+      <h3>Source Breakdown</h3>
+      <div id="detailSources"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '/api';
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+// Chart.js global config
+Chart.defaults.color = '#6e6e82';
+Chart.defaults.borderColor = 'rgba(34,34,48,0.6)';
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+
+let _data = [];
+let _overviewChart = null;
+let _detailHistChart = null;
+let _detailSourceChart = null;
+
+function esc(s) { const d = document.createElement('div'); d.textContent = String(s); return d.innerHTML; }
+
+function fmtDate(s) {
+  if (!s) return '';
+  const d = new Date(s);
+  return isNaN(d) ? String(s) : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function toneColor(t) {
+  if (t < -1) return 'var(--negative)';
+  if (t > 1) return 'var(--positive)';
+  return 'var(--text-3)';
+}
+
+function toneColorRgba(t, alpha) {
+  if (t < -1) return `rgba(229, 99, 122, ${alpha})`;
+  if (t > 1) return `rgba(45, 212, 168, ${alpha})`;
+  return `rgba(110, 110, 130, ${alpha})`;
+}
+
+function scoreClass(s) {
+  if (s >= 3.5) return 'pol-score-high';
+  if (s >= 2.5) return 'pol-score-med';
+  return 'pol-score-low';
+}
+
+// ── Load data ────────────────────────────────────────────
+
+async function loadData() {
+  try {
+    const data = await fetch(`${API}/polarization?limit=30&min_articles=20`).then(r => {
+      if (!r.ok) throw new Error(`Server error ${r.status}`);
+      return r.json();
+    });
+    _data = data;
+    renderOverview(data);
+    renderStories(data);
+  } catch (e) {
+    $('#storyList').innerHTML = `<div class="empty-state">${esc(e.message)}</div>`;
+  }
+}
+
+// ── Overview ─────────────────────────────────────────────
+
+function renderOverview(data) {
+  if (!data.length) return;
+
+  const scores = data.map(d => d.polarization_score);
+  const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+  const maxScore = Math.max(...scores);
+  const avgSources = data.reduce((a, d) => a + d.distinct_sources, 0) / data.length;
+
+  $('#statStories').textContent = data.length;
+  $('#statAvgScore').textContent = avgScore.toFixed(2);
+  $('#statMaxScore').textContent = maxScore.toFixed(2);
+  $('#statSources').textContent = Math.round(avgSources);
+
+  // Scatter: polarization score vs article count
+  const ctx = $('#overviewChart').getContext('2d');
+  if (_overviewChart) _overviewChart.destroy();
+
+  _overviewChart = new Chart(ctx, {
+    type: 'bubble',
+    data: {
+      datasets: [{
+        data: data.map(d => ({
+          x: d.article_count,
+          y: d.polarization_score,
+          r: Math.max(4, Math.min(16, d.distinct_sources / 2)),
+          _title: d.title,
+          _id: d.id,
+        })),
+        backgroundColor: data.map(d => toneColorRgba(d.avg_tone < 0 ? -2 : 2, 0.5)),
+        borderColor: data.map(d => toneColorRgba(d.avg_tone < 0 ? -2 : 2, 0.8)),
+        borderWidth: 1,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const p = ctx.raw;
+              const title = p._title || '';
+              const short = title.length > 60 ? title.slice(0, 57) + '...' : title;
+              return [short, `Polarization: ${p.y.toFixed(2)}`, `Articles: ${p.x}`];
+            },
+          },
+          backgroundColor: 'rgba(12,12,16,0.95)',
+          titleColor: '#ededf0',
+          bodyColor: '#b0b0be',
+          borderColor: 'rgba(255,255,255,0.08)',
+          borderWidth: 1,
+          padding: 12,
+          cornerRadius: 10,
+        },
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Article Count', color: '#6e6e82', font: { size: 11 } },
+          grid: { color: 'rgba(34,34,48,0.4)' },
+        },
+        y: {
+          title: { display: true, text: 'Polarization Score', color: '#6e6e82', font: { size: 11 } },
+          grid: { color: 'rgba(34,34,48,0.4)' },
+        },
+      },
+      onClick: (e, elements) => {
+        if (elements.length) {
+          const idx = elements[0].index;
+          const id = _data[idx].id;
+          openDetail(id);
+        }
+      },
+    },
+  });
+}
+
+// ── Story cards ──────────────────────────────────────────
+
+function renderStories(data) {
+  if (!data.length) {
+    $('#storyList').innerHTML = '<div class="empty-state">No polarized stories found</div>';
+    return;
+  }
+
+  const html = data.map((d, i) => {
+    const delay = `style="animation-delay:${Math.min(i, 20) * 40}ms"`;
+
+    // Tone bar: map range [-10, 10] to [0%, 100%]
+    const minPct = Math.max(0, (d.tone_min + 10) / 20 * 100);
+    const maxPct = Math.min(100, (d.tone_max + 10) / 20 * 100);
+    const avgPct = Math.max(0, Math.min(100, (d.avg_tone + 10) / 20 * 100));
+
+    // Source bars (top 5)
+    const srcHtml = d.sources.slice(0, 5).map(s => {
+      const pct = Math.max(0, Math.min(100, (s.avg_tone + 10) / 20 * 100));
+      const col = toneColor(s.avg_tone);
+      const cls = s.avg_tone >= 0 ? 'pos' : 'neg';
+      return `<div class="src-row">
+        <span class="src-name" title="${esc(s.source)}">${esc(s.source)}</span>
+        <div class="src-bar-track">
+          <div class="src-bar-fill" style="left:50%;width:${Math.abs(pct - 50)}%;${pct < 50 ? `right:50%;left:auto;` : ''}background:${col}"></div>
+        </div>
+        <span class="src-tone ${cls}">${s.avg_tone > 0 ? '+' : ''}${s.avg_tone.toFixed(1)}</span>
+      </div>`;
+    }).join('');
+
+    return `<div class="pol-card" data-id="${d.id}" ${delay} onclick="openDetail('${d.id}')">
+      <div class="pol-card-top">
+        <span class="pol-card-title">${esc(d.title || '(untitled)')}</span>
+        <span class="pol-score ${scoreClass(d.polarization_score)}">${d.polarization_score.toFixed(2)}</span>
+      </div>
+      <div class="pol-card-meta">
+        <span><span class="mono">${d.article_count}</span> articles</span>
+        <span><span class="mono">${d.distinct_sources}</span> sources</span>
+        <span>avg tone <span class="mono" style="color:${toneColor(d.avg_tone)}">${d.avg_tone > 0 ? '+' : ''}${d.avg_tone.toFixed(2)}</span></span>
+        <span>${fmtDate(d.first_article_at)} &mdash; ${fmtDate(d.last_article_at)}</span>
+      </div>
+      <div class="tone-bar-wrap">
+        <span class="tone-bar-label neg">${d.tone_min.toFixed(1)}</span>
+        <div class="tone-bar-track">
+          <div class="tone-bar-fill" style="left:${minPct}%;width:${maxPct - minPct}%;background:linear-gradient(90deg, var(--negative), var(--text-3) 50%, var(--positive))"></div>
+          <div class="tone-bar-avg" style="left:${avgPct}%"></div>
+        </div>
+        <span class="tone-bar-label pos">+${d.tone_max.toFixed(1)}</span>
+      </div>
+      <div class="source-bars">${srcHtml}</div>
+    </div>`;
+  }).join('');
+
+  $('#storyList').innerHTML = html;
+}
+
+// ── Detail view ──────────────────────────────────────────
+
+async function openDetail(id) {
+  const overlay = $('#overlay');
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  $('#detailTitle').textContent = 'Loading...';
+  $('#detailMeta').textContent = '';
+  $('#detailStats').innerHTML = '<div class="loading"><span class="spinner"></span></div>';
+  $('#detailSources').innerHTML = '';
+
+  try {
+    const d = await fetch(`${API}/polarization/${id}`).then(r => {
+      if (!r.ok) throw new Error(`Server error ${r.status}`);
+      return r.json();
+    });
+
+    $('#detailTitle').textContent = d.cluster.title || '(untitled)';
+    $('#detailMeta').innerHTML = `${d.total_articles_with_tone} articles with tone data &middot; ${fmtDate(d.cluster.first_article_at)} &mdash; ${fmtDate(d.cluster.last_article_at)}`;
+
+    // Stats
+    $('#detailStats').innerHTML = `
+      <div class="detail-stat"><div class="detail-stat-val" style="color:var(--primary-light)">${d.polarization_score.toFixed(2)}</div><div class="detail-stat-label">Polarization</div></div>
+      <div class="detail-stat"><div class="detail-stat-val" style="color:${toneColor(d.avg_tone)}">${d.avg_tone > 0 ? '+' : ''}${d.avg_tone.toFixed(2)}</div><div class="detail-stat-label">Avg Tone</div></div>
+      <div class="detail-stat"><div class="detail-stat-val" style="color:var(--negative)">${d.tone_min.toFixed(1)}</div><div class="detail-stat-label">Most Negative</div></div>
+      <div class="detail-stat"><div class="detail-stat-val" style="color:var(--positive)">+${d.tone_max.toFixed(1)}</div><div class="detail-stat-label">Most Positive</div></div>
+      <div class="detail-stat"><div class="detail-stat-val">${d.sources.length}</div><div class="detail-stat-label">Sources</div></div>
+    `;
+
+    // Histogram from precomputed data or from articles
+    renderDetailHistogram(d);
+    renderDetailSourceChart(d);
+    renderDetailSources(d);
+
+  } catch (e) {
+    $('#detailStats').innerHTML = `<div class="empty-state">${esc(e.message)}</div>`;
+  }
+}
+
+function renderDetailHistogram(d) {
+  // Build histogram from all articles
+  const allTones = [];
+  d.sources.forEach(s => s.articles.forEach(a => { if (a.tone != null) allTones.push(a.tone); }));
+
+  const bucketSize = 1;
+  const buckets = {};
+  for (let i = -10; i < 10; i++) buckets[i] = 0;
+  allTones.forEach(t => {
+    const b = Math.max(-10, Math.min(9, Math.floor(t)));
+    buckets[b] = (buckets[b] || 0) + 1;
+  });
+
+  const labels = Object.keys(buckets).map(Number).sort((a, b) => a - b);
+  const values = labels.map(l => buckets[l]);
+  const colors = labels.map(l => {
+    if (l < -1) return 'rgba(229, 99, 122, 0.7)';
+    if (l > 0) return 'rgba(45, 212, 168, 0.7)';
+    return 'rgba(110, 110, 130, 0.5)';
+  });
+
+  const ctx = $('#detailHistChart').getContext('2d');
+  if (_detailHistChart) _detailHistChart.destroy();
+
+  _detailHistChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels.map(l => l.toString()),
+      datasets: [{
+        data: values,
+        backgroundColor: colors,
+        borderRadius: 3,
+        barPercentage: 0.95,
+        categoryPercentage: 1,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: ctx => `Tone ${ctx[0].label} to ${Number(ctx[0].label) + 1}`,
+            label: ctx => `${ctx.raw} articles`,
+          },
+          backgroundColor: 'rgba(12,12,16,0.95)',
+          bodyColor: '#b0b0be',
+          borderColor: 'rgba(255,255,255,0.08)',
+          borderWidth: 1,
+          padding: 10,
+          cornerRadius: 8,
+        },
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Tone Score', color: '#6e6e82', font: { size: 11 } },
+          grid: { display: false },
+        },
+        y: {
+          title: { display: true, text: 'Articles', color: '#6e6e82', font: { size: 11 } },
+          grid: { color: 'rgba(34,34,48,0.4)' },
+        },
+      },
+    },
+  });
+}
+
+function renderDetailSourceChart(d) {
+  // Horizontal bar: one bar per source, colored by tone
+  const sources = d.sources.filter(s => s.article_count >= 2).slice(0, 20);
+
+  const chartHeight = Math.max(200, sources.length * 28 + 40);
+  $('#detailSourceChartWrap').style.height = chartHeight + 'px';
+
+  const ctx = $('#detailSourceChart').getContext('2d');
+  if (_detailSourceChart) _detailSourceChart.destroy();
+
+  _detailSourceChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sources.map(s => {
+        const name = s.source;
+        return name.length > 25 ? name.slice(0, 22) + '...' : name;
+      }),
+      datasets: [{
+        data: sources.map(s => s.avg_tone),
+        backgroundColor: sources.map(s => toneColorRgba(s.avg_tone, 0.7)),
+        borderColor: sources.map(s => toneColorRgba(s.avg_tone, 1)),
+        borderWidth: 1,
+        borderRadius: 3,
+        barPercentage: 0.7,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: 'y',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const s = sources[ctx.dataIndex];
+              return [`Avg tone: ${s.avg_tone > 0 ? '+' : ''}${s.avg_tone.toFixed(2)}`, `${s.article_count} articles`];
+            },
+          },
+          backgroundColor: 'rgba(12,12,16,0.95)',
+          bodyColor: '#b0b0be',
+          borderColor: 'rgba(255,255,255,0.08)',
+          borderWidth: 1,
+          padding: 10,
+          cornerRadius: 8,
+        },
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Average Tone', color: '#6e6e82', font: { size: 11 } },
+          grid: { color: 'rgba(34,34,48,0.4)' },
+        },
+        y: {
+          grid: { display: false },
+          ticks: { font: { size: 11 } },
+        },
+      },
+    },
+  });
+}
+
+function renderDetailSources(d) {
+  const html = d.sources.map(s => {
+    const tCol = toneColor(s.avg_tone);
+    const cls = s.avg_tone >= 0 ? 'pos' : 'neg';
+
+    const articlesHtml = s.articles.slice(0, 8).map(a => {
+      const tCls = (a.tone != null && a.tone >= 0) ? 'pos' : 'neg';
+      return `<div class="source-article">
+        <span class="source-article-title"><a href="${esc(a.url)}" target="_blank" rel="noopener noreferrer">${esc(a.title || '(no title)')}</a></span>
+        <span class="source-article-tone ${tCls}">${a.tone != null ? (a.tone > 0 ? '+' : '') + a.tone.toFixed(1) : '--'}</span>
+      </div>`;
+    }).join('');
+
+    return `<div class="source-group">
+      <div class="source-group-header" onclick="this.parentElement.querySelector('.source-articles').classList.toggle('collapsed')">
+        <span class="source-group-name">${esc(s.source)}</span>
+        <div class="source-group-meta">
+          <span class="source-group-tone" style="color:${tCol}">${s.avg_tone > 0 ? '+' : ''}${s.avg_tone.toFixed(2)}</span>
+          <span class="source-group-count">${s.article_count} articles</span>
+        </div>
+      </div>
+      <div class="source-articles">${articlesHtml}</div>
+    </div>`;
+  }).join('');
+
+  $('#detailSources').innerHTML = html;
+}
+
+// ── Modal controls ───────────────────────────────────────
+
+function closeDetail() {
+  $('#overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+$('#detailClose').addEventListener('click', closeDetail);
+$('#overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeDetail(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
+
+// ── Init ─────────────────────────────────────────────────
+
+loadData();
+</script>
+</body>
+</html>

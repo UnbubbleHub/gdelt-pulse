@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attention Asymmetry | GDELT Pulse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+
+:root{
+  --bg:#050507;--bg-raised:#0c0c10;--surface:#111116;--surface-2:#17171d;
+  --surface-3:#1d1d25;--border:#222230;--border-dim:#1a1a24;
+  --text:#ededf0;--text-2:#b0b0be;--text-3:#6e6e82;
+  --primary:#7c6aef;--primary-light:#9d8ff5;--primary-dim:rgba(124,106,239,0.1);
+  --teal:#2dd4a8;--teal-dim:rgba(45,212,168,0.1);
+  --amber:#e5a63e;--amber-dim:rgba(229,166,62,0.1);
+  --rose:#e5637a;--rose-dim:rgba(229,99,122,0.1);
+  --glass-bg:rgba(17,17,22,0.4);--glass-border:rgba(255,255,255,0.06);
+  --glass-blur:20px;--ease:cubic-bezier(0.4,0,0.2,1);
+}
+
+body{
+  font-family:'DM Sans',-apple-system,sans-serif;
+  background:var(--bg);color:var(--text);
+  min-height:100vh;line-height:1.55;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+
+::selection{background:var(--primary-dim);color:var(--primary-light)}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-dim);border-radius:3px}
+
+/* ── Top bar ──────────────────────────────────── */
+
+.topbar{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;gap:16px;
+  padding:14px 24px;
+  background:rgba(5,5,7,0.8);backdrop-filter:blur(20px) saturate(1.6);
+  -webkit-backdrop-filter:blur(20px) saturate(1.6);
+  border-bottom:1px solid var(--glass-border);
+}
+
+.topbar-back{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 14px;border-radius:20px;
+  border:1px solid var(--border-dim);background:none;
+  color:var(--text-2);font-size:0.78rem;font-family:inherit;
+  font-weight:500;cursor:pointer;text-decoration:none;
+  transition:all 0.2s var(--ease);
+}
+.topbar-back:hover{color:var(--text);border-color:var(--border)}
+.topbar-back svg{width:14px;height:14px}
+
+.topbar-title{font-size:0.9rem;font-weight:600;letter-spacing:-0.02em}
+.topbar-title .accent{color:var(--primary-light)}
+
+/* ── Page ─────────────────────────────────────── */
+
+.page-wrap{max-width:1060px;margin:0 auto;padding:80px 24px 60px}
+
+.page-intro{
+  text-align:center;margin-bottom:40px;
+  animation:fadeUp 0.6s var(--ease) both;
+}
+
+.page-intro h1{
+  font-size:clamp(1.8rem,4vw,2.6rem);
+  font-weight:700;letter-spacing:-0.04em;margin-bottom:10px;
+}
+
+.page-intro h1 .accent{
+  background:linear-gradient(135deg,var(--amber),var(--primary-light),var(--rose));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+
+.page-intro p{font-size:0.92rem;color:var(--text-3);max-width:560px;margin:0 auto}
+
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(18px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+/* ── Overview stats ───────────────────────────── */
+
+.ov-stats{
+  display:flex;gap:10px;margin-bottom:32px;
+  animation:fadeUp 0.6s var(--ease) 0.1s both;
+}
+
+.ov-stat{
+  flex:1;text-align:center;padding:18px 14px;
+  background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));
+  border:1px solid var(--glass-border);border-radius:14px;
+}
+
+.ov-stat-val{
+  font-family:'JetBrains Mono',monospace;
+  font-size:1.4rem;font-weight:600;margin-bottom:2px;
+}
+
+.ov-stat-label{
+  font-size:0.66rem;text-transform:uppercase;
+  letter-spacing:0.07em;color:var(--text-3);font-weight:500;
+}
+
+/* ── Charts ───────────────────────────────────── */
+
+.chart-section{
+  background:var(--surface);border:1px solid var(--border-dim);
+  border-radius:16px;padding:24px;margin-bottom:20px;
+  animation:fadeUp 0.6s var(--ease) both;
+}
+
+.chart-section h3{
+  font-size:0.72rem;text-transform:uppercase;
+  letter-spacing:0.07em;color:var(--text-3);
+  font-weight:600;margin-bottom:4px;
+}
+
+.chart-section .chart-sub{
+  font-size:0.78rem;color:var(--text-3);margin-bottom:16px;
+}
+
+.chart-container{position:relative;height:320px}
+.chart-container.tall{height:400px}
+
+/* ── Treemap ──────────────────────────────────── */
+
+.treemap-wrap{
+  position:relative;height:360px;border-radius:10px;
+  overflow:hidden;margin-bottom:8px;
+}
+
+.tm-cell{
+  position:absolute;border:1px solid rgba(5,5,7,0.6);
+  border-radius:4px;overflow:hidden;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  cursor:pointer;transition:filter 0.2s,transform 0.15s;
+  text-align:center;padding:4px;
+}
+
+.tm-cell:hover{filter:brightness(1.25);transform:scale(1.02);z-index:2}
+
+.tm-cell .tm-code{
+  font-family:'JetBrains Mono',monospace;
+  font-size:0.72rem;font-weight:600;color:rgba(255,255,255,0.9);
+  text-shadow:0 1px 3px rgba(0,0,0,0.5);
+}
+
+.tm-cell .tm-count{
+  font-family:'JetBrains Mono',monospace;
+  font-size:0.6rem;color:rgba(255,255,255,0.6);
+  text-shadow:0 1px 3px rgba(0,0,0,0.5);
+}
+
+/* ── Two column layout ────────────────────────── */
+
+.two-col{
+  display:grid;grid-template-columns:1fr 1fr;gap:16px;
+  margin-bottom:20px;
+}
+
+/* ── Story panels ─────────────────────────────── */
+
+.story-panel{
+  background:var(--surface);border:1px solid var(--border-dim);
+  border-radius:16px;padding:24px;
+  animation:fadeUp 0.6s var(--ease) both;
+}
+
+.story-panel h3{
+  font-size:0.72rem;text-transform:uppercase;
+  letter-spacing:0.07em;font-weight:600;margin-bottom:14px;
+  display:flex;align-items:center;gap:8px;
+}
+
+.story-panel h3 .dot{
+  width:8px;height:8px;border-radius:50%;flex-shrink:0;
+}
+
+.story-card{
+  padding:12px 14px;background:var(--bg);
+  border:1px solid var(--border-dim);border-radius:10px;
+  margin-bottom:6px;transition:all 0.2s var(--ease);
+}
+
+.story-card:hover{border-color:rgba(124,106,239,0.3);background:var(--surface-2)}
+
+.story-title{
+  font-size:0.82rem;font-weight:500;line-height:1.35;
+  margin-bottom:4px;letter-spacing:-0.01em;
+  display:-webkit-box;-webkit-line-clamp:2;
+  -webkit-box-orient:vertical;overflow:hidden;
+}
+
+.story-meta{
+  display:flex;gap:10px;font-size:0.7rem;color:var(--text-3);
+}
+
+.story-meta .mono{font-family:'JetBrains Mono',monospace}
+
+.story-badge{
+  font-family:'JetBrains Mono',monospace;
+  font-size:0.66rem;font-weight:600;
+  padding:3px 8px;border-radius:12px;
+}
+
+.badge-over{color:var(--amber);background:var(--amber-dim)}
+.badge-under{color:var(--rose);background:var(--rose-dim)}
+
+/* ── Country table ────────────────────────────── */
+
+.country-table-wrap{
+  max-height:400px;overflow-y:auto;
+  border-radius:10px;
+}
+
+.country-table{
+  width:100%;border-collapse:collapse;font-size:0.8rem;
+}
+
+.country-table th{
+  position:sticky;top:0;z-index:2;
+  padding:10px 12px;text-align:left;
+  font-size:0.64rem;text-transform:uppercase;
+  letter-spacing:0.06em;color:var(--text-3);
+  font-weight:600;background:var(--surface);
+  border-bottom:1px solid var(--border-dim);
+}
+
+.country-table th.sortable{cursor:pointer;user-select:none}
+.country-table th.sortable:hover{color:var(--text-2)}
+.country-table th.sorted{color:var(--primary-light)}
+
+.country-table td{
+  padding:8px 12px;border-bottom:1px solid rgba(34,34,48,0.3);
+  vertical-align:middle;
+}
+
+.country-table tr:hover td{background:var(--surface-2)}
+
+.country-table .mono{font-family:'JetBrains Mono',monospace}
+
+.coverage-bar{
+  display:inline-block;height:4px;border-radius:2px;
+  background:var(--primary);vertical-align:middle;
+  margin-left:6px;transition:width 0.4s var(--ease);
+}
+
+.crisis-bar{
+  display:inline-block;height:4px;border-radius:2px;
+  background:var(--rose);vertical-align:middle;
+  margin-left:6px;transition:width 0.4s var(--ease);
+}
+
+/* ── Tooltip ──────────────────────────────────── */
+
+.tooltip{
+  position:fixed;z-index:200;
+  background:rgba(12,12,16,0.95);backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border:1px solid var(--glass-border);
+  border-radius:12px;padding:14px 16px;
+  pointer-events:none;opacity:0;transition:opacity 0.15s;
+  max-width:240px;
+}
+
+.tooltip.visible{opacity:1}
+
+.tooltip-name{font-size:0.88rem;font-weight:600;margin-bottom:4px}
+
+.tooltip-row{
+  display:flex;justify-content:space-between;gap:16px;
+  font-size:0.74rem;color:var(--text-3);margin-bottom:2px;
+}
+
+.tooltip-row .val{
+  font-family:'JetBrains Mono',monospace;
+  color:var(--text-2);font-weight:500;
+}
+
+/* ── Loading ──────────────────────────────────── */
+
+.loading{
+  text-align:center;padding:48px 20px;
+  color:var(--text-3);font-size:0.86rem;
+}
+
+.spinner{
+  display:inline-block;width:16px;height:16px;
+  border:2px solid var(--border);border-top-color:var(--primary);
+  border-radius:50%;animation:spin 0.5s linear infinite;
+  margin-left:8px;vertical-align:middle;
+}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Responsive ───────────────────────────────── */
+
+@media(max-width:768px){
+  .page-wrap{padding:72px 14px 40px}
+  .ov-stats{flex-direction:column}
+  .two-col{grid-template-columns:1fr}
+  .treemap-wrap{height:280px}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/" class="topbar-back">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+    GDELT Pulse
+  </a>
+  <span class="topbar-title">Attention <span class="accent">Asymmetry</span></span>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<div class="page-wrap">
+  <div class="page-intro">
+    <h1>Attention <span class="accent">Asymmetry</span></h1>
+    <p>Where the world looks vs. where crises happen. Comparing media attention with crisis intensity to find the blind spots.</p>
+  </div>
+
+  <div class="ov-stats">
+    <div class="ov-stat"><div class="ov-stat-val" id="statTotal">--</div><div class="ov-stat-label">Total Articles</div></div>
+    <div class="ov-stat"><div class="ov-stat-val" id="statCountries">--</div><div class="ov-stat-label">Countries Covered</div></div>
+    <div class="ov-stat"><div class="ov-stat-val" id="statTopPct">--</div><div class="ov-stat-label">Top 5 Countries Share</div></div>
+    <div class="ov-stat"><div class="ov-stat-val" id="statGini">--</div><div class="ov-stat-label">Concentration Index</div></div>
+  </div>
+
+  <!-- Treemap: visual coverage distribution -->
+  <div class="chart-section" style="animation-delay:0.15s">
+    <h3>Coverage Distribution</h3>
+    <div class="chart-sub">Each block = one country. Size = article volume. Color = crisis intensity (red = high crisis ratio).</div>
+    <div class="treemap-wrap" id="treemap"></div>
+  </div>
+
+  <!-- Scatter: coverage vs crisis ratio -->
+  <div class="chart-section" style="animation-delay:0.2s">
+    <h3>The Blind Spot Map</h3>
+    <div class="chart-sub">Countries in the top-right are well-covered crisis zones. Bottom-right = crises that media is ignoring.</div>
+    <div class="chart-container tall"><canvas id="scatterChart"></canvas></div>
+  </div>
+
+  <!-- Overcovered vs Underreported -->
+  <div class="two-col">
+    <div class="story-panel" style="animation-delay:0.25s">
+      <h3><span class="dot" style="background:var(--amber)"></span> <span style="color:var(--amber)">Most Covered</span> Stories</h3>
+      <div id="overcoveredList"><div class="loading"><span class="spinner"></span></div></div>
+    </div>
+    <div class="story-panel" style="animation-delay:0.3s">
+      <h3><span class="dot" style="background:var(--rose)"></span> <span style="color:var(--rose)">Underreported</span> Crises</h3>
+      <div id="underreportedList"><div class="loading"><span class="spinner"></span></div></div>
+    </div>
+  </div>
+
+  <!-- Full country table -->
+  <div class="chart-section" style="animation-delay:0.35s">
+    <h3>All Countries</h3>
+    <div class="chart-sub">Click column headers to sort. Coverage % shows share of total articles.</div>
+    <div class="country-table-wrap">
+      <table class="country-table" id="countryTable">
+        <thead>
+          <tr>
+            <th class="sortable sorted" data-sort="articles" data-dir="desc">Country</th>
+            <th class="sortable" data-sort="articles" data-dir="desc">Articles</th>
+            <th class="sortable" data-sort="coverage" data-dir="desc">Coverage</th>
+            <th class="sortable" data-sort="crisis" data-dir="desc">Crisis Articles</th>
+            <th class="sortable" data-sort="ratio" data-dir="desc">Crisis Ratio</th>
+            <th class="sortable" data-sort="tone" data-dir="asc">Tone</th>
+          </tr>
+        </thead>
+        <tbody id="countryTbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const API='/api';
+const $=s=>document.querySelector(s);
+const $$=s=>document.querySelectorAll(s);
+
+Chart.defaults.color='#6e6e82';
+Chart.defaults.borderColor='rgba(34,34,48,0.6)';
+Chart.defaults.font.family="'DM Sans',sans-serif";
+
+const COUNTRIES={
+US:["United States","\u{1F1FA}\u{1F1F8}"],UK:["United Kingdom","\u{1F1EC}\u{1F1E7}"],
+CA:["Canada","\u{1F1E8}\u{1F1E6}"],AS:["Australia","\u{1F1E6}\u{1F1FA}"],
+FR:["France","\u{1F1EB}\u{1F1F7}"],GM:["Germany","\u{1F1E9}\u{1F1EA}"],
+IT:["Italy","\u{1F1EE}\u{1F1F9}"],SP:["Spain","\u{1F1EA}\u{1F1F8}"],
+JA:["Japan","\u{1F1EF}\u{1F1F5}"],CH:["China","\u{1F1E8}\u{1F1F3}"],
+IN:["India","\u{1F1EE}\u{1F1F3}"],RS:["Russia","\u{1F1F7}\u{1F1FA}"],
+BR:["Brazil","\u{1F1E7}\u{1F1F7}"],MX:["Mexico","\u{1F1F2}\u{1F1FD}"],
+IR:["Iran","\u{1F1EE}\u{1F1F7}"],IS:["Israel","\u{1F1EE}\u{1F1F1}"],
+SA:["Saudi Arabia","\u{1F1F8}\u{1F1E6}"],EG:["Egypt","\u{1F1EA}\u{1F1EC}"],
+TU:["Turkey","\u{1F1F9}\u{1F1F7}"],PK:["Pakistan","\u{1F1F5}\u{1F1F0}"],
+UP:["Ukraine","\u{1F1FA}\u{1F1E6}"],LE:["Lebanon","\u{1F1F1}\u{1F1E7}"],
+SY:["Syria","\u{1F1F8}\u{1F1FE}"],IZ:["Iraq","\u{1F1EE}\u{1F1F6}"],
+AF:["Afghanistan","\u{1F1E6}\u{1F1EB}"],KS:["South Korea","\u{1F1F0}\u{1F1F7}"],
+KN:["North Korea","\u{1F1F0}\u{1F1F5}"],TW:["Taiwan","\u{1F1F9}\u{1F1FC}"],
+TH:["Thailand","\u{1F1F9}\u{1F1ED}"],VM:["Vietnam","\u{1F1FB}\u{1F1F3}"],
+ID:["Indonesia","\u{1F1EE}\u{1F1E9}"],MY:["Malaysia","\u{1F1F2}\u{1F1FE}"],
+PL:["Poland","\u{1F1F5}\u{1F1F1}"],NL:["Netherlands","\u{1F1F3}\u{1F1F1}"],
+NI:["Nigeria","\u{1F1F3}\u{1F1EC}"],SF:["South Africa","\u{1F1FF}\u{1F1E6}"],
+KE:["Kenya","\u{1F1F0}\u{1F1EA}"],ET:["Ethiopia","\u{1F1EA}\u{1F1F9}"],
+GH:["Ghana","\u{1F1EC}\u{1F1ED}"],CO:["Colombia","\u{1F1E8}\u{1F1F4}"],
+AR:["Argentina","\u{1F1E6}\u{1F1F7}"],PE:["Peru","\u{1F1F5}\u{1F1EA}"],
+CU:["Cuba","\u{1F1E8}\u{1F1FA}"],QA:["Qatar","\u{1F1F6}\u{1F1E6}"],
+AE:["UAE","\u{1F1E6}\u{1F1EA}"],SU:["Sudan","\u{1F1F8}\u{1F1E9}"],
+LY:["Libya","\u{1F1F1}\u{1F1FE}"],MO:["Morocco","\u{1F1F2}\u{1F1E6}"],
+SN:["Senegal","\u{1F1F8}\u{1F1F3}"],UG:["Uganda","\u{1F1FA}\u{1F1EC}"],
+RO:["Romania","\u{1F1F7}\u{1F1F4}"],HU:["Hungary","\u{1F1ED}\u{1F1FA}"],
+EI:["Ireland","\u{1F1EE}\u{1F1EA}"],SZ:["Switzerland","\u{1F1E8}\u{1F1ED}"],
+SW:["Sweden","\u{1F1F8}\u{1F1EA}"],NO:["Norway","\u{1F1F3}\u{1F1F4}"],
+SO:["Somalia","\u{1F1F8}\u{1F1F4}"],YM:["Yemen","\u{1F1FE}\u{1F1EA}"],
+RP:["Philippines","\u{1F1F5}\u{1F1ED}"],BA:["Bahrain","\u{1F1E7}\u{1F1ED}"],
+JO:["Jordan","\u{1F1EF}\u{1F1F4}"],
+};
+
+function cName(code){return COUNTRIES[code]?COUNTRIES[code][0]:code}
+function cFlag(code){return COUNTRIES[code]?COUNTRIES[code][1]:''}
+function esc(s){const d=document.createElement('div');d.textContent=String(s);return d.innerHTML}
+function fmtDate(s){if(!s)return'';const d=new Date(s);return isNaN(d)?String(s):d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}
+
+let _data=null;
+let _scatterChart=null;
+
+// ── Load ─────────────────────────────────────────
+
+async function loadData(){
+  try{
+    const data=await fetch(`${API}/asymmetry`).then(r=>{
+      if(!r.ok)throw new Error(`Server ${r.status}`);
+      return r.json();
+    });
+    _data=data;
+    renderOverview(data);
+    renderTreemap(data);
+    renderScatter(data);
+    renderStories(data);
+    renderTable(data);
+  }catch(e){
+    $('#treemap').innerHTML=`<div class="loading">${esc(e.message)}</div>`;
+  }
+}
+
+// ── Overview ─────────────────────────────────────
+
+function renderOverview(data){
+  $('#statTotal').textContent=data.total_articles.toLocaleString();
+  $('#statCountries').textContent=data.total_countries;
+
+  // Top 5 share
+  const top5=data.countries.slice(0,5);
+  const top5pct=top5.reduce((s,c)=>s+c.coverage_pct,0);
+  $('#statTopPct').textContent=top5pct.toFixed(1)+'%';
+
+  // Gini-like concentration (share of top 10% of countries)
+  const sorted=[...data.countries].sort((a,b)=>b.article_count-a.article_count);
+  const top10pct=sorted.slice(0,Math.max(1,Math.ceil(sorted.length*0.1)));
+  const top10share=top10pct.reduce((s,c)=>s+c.article_count,0)/data.total_articles*100;
+  $('#statGini').textContent=top10share.toFixed(0)+'%';
+}
+
+// ── Treemap ──────────────────────────────────────
+
+function renderTreemap(data){
+  const wrap=$('#treemap');
+  const W=wrap.clientWidth,H=wrap.clientHeight;
+  const items=data.countries.filter(c=>c.article_count>=50).slice(0,60);
+  const total=items.reduce((s,c)=>s+c.article_count,0);
+
+  // Simple squarified treemap layout
+  const rects=squarify(items.map(c=>c.article_count/total),W,H);
+
+  const maxCrisis=Math.max(...items.map(c=>c.crisis_ratio),0.01);
+
+  let html='';
+  rects.forEach((r,i)=>{
+    const c=items[i];
+    const crisisIntensity=c.crisis_ratio/maxCrisis;
+    // Color: neutral purple → red based on crisis ratio
+    const red=Math.round(124+131*crisisIntensity);
+    const green=Math.round(106-106*crisisIntensity);
+    const blue=Math.round(239-117*crisisIntensity);
+    const bg=`rgb(${red},${green},${blue})`;
+
+    const showLabel=r.w>40&&r.h>30;
+    const showCount=r.w>50&&r.h>44;
+
+    html+=`<div class="tm-cell" style="left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px;background:${bg}"
+      data-idx="${i}"
+      onmouseenter="showTmTip(event,${i})"
+      onmousemove="moveTip(event)"
+      onmouseleave="hideTip()">
+      ${showLabel?`<span class="tm-code">${c.code}</span>`:''}
+      ${showCount?`<span class="tm-count">${c.article_count.toLocaleString()}</span>`:''}
+    </div>`;
+  });
+
+  wrap.innerHTML=html;
+}
+
+// Simple squarified treemap algorithm
+function squarify(values,W,H){
+  const rects=[];
+  const areas=values.map(v=>v*W*H);
+  layoutRow(areas,0,0,W,H,rects);
+  return rects;
+}
+
+function layoutRow(areas,x,y,w,h,rects){
+  if(areas.length===0)return;
+  if(areas.length===1){
+    rects.push({x,y,w,h});
+    return;
+  }
+
+  const total=areas.reduce((s,a)=>s+a,0);
+  const horizontal=w>=h;
+  let row=[],rowArea=0,remaining=[...areas];
+  let bestAspect=Infinity;
+
+  for(let i=0;i<remaining.length;i++){
+    row.push(remaining[i]);
+    rowArea+=remaining[i];
+
+    const rowLen=horizontal?rowArea/h:rowArea/w;
+    let worstAspect=0;
+    for(const a of row){
+      const cellW=horizontal?rowLen:a/rowLen;
+      const cellH=horizontal?a/rowLen:rowLen;
+      const aspect=Math.max(cellW/cellH,cellH/cellW);
+      worstAspect=Math.max(worstAspect,aspect);
+    }
+
+    if(worstAspect>bestAspect&&row.length>1){
+      row.pop();rowArea-=remaining[i];
+      break;
+    }
+    bestAspect=worstAspect;
+  }
+
+  // Layout this row
+  const rowLen=horizontal?rowArea/h:rowArea/w;
+  let offset=0;
+  for(const a of row){
+    const cellLen=horizontal?a/rowLen:a/rowLen;
+    if(horizontal){
+      rects.push({x:x,y:y+offset,w:rowLen,h:cellLen});
+    }else{
+      rects.push({x:x+offset,y:y,w:cellLen,h:rowLen});
+    }
+    offset+=cellLen;
+  }
+
+  // Recurse with remaining
+  const rest=remaining.slice(row.length);
+  if(horizontal){
+    layoutRow(rest,x+rowLen,y,w-rowLen,h,rects);
+  }else{
+    layoutRow(rest,x,y+rowLen,w,h-rowLen,rects);
+  }
+}
+
+// ── Treemap tooltip ──────────────────────────────
+
+function showTmTip(e,idx){
+  const c=_data.countries.filter(c=>c.article_count>=50)[idx];
+  if(!c)return;
+  const tt=$('#tooltip');
+  tt.innerHTML=`
+    <div class="tooltip-name">${cFlag(c.code)} ${esc(cName(c.code))}</div>
+    <div class="tooltip-row"><span>Articles</span><span class="val">${c.article_count.toLocaleString()}</span></div>
+    <div class="tooltip-row"><span>Coverage</span><span class="val">${c.coverage_pct.toFixed(2)}%</span></div>
+    <div class="tooltip-row"><span>Crisis articles</span><span class="val">${c.crisis_articles.toLocaleString()}</span></div>
+    <div class="tooltip-row"><span>Crisis ratio</span><span class="val" style="color:${c.crisis_ratio>0.3?'var(--rose)':'var(--text-2)'}">${(c.crisis_ratio*100).toFixed(1)}%</span></div>
+  `;
+  tt.classList.add('visible');
+  moveTip(e);
+}
+
+function moveTip(e){
+  const tt=$('#tooltip');
+  tt.style.left=(e.clientX+16)+'px';
+  tt.style.top=(e.clientY-10)+'px';
+}
+
+function hideTip(){$('#tooltip').classList.remove('visible')}
+
+// ── Scatter chart ────────────────────────────────
+
+function renderScatter(data){
+  const items=data.countries.filter(c=>c.article_count>=20);
+
+  const ctx=$('#scatterChart').getContext('2d');
+  if(_scatterChart)_scatterChart.destroy();
+
+  _scatterChart=new Chart(ctx,{
+    type:'bubble',
+    data:{
+      datasets:[{
+        data:items.map(c=>({
+          x:c.article_count,
+          y:c.crisis_ratio*100,
+          r:Math.max(3,Math.min(18,Math.log10(c.article_count)*3)),
+          _code:c.code,
+          _name:cName(c.code),
+        })),
+        backgroundColor:items.map(c=>{
+          if(c.crisis_ratio>0.4)return'rgba(229,99,122,0.6)';
+          if(c.crisis_ratio>0.2)return'rgba(229,166,62,0.5)';
+          return'rgba(124,106,239,0.4)';
+        }),
+        borderColor:items.map(c=>{
+          if(c.crisis_ratio>0.4)return'rgba(229,99,122,0.9)';
+          if(c.crisis_ratio>0.2)return'rgba(229,166,62,0.8)';
+          return'rgba(124,106,239,0.7)';
+        }),
+        borderWidth:1,
+      }],
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{
+            label:ctx=>{
+              const p=ctx.raw;
+              return[`${p._name} (${p._code})`,`Articles: ${p.x.toLocaleString()}`,`Crisis ratio: ${p.y.toFixed(1)}%`];
+            },
+          },
+          backgroundColor:'rgba(12,12,16,0.95)',bodyColor:'#b0b0be',
+          borderColor:'rgba(255,255,255,0.08)',borderWidth:1,
+          padding:12,cornerRadius:10,
+        },
+      },
+      scales:{
+        x:{
+          type:'logarithmic',
+          title:{display:true,text:'Article Count (log scale)',color:'#6e6e82',font:{size:11}},
+          grid:{color:'rgba(34,34,48,0.4)'},
+        },
+        y:{
+          title:{display:true,text:'Crisis Ratio %',color:'#6e6e82',font:{size:11}},
+          grid:{color:'rgba(34,34,48,0.4)'},
+        },
+      },
+    },
+  });
+}
+
+// ── Stories ───────────────────────────────────────
+
+function renderStories(data){
+  // Overcovered
+  const overHtml=data.overcovered.map(c=>`
+    <div class="story-card">
+      <div class="story-title">${esc(c.title||'(untitled)')}</div>
+      <div class="story-meta">
+        <span class="story-badge badge-over">${c.article_count} articles</span>
+        <span>${fmtDate(c.first_article_at)} &mdash; ${fmtDate(c.last_article_at)}</span>
+      </div>
+    </div>
+  `).join('');
+  $('#overcoveredList').innerHTML=overHtml||'<div class="loading">No data</div>';
+
+  // Underreported
+  const underHtml=data.underreported.map(c=>`
+    <div class="story-card">
+      <div class="story-title">${esc(c.title||'(untitled)')}</div>
+      <div class="story-meta">
+        <span class="story-badge badge-under">${c.article_count} articles</span>
+        <span>${fmtDate(c.first_article_at)} &mdash; ${fmtDate(c.last_article_at)}</span>
+      </div>
+    </div>
+  `).join('');
+  $('#underreportedList').innerHTML=underHtml||'<div class="loading">No data</div>';
+}
+
+// ── Country table ────────────────────────────────
+
+let currentSort='articles',currentDir='desc';
+
+function renderTable(data){
+  const maxArticles=data.countries[0]?.article_count||1;
+  const maxCrisis=Math.max(...data.countries.map(c=>c.crisis_articles),1);
+
+  const sorted=[...data.countries];
+  sortCountries(sorted);
+
+  const html=sorted.slice(0,100).map(c=>{
+    const covW=Math.round(c.article_count/maxArticles*80);
+    const criW=Math.round(c.crisis_articles/maxCrisis*60);
+    const tCol=c.avg_tone<-1?'var(--rose)':c.avg_tone>1?'var(--teal)':'var(--text-3)';
+    return`<tr>
+      <td>${cFlag(c.code)} <strong>${esc(cName(c.code))}</strong> <span style="color:var(--text-3);font-size:0.7rem">${c.code}</span></td>
+      <td class="mono">${c.article_count.toLocaleString()}<span class="coverage-bar" style="width:${covW}px"></span></td>
+      <td class="mono">${c.coverage_pct.toFixed(2)}%</td>
+      <td class="mono">${c.crisis_articles.toLocaleString()}<span class="crisis-bar" style="width:${criW}px"></span></td>
+      <td class="mono" style="color:${c.crisis_ratio>0.3?'var(--rose)':'var(--text-2)'}">${(c.crisis_ratio*100).toFixed(1)}%</td>
+      <td class="mono" style="color:${tCol}">${c.avg_tone>0?'+':''}${c.avg_tone.toFixed(2)}</td>
+    </tr>`;
+  }).join('');
+
+  $('#countryTbody').innerHTML=html;
+}
+
+function sortCountries(arr){
+  const dir=currentDir==='desc'?-1:1;
+  const key={
+    articles:(c)=>c.article_count,
+    coverage:(c)=>c.coverage_pct,
+    crisis:(c)=>c.crisis_articles,
+    ratio:(c)=>c.crisis_ratio,
+    tone:(c)=>c.avg_tone,
+  }[currentSort]||(c=>c.article_count);
+
+  arr.sort((a,b)=>(key(a)-key(b))*dir);
+}
+
+// Table header sorting
+$$('.country-table th.sortable').forEach(th=>{
+  th.addEventListener('click',()=>{
+    const sort=th.dataset.sort;
+    if(currentSort===sort){
+      currentDir=currentDir==='desc'?'asc':'desc';
+    }else{
+      currentSort=sort;
+      currentDir=th.dataset.dir||'desc';
+    }
+    $$('.country-table th').forEach(h=>h.classList.remove('sorted'));
+    th.classList.add('sorted');
+    if(_data)renderTable(_data);
+  });
+});
+
+// ── Init ─────────────────────────────────────────
+
+loadData();
+</script>
+</body>
+</html>

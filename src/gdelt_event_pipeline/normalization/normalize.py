@@ -96,6 +96,7 @@ def normalize_row(row: list[str]) -> dict[str, Any] | None:
         "persons": json.dumps(persons) if persons else None,
         "all_names": json.dumps(all_names) if all_names else None,
         "tone": json.dumps(tone) if tone else None,
+        "raw_payload": json.dumps({f"col_{i}": v for i, v in enumerate(row)}),
     }
 
 
