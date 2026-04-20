@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import time
 from collections import defaultdict
 from collections.abc import AsyncIterator
@@ -26,8 +27,6 @@ from gdelt_event_pipeline.storage.clusters import (
     get_cluster_by_id,
 )
 from gdelt_event_pipeline.storage.database import close_pool, init_pool
-
-import os
 
 # Detect whether sentence_transformers is available at startup.
 # On Vercel it is not installed (see requirements.txt), so /api/search returns 501.
