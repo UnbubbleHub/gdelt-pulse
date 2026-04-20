@@ -27,6 +27,16 @@ from gdelt_event_pipeline.storage.clusters import (
 )
 from gdelt_event_pipeline.storage.database import close_pool, init_pool
 
+import os
+
+# Detect whether sentence_transformers is available at startup.
+# On Vercel it is not installed (see requirements.txt), so /api/search returns 501.
+try:
+    import sentence_transformers as _st_check  # noqa: F401
+    _SEARCH_AVAILABLE = True
+except ImportError:
+    _SEARCH_AVAILABLE = False
+
 STATIC_DIR = Path(__file__).parent / "static"
 
 # ── Pydantic response models ─────────────────────────────────────────
@@ -113,7 +123,12 @@ def _ensure_schema() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
-    init_pool(settings.db)
+    _is_serverless = bool(os.environ.get("VERCEL"))
+    init_pool(
+        settings.db,
+        min_size=0 if _is_serverless else 2,
+        max_size=2 if _is_serverless else 10,
+    )
     _ensure_schema()
     yield
     close_pool()
@@ -251,6 +266,11 @@ def search(
     date_to: datetime | None = Query(None, description="End date (ISO format)"),  # noqa: B008
 ):
     """Hybrid semantic + keyword search over articles and clusters."""
+    if not _SEARCH_AVAILABLE:
+        raise HTTPException(
+            status_code=501,
+            detail="Semantic search is not available in this deployment.",
+        )
     filters = SearchFilters(
         locations=_split_csv(location),
         persons=_split_csv(person),
