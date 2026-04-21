@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import threading as _threading
 import time
 from collections import defaultdict
 from collections.abc import AsyncIterator
@@ -169,17 +170,20 @@ RATE_LIMIT_WINDOW = 60  # seconds
 
 _rate_limit_store: dict[str, list[float]] = defaultdict(list)
 _redis = None
+_redis_lock = _threading.Lock()
 
 
 def _get_redis():
     """Return the Upstash Redis client, or None if not configured."""
     global _redis
     if _redis is None:
-        url = os.environ.get("UPSTASH_REDIS_REST_URL")
-        token = os.environ.get("UPSTASH_REDIS_REST_TOKEN")
-        if url and token:
-            from upstash_redis import Redis  # lazy: not installed in all environments
-            _redis = Redis(url=url, token=token)
+        with _redis_lock:
+            if _redis is None:
+                url = os.environ.get("UPSTASH_REDIS_REST_URL")
+                token = os.environ.get("UPSTASH_REDIS_REST_TOKEN")
+                if url and token:
+                    from upstash_redis import Redis  # lazy: not installed in all environments
+                    _redis = Redis(url=url, token=token)
     return _redis
 
 
@@ -202,9 +206,10 @@ async def rate_limit_middleware(request: Request, call_next) -> Response:
         pipe.zadd(key, {f"{now}-{os.urandom(4).hex()}": now})
         pipe.expire(key, RATE_LIMIT_WINDOW)
         results = pipe.execute()
-        count = results[1]
+        count = results[1]  # count before this request; >= RATE_LIMIT_MAX means window is full
     else:
         # In-memory fallback: per-instance, not shared across Vercel instances
+        # time.time() used (not monotonic) to keep the clock consistent with the Redis path
         timestamps = _rate_limit_store[client_ip]
         _rate_limit_store[client_ip] = [t for t in timestamps if now - t < RATE_LIMIT_WINDOW]
         count = len(_rate_limit_store[client_ip])
