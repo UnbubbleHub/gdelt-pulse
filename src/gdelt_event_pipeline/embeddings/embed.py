@@ -38,11 +38,7 @@ def embed_texts(
     if backend == "fastembed":
         from fastembed import TextEmbedding  # lazy: only when backend is configured
         fe_model = TextEmbedding(model_name)
-        return [
-            row.tolist() if hasattr(row, "tolist") else list(row)
-            for batch in fe_model.embed(texts)
-            for row in batch
-        ]
+        return [v.tolist() for v in fe_model.embed(texts)]
 
     model = load_model(model_name)
     embeddings = model.encode(texts, batch_size=batch_size, show_progress_bar=False)

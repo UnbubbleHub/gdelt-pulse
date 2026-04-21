@@ -67,9 +67,10 @@ class TestEmbeddingBackend:
 
         monkeypatch.setenv("EMBEDDING_BACKEND", "fastembed")
 
+        import numpy as np
         fake_vec = [0.1] * 384
         mock_model = MagicMock()
-        mock_model.embed.return_value = iter([[fake_vec]])
+        mock_model.embed.return_value = iter([np.array(fake_vec)])
 
         with patch.dict(sys.modules, {"fastembed": MagicMock(TextEmbedding=MagicMock(return_value=mock_model))}):
             # Re-import embed_texts so it picks up the env var at call time
