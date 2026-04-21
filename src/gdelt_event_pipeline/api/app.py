@@ -40,6 +40,7 @@ try:
     _SEARCH_AVAILABLE = True
 except ImportError:
     _SEARCH_AVAILABLE = False
+del _backend
 
 STATIC_DIR = Path(__file__).parent / "static"
 
