@@ -6,6 +6,7 @@ import os
 logger = logging.getLogger(__name__)
 
 _model = None
+_fe_model: dict = {}
 
 
 def load_model(model_name: str):
@@ -17,6 +18,16 @@ def load_model(model_name: str):
         logger.info("Loading embedding model: %s", model_name)
         _model = SentenceTransformer(model_name)
     return _model
+
+
+def load_fe_model(model_name: str):
+    """Load (and cache) a fastembed TextEmbedding model."""
+    from fastembed import TextEmbedding  # lazy: only when backend is configured
+
+    if model_name not in _fe_model:
+        logger.info("Loading fastembed model: %s", model_name)
+        _fe_model[model_name] = TextEmbedding(model_name)
+    return _fe_model[model_name]
 
 
 def embed_texts(
@@ -36,8 +47,7 @@ def embed_texts(
 
     backend = os.environ.get("EMBEDDING_BACKEND", "sentence-transformers")
     if backend == "fastembed":
-        from fastembed import TextEmbedding  # lazy: only when backend is configured
-        fe_model = TextEmbedding(model_name)
+        fe_model = load_fe_model(model_name)
         return [v.tolist() for v in fe_model.embed(texts)]
 
     model = load_model(model_name)
