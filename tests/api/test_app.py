@@ -1,8 +1,10 @@
 """Tests for app.py behaviour specific to the Vercel deployment split."""
 
-import pytest
 from unittest.mock import patch
+
+import pytest
 from fastapi.testclient import TestClient
+
 import gdelt_event_pipeline.api.app as app_module
 
 
