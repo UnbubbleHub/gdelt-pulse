@@ -33,7 +33,9 @@ class TestSearchGuard:
         so the module-level flag must be True."""
         assert app_module._SEARCH_AVAILABLE is True
 
-    def test_search_returns_501_when_search_available_flag_is_false(self, client_no_db, monkeypatch):
+    def test_search_returns_501_when_search_available_flag_is_false(
+        self, client_no_db, monkeypatch
+    ):
         """When _SEARCH_AVAILABLE is False, /api/search must return 501 regardless of backend."""
         monkeypatch.setattr(app_module, "_SEARCH_AVAILABLE", False)
         response = client_no_db.get("/api/search?q=test")

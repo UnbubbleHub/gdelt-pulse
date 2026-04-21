@@ -7,8 +7,8 @@ Run: uv run python scripts/compare_embeddings.py
 Requires: DATABASE_URL set to Neon direct DSN, both libraries installed locally.
 """
 
-import os
 import math
+import os
 
 HEADLINES = [
     "Earthquake strikes Turkey, thousands displaced",
@@ -38,7 +38,7 @@ PASS_THRESHOLD = 0.9999
 
 
 def cosine_similarity(a: list[float], b: list[float]) -> float:
-    dot = sum(x * y for x, y in zip(a, b))
+    dot = sum(x * y for x, y in zip(a, b, strict=True))
     norm_a = math.sqrt(sum(x * x for x in a))
     norm_b = math.sqrt(sum(x * x for x in b))
     return dot / (norm_a * norm_b)
@@ -61,7 +61,7 @@ def check_vector_compatibility() -> bool:
     st_vecs = embed_st(HEADLINES)
     fe_vecs = embed_fe(HEADLINES)
 
-    sims = [cosine_similarity(st, fe) for st, fe in zip(st_vecs, fe_vecs)]
+    sims = [cosine_similarity(st, fe) for st, fe in zip(st_vecs, fe_vecs, strict=True)]
     mean_sim = sum(sims) / len(sims)
     min_sim = min(sims)
 
@@ -77,8 +77,8 @@ def check_vector_compatibility() -> bool:
 def check_retrieval_quality() -> None:
     print("\n=== Gate 1b: Retrieval quality (manual inspection) ===")
     import psycopg
-    from psycopg.rows import dict_row
     from fastembed import TextEmbedding
+    from psycopg.rows import dict_row
 
     db_url = os.environ["DATABASE_URL"]
     model = TextEmbedding(MODEL)

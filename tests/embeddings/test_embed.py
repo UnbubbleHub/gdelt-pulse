@@ -72,7 +72,8 @@ class TestEmbeddingBackend:
         mock_model = MagicMock()
         mock_model.embed.return_value = iter([np.array(fake_vec)])
 
-        with patch.dict(sys.modules, {"fastembed": MagicMock(TextEmbedding=MagicMock(return_value=mock_model))}):
+        fe_mock = MagicMock(TextEmbedding=MagicMock(return_value=mock_model))
+        with patch.dict(sys.modules, {"fastembed": fe_mock}):
             # Re-import embed_texts so it picks up the env var at call time
             from gdelt_event_pipeline.embeddings.embed import embed_texts
             result = embed_texts(["test headline"])
