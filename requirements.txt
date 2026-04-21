@@ -1,5 +1,5 @@
 # Vercel API dependencies — pinned from uv.lock
-# sentence-transformers is intentionally excluded: /api/search returns 501 on Vercel (Phase 2)
+# sentence-transformers is intentionally excluded: fastembed is used instead on Vercel
 psycopg[binary]==3.3.3
 psycopg-pool==3.3.0
 pgvector==0.4.2
@@ -23,3 +23,28 @@ watchfiles==1.1.1
 websockets==16.0
 idna==3.11
 certifi==2026.2.25
+
+# fastembed — ONNX-based embeddings (replaces sentence-transformers on Vercel)
+fastembed==0.8.0
+onnxruntime==1.24.4
+tokenizers==0.22.2
+huggingface-hub==1.7.1
+hf-xet==1.4.2
+fsspec==2026.2.0
+filelock==3.25.2
+flatbuffers==25.12.19
+loguru==0.7.3
+mmh3==5.2.1
+pillow==12.2.0
+py-rust-stemmers==0.1.5
+sympy==1.14.0
+tqdm==4.67.3
+requests==2.33.1
+urllib3==2.6.3
+charset-normalizer==3.4.7
+packaging==26.0
+
+# upstash-redis — HTTP-based Redis client for Vercel serverless
+upstash-redis==1.7.0
+httpx==0.28.1
+httpcore==1.0.9
