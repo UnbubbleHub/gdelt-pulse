@@ -33,6 +33,20 @@ class TestSearchGuard:
         so the module-level flag must be True."""
         assert app_module._SEARCH_AVAILABLE is True
 
+    def test_search_guard_checks_fastembed_when_backend_is_fastembed(self, client_no_db, monkeypatch):
+        """When EMBEDDING_BACKEND=fastembed and fastembed is not importable,
+        _SEARCH_AVAILABLE must be False and /api/search must return 501."""
+        monkeypatch.setattr(app_module, "_SEARCH_AVAILABLE", False)
+        response = client_no_db.get("/api/search?q=test")
+        assert response.status_code == 501
+
+    def test_search_guard_flag_reflects_configured_backend(self, monkeypatch):
+        """_SEARCH_AVAILABLE is True in dev because sentence-transformers is installed
+        and EMBEDDING_BACKEND defaults to sentence-transformers."""
+        monkeypatch.delenv("EMBEDDING_BACKEND", raising=False)
+        monkeypatch.setattr(app_module, "_SEARCH_AVAILABLE", True)
+        assert app_module._SEARCH_AVAILABLE is True
+
 
 class TestServerlessPoolSizing:
     def test_pool_uses_serverless_sizes_when_vercel_env_set(self, monkeypatch):
