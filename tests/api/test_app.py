@@ -68,3 +68,48 @@ class TestServerlessPoolSizing:
         mock_init.assert_called_once()
         assert mock_init.call_args.kwargs["min_size"] == 2
         assert mock_init.call_args.kwargs["max_size"] == 10
+
+
+class TestRateLimiting:
+    def test_redis_rate_limit_returns_429_when_over_limit(self, client_no_db, monkeypatch):
+        """When Redis pipeline reports count >= RATE_LIMIT_MAX, middleware returns 429."""
+        from unittest.mock import MagicMock
+
+        mock_pipe = MagicMock()
+        # Pipeline results: [zremrangebyscore_result, zcard_count, zadd_result, expire_result]
+        mock_pipe.execute.return_value = [0, 30, 1, 1]  # count=30 == RATE_LIMIT_MAX
+
+        mock_redis = MagicMock()
+        mock_redis.pipeline.return_value = mock_pipe
+
+        monkeypatch.setattr(app_module, "_redis", mock_redis)
+
+        response = client_no_db.get("/api/clusters")
+        assert response.status_code == 429
+        assert "rate limit" in response.json()["detail"].lower()
+
+    def test_redis_rate_limit_passes_when_under_limit(self, client_no_db, monkeypatch):
+        """When Redis pipeline reports count < RATE_LIMIT_MAX, middleware passes through."""
+        from unittest.mock import MagicMock
+
+        mock_pipe = MagicMock()
+        mock_pipe.execute.return_value = [0, 5, 1, 1]  # count=5, well under limit
+
+        mock_redis = MagicMock()
+        mock_redis.pipeline.return_value = mock_pipe
+
+        monkeypatch.setattr(app_module, "_redis", mock_redis)
+        # /api/search with _SEARCH_AVAILABLE=False returns 501 — proves middleware passed through
+        monkeypatch.setattr(app_module, "_SEARCH_AVAILABLE", False)
+
+        response = client_no_db.get("/api/search?q=test")
+        assert response.status_code == 501  # middleware passed through; endpoint returned 501
+
+    def test_falls_back_to_in_memory_when_redis_not_configured(self, client_no_db, monkeypatch):
+        """When _redis is None (no Upstash credentials), middleware uses in-memory store."""
+        monkeypatch.setattr(app_module, "_redis", None)
+        monkeypatch.setattr(app_module, "_SEARCH_AVAILABLE", False)
+
+        response = client_no_db.get("/api/search?q=test")
+        # In-memory fallback allows the request through (count is 0)
+        assert response.status_code == 501  # passed through; not 429

@@ -168,39 +168,56 @@ RATE_LIMIT_MAX = 30  # requests per window
 RATE_LIMIT_WINDOW = 60  # seconds
 
 _rate_limit_store: dict[str, list[float]] = defaultdict(list)
+_redis = None
+
+
+def _get_redis():
+    """Return the Upstash Redis client, or None if not configured."""
+    global _redis
+    if _redis is None:
+        url = os.environ.get("UPSTASH_REDIS_REST_URL")
+        token = os.environ.get("UPSTASH_REDIS_REST_TOKEN")
+        if url and token:
+            from upstash_redis import Redis  # lazy: not installed in all environments
+            _redis = Redis(url=url, token=token)
+    return _redis
 
 
 @app.middleware("http")
 async def rate_limit_middleware(request: Request, call_next) -> Response:
-    """Simple per-IP rate limiter for search endpoints."""
-    if not (
-        request.url.path.startswith("/api/search")
-        or request.url.path.startswith("/api/clusters")
-        or request.url.path.startswith("/api/globe")
-        or request.url.path.startswith("/api/polarization")
-        or request.url.path.startswith("/api/gravity")
-        or request.url.path.startswith("/api/asymmetry")
-        or request.url.path.startswith("/api/sources")
-        or request.url.path.startswith("/api/propagation")
-        or request.url.path.startswith("/api/velocity")
-    ):
+    """Per-IP rate limiter. Uses Upstash Redis when configured; falls back to in-memory."""
+    if not request.url.path.startswith("/api/"):
         return await call_next(request)
 
     client_ip = request.client.host if request.client else "unknown"
-    now = time.monotonic()
+    now = time.time()
+    redis = _get_redis()
 
-    # Prune old entries
-    timestamps = _rate_limit_store[client_ip]
-    _rate_limit_store[client_ip] = [t for t in timestamps if now - t < RATE_LIMIT_WINDOW]
+    if redis is not None:
+        key = f"ratelimit:{client_ip}"
+        window_start = now - RATE_LIMIT_WINDOW
+        pipe = redis.pipeline()
+        pipe.zremrangebyscore(key, "-inf", window_start)
+        pipe.zcard(key)
+        pipe.zadd(key, {f"{now}-{os.urandom(4).hex()}": now})
+        pipe.expire(key, RATE_LIMIT_WINDOW)
+        results = pipe.execute()
+        count = results[1]
+    else:
+        # In-memory fallback: per-instance, not shared across Vercel instances
+        timestamps = _rate_limit_store[client_ip]
+        _rate_limit_store[client_ip] = [t for t in timestamps if now - t < RATE_LIMIT_WINDOW]
+        count = len(_rate_limit_store[client_ip])
+        if count < RATE_LIMIT_MAX:
+            _rate_limit_store[client_ip].append(now)
 
-    if len(_rate_limit_store[client_ip]) >= RATE_LIMIT_MAX:
+    if count >= RATE_LIMIT_MAX:
         return Response(
             content='{"detail":"Rate limit exceeded. Try again later."}',
             status_code=429,
             media_type="application/json",
         )
 
-    _rate_limit_store[client_ip].append(now)
     return await call_next(request)
 
 
