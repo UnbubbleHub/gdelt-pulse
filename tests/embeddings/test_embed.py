@@ -53,9 +53,7 @@ class TestLazyImport:
         # Block sentence_transformers from being importable
         monkeypatch.setitem(sys.modules, "sentence_transformers", None)
         # Remove the cached embed module so Python re-imports it fresh
-        monkeypatch.delitem(
-            sys.modules, "gdelt_event_pipeline.embeddings.embed", raising=False
-        )
+        monkeypatch.delitem(sys.modules, "gdelt_event_pipeline.embeddings.embed", raising=False)
 
         # Must NOT raise ModuleNotFoundError / ImportError
         import gdelt_event_pipeline.embeddings.embed  # noqa: F401

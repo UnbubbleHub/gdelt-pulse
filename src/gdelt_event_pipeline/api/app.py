@@ -32,6 +32,7 @@ from gdelt_event_pipeline.storage.database import close_pool, init_pool
 # On Vercel it is not installed (see requirements.txt), so /api/search returns 501.
 try:
     import sentence_transformers as _st_check  # noqa: F401
+
     _SEARCH_AVAILABLE = True
 except ImportError:
     _SEARCH_AVAILABLE = False

@@ -11,9 +11,11 @@ import gdelt_event_pipeline.api.app as app_module
 @pytest.fixture
 def client_no_db():
     """TestClient with DB lifecycle mocked out so no real connection is needed."""
-    with patch("gdelt_event_pipeline.api.app.init_pool"), \
-         patch("gdelt_event_pipeline.api.app.close_pool"), \
-         patch("gdelt_event_pipeline.api.app._ensure_schema"):
+    with (
+        patch("gdelt_event_pipeline.api.app.init_pool"),
+        patch("gdelt_event_pipeline.api.app.close_pool"),
+        patch("gdelt_event_pipeline.api.app._ensure_schema"),
+    ):
         with TestClient(app_module.app) as client:
             yield client
 
@@ -36,9 +38,11 @@ class TestServerlessPoolSizing:
     def test_pool_uses_serverless_sizes_when_vercel_env_set(self, monkeypatch):
         """When VERCEL=1 the lifespan must call init_pool with min_size=0, max_size=2."""
         monkeypatch.setenv("VERCEL", "1")
-        with patch("gdelt_event_pipeline.api.app.init_pool") as mock_init, \
-             patch("gdelt_event_pipeline.api.app.close_pool"), \
-             patch("gdelt_event_pipeline.api.app._ensure_schema"):
+        with (
+            patch("gdelt_event_pipeline.api.app.init_pool") as mock_init,
+            patch("gdelt_event_pipeline.api.app.close_pool"),
+            patch("gdelt_event_pipeline.api.app._ensure_schema"),
+        ):
             with TestClient(app_module.app):
                 pass
         mock_init.assert_called_once()
@@ -48,9 +52,11 @@ class TestServerlessPoolSizing:
     def test_pool_uses_standard_sizes_without_vercel_env(self, monkeypatch):
         """Without VERCEL env the lifespan must call init_pool with min_size=2, max_size=10."""
         monkeypatch.delenv("VERCEL", raising=False)
-        with patch("gdelt_event_pipeline.api.app.init_pool") as mock_init, \
-             patch("gdelt_event_pipeline.api.app.close_pool"), \
-             patch("gdelt_event_pipeline.api.app._ensure_schema"):
+        with (
+            patch("gdelt_event_pipeline.api.app.init_pool") as mock_init,
+            patch("gdelt_event_pipeline.api.app.close_pool"),
+            patch("gdelt_event_pipeline.api.app._ensure_schema"),
+        ):
             with TestClient(app_module.app):
                 pass
         mock_init.assert_called_once()
