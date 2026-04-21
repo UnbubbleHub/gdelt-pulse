@@ -1,18 +1,16 @@
 """Embedding generation using sentence-transformers."""
 
-from __future__ import annotations
-
 import logging
-
-from sentence_transformers import SentenceTransformer
 
 logger = logging.getLogger(__name__)
 
-_model: SentenceTransformer | None = None
+_model = None
 
 
-def load_model(model_name: str) -> SentenceTransformer:
+def load_model(model_name: str):
     """Load (and cache) a sentence-transformers model."""
+    from sentence_transformers import SentenceTransformer  # lazy: not needed at import time
+
     global _model
     if _model is None or _model.model_card_data.model_id != model_name:
         logger.info("Loading embedding model: %s", model_name)

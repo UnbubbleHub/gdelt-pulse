@@ -41,3 +41,19 @@ def _cosine_similarity(a: list[float], b: list[float]) -> float:
     norm_a = sum(x * x for x in a) ** 0.5
     norm_b = sum(x * x for x in b) ** 0.5
     return dot / (norm_a * norm_b)
+
+
+class TestLazyImport:
+    def test_module_loads_without_sentence_transformers(self, monkeypatch):
+        """embed.py must not import sentence_transformers at module load time.
+        After the lazy-import fix, importing the module with sentence_transformers
+        blocked must succeed without raising ModuleNotFoundError."""
+        import sys
+
+        # Block sentence_transformers from being importable
+        monkeypatch.setitem(sys.modules, "sentence_transformers", None)
+        # Remove the cached embed module so Python re-imports it fresh
+        monkeypatch.delitem(sys.modules, "gdelt_event_pipeline.embeddings.embed", raising=False)
+
+        # Must NOT raise ModuleNotFoundError / ImportError
+        import gdelt_event_pipeline.embeddings.embed  # noqa: F401

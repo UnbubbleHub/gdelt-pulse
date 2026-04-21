@@ -1,8 +1,6 @@
 [build]
 builder = "dockerfile"
-dockerfilePath = "Dockerfile"
+dockerfilePath = "Dockerfile.pipeline"
 
 [deploy]
-healthcheckPath = "/api/stats"
-healthcheckTimeout = 300
 restartPolicyType = "always"
