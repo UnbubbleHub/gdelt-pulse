@@ -69,7 +69,7 @@ def check_vector_compatibility() -> bool:
     print(f"Min cosine similarity:  {min_sim:.6f}")
     print(f"Threshold:              {PASS_THRESHOLD}")
 
-    passed = mean_sim >= PASS_THRESHOLD
+    passed = min_sim >= PASS_THRESHOLD
     print(f"Result: {'PASS' if passed else 'FAIL'}")
     return passed
 
