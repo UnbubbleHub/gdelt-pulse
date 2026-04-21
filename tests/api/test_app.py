@@ -144,9 +144,7 @@ class TestApiKeyAuth:
         monkeypatch.setattr(app_module, "_SEARCH_AVAILABLE", False)
         monkeypatch.setattr(app_module, "_redis", None)
 
-        response = client_no_db.get(
-            "/api/search?q=test", headers={"X-API-Key": "secret-key"}
-        )
+        response = client_no_db.get("/api/search?q=test", headers={"X-API-Key": "secret-key"})
         assert response.status_code == 501  # middleware passed; endpoint returned 501
 
     def test_auth_disabled_when_api_key_not_set(self, client_no_db, monkeypatch):

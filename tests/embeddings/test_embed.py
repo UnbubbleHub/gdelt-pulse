@@ -68,6 +68,7 @@ class TestEmbeddingBackend:
         monkeypatch.setenv("EMBEDDING_BACKEND", "fastembed")
 
         import numpy as np
+
         fake_vec = [0.1] * 384
         mock_model = MagicMock()
         mock_model.embed.return_value = iter([np.array(fake_vec)])
@@ -76,6 +77,7 @@ class TestEmbeddingBackend:
         with patch.dict(sys.modules, {"fastembed": fe_mock}):
             # Re-import embed_texts so it picks up the env var at call time
             from gdelt_event_pipeline.embeddings.embed import embed_texts
+
             result = embed_texts(["test headline"])
 
         assert result == [fake_vec]
@@ -84,6 +86,7 @@ class TestEmbeddingBackend:
         """When EMBEDDING_BACKEND is unset, embed_texts must use sentence-transformers."""
         monkeypatch.delenv("EMBEDDING_BACKEND", raising=False)
         from gdelt_event_pipeline.embeddings.embed import embed_texts
+
         result = embed_texts(["Hello world"])
         assert len(result) == 1
         assert len(result[0]) == 384
@@ -93,4 +96,5 @@ class TestEmbeddingBackend:
         for backend in ("sentence-transformers", "fastembed"):
             monkeypatch.setenv("EMBEDDING_BACKEND", backend)
             from gdelt_event_pipeline.embeddings.embed import embed_texts
+
             assert embed_texts([]) == []

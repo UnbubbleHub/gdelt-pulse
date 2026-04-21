@@ -184,6 +184,7 @@ def _get_redis():
                 token = os.environ.get("UPSTASH_REDIS_REST_TOKEN")
                 if url and token:
                     from upstash_redis import Redis  # lazy: not installed in all environments
+
                     _redis = Redis(url=url, token=token)
     return _redis
 

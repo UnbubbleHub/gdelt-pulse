@@ -46,12 +46,14 @@ def cosine_similarity(a: list[float], b: list[float]) -> float:
 
 def embed_st(texts: list[str]) -> list[list[float]]:
     from sentence_transformers import SentenceTransformer
+
     model = SentenceTransformer(MODEL)
     return model.encode(texts, show_progress_bar=False).tolist()
 
 
 def embed_fe(texts: list[str]) -> list[list[float]]:
     from fastembed import TextEmbedding
+
     model = TextEmbedding(MODEL)
     return [v.tolist() for v in model.embed(texts)]
 
