@@ -1,6 +1,7 @@
-"""Embedding generation using sentence-transformers."""
+"""Embedding generation — sentence-transformers or fastembed backend."""
 
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -26,10 +27,22 @@ def embed_texts(
 ) -> list[list[float]]:
     """Encode a list of texts into embedding vectors.
 
-    Returns a list of float lists, one per input text.
+    Backend is selected by the EMBEDDING_BACKEND env var:
+      - "fastembed"            → fastembed.TextEmbedding (Vercel)
+      - "sentence-transformers" or unset → SentenceTransformer (Railway / local)
     """
     if not texts:
         return []
+
+    backend = os.environ.get("EMBEDDING_BACKEND", "sentence-transformers")
+    if backend == "fastembed":
+        from fastembed import TextEmbedding  # lazy: only when backend is configured
+        fe_model = TextEmbedding(model_name)
+        return [
+            row.tolist() if hasattr(row, "tolist") else list(row)
+            for batch in fe_model.embed(texts)
+            for row in batch
+        ]
 
     model = load_model(model_name)
     embeddings = model.encode(texts, batch_size=batch_size, show_progress_bar=False)

@@ -57,3 +57,38 @@ class TestLazyImport:
 
         # Must NOT raise ModuleNotFoundError / ImportError
         import gdelt_event_pipeline.embeddings.embed  # noqa: F401
+
+
+class TestEmbeddingBackend:
+    def test_fastembed_backend_used_when_env_set(self, monkeypatch):
+        """When EMBEDDING_BACKEND=fastembed, embed_texts must call fastembed.TextEmbedding."""
+        import sys
+        from unittest.mock import MagicMock, patch
+
+        monkeypatch.setenv("EMBEDDING_BACKEND", "fastembed")
+
+        fake_vec = [0.1] * 384
+        mock_model = MagicMock()
+        mock_model.embed.return_value = iter([[fake_vec]])
+
+        with patch.dict(sys.modules, {"fastembed": MagicMock(TextEmbedding=MagicMock(return_value=mock_model))}):
+            # Re-import embed_texts so it picks up the env var at call time
+            from gdelt_event_pipeline.embeddings.embed import embed_texts
+            result = embed_texts(["test headline"])
+
+        assert result == [fake_vec]
+
+    def test_sentence_transformers_backend_used_by_default(self, monkeypatch):
+        """When EMBEDDING_BACKEND is unset, embed_texts must use sentence-transformers."""
+        monkeypatch.delenv("EMBEDDING_BACKEND", raising=False)
+        from gdelt_event_pipeline.embeddings.embed import embed_texts
+        result = embed_texts(["Hello world"])
+        assert len(result) == 1
+        assert len(result[0]) == 384
+
+    def test_empty_list_returns_empty_regardless_of_backend(self, monkeypatch):
+        """Empty input must return [] for both backends without calling any model."""
+        for backend in ("sentence-transformers", "fastembed"):
+            monkeypatch.setenv("EMBEDDING_BACKEND", backend)
+            from gdelt_event_pipeline.embeddings.embed import embed_texts
+            assert embed_texts([]) == []
