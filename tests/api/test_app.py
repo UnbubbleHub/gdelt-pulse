@@ -134,6 +134,7 @@ class TestApiKeyAuth:
 
         response = client_no_db.get("/api/search?q=test", headers={"X-API-Key": "wrong"})
         assert response.status_code == 401
+        assert "api key" in response.json()["detail"].lower()
 
     def test_passes_through_when_key_is_correct(self, client_no_db, monkeypatch):
         """When API_KEY is set and X-API-Key matches, middleware passes through."""
@@ -161,4 +162,4 @@ class TestApiKeyAuth:
         monkeypatch.setattr(app_module, "_redis", None)
 
         response = client_no_db.get("/")
-        assert response.status_code != 401  # not gated by auth
+        assert response.status_code == 200

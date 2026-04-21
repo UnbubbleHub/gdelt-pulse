@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hmac
 import os
 import threading as _threading
 import time
@@ -196,12 +197,13 @@ async def rate_limit_middleware(request: Request, call_next) -> Response:
     # API key auth — skipped if API_KEY env var is not set (local dev / Railway)
     expected_key = os.environ.get("API_KEY")
     if expected_key:
-        provided_key = request.headers.get("X-API-Key")
-        if provided_key != expected_key:
+        provided_key = request.headers.get("X-API-Key") or ""
+        if not hmac.compare_digest(provided_key, expected_key):
             return Response(
                 content='{"detail":"Invalid or missing API key."}',
                 status_code=401,
                 media_type="application/json",
+                headers={"WWW-Authenticate": 'ApiKey realm="GDELT Pulse API"'},
             )
 
     # Rate limiting (Redis or in-memory fallback)
