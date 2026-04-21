@@ -113,3 +113,52 @@ class TestRateLimiting:
         response = client_no_db.get("/api/search?q=test")
         # In-memory fallback allows the request through (count is 0)
         assert response.status_code == 501  # passed through; not 429
+
+
+class TestApiKeyAuth:
+    def test_returns_401_when_key_is_missing(self, client_no_db, monkeypatch):
+        """When API_KEY is set and X-API-Key header is absent, return 401."""
+        monkeypatch.setenv("API_KEY", "secret-key")
+        monkeypatch.setattr(app_module, "_SEARCH_AVAILABLE", False)
+        monkeypatch.setattr(app_module, "_redis", None)
+
+        response = client_no_db.get("/api/search?q=test")
+        assert response.status_code == 401
+        assert "api key" in response.json()["detail"].lower()
+
+    def test_returns_401_when_key_is_wrong(self, client_no_db, monkeypatch):
+        """When API_KEY is set and X-API-Key header has wrong value, return 401."""
+        monkeypatch.setenv("API_KEY", "secret-key")
+        monkeypatch.setattr(app_module, "_SEARCH_AVAILABLE", False)
+        monkeypatch.setattr(app_module, "_redis", None)
+
+        response = client_no_db.get("/api/search?q=test", headers={"X-API-Key": "wrong"})
+        assert response.status_code == 401
+
+    def test_passes_through_when_key_is_correct(self, client_no_db, monkeypatch):
+        """When API_KEY is set and X-API-Key matches, middleware passes through."""
+        monkeypatch.setenv("API_KEY", "secret-key")
+        monkeypatch.setattr(app_module, "_SEARCH_AVAILABLE", False)
+        monkeypatch.setattr(app_module, "_redis", None)
+
+        response = client_no_db.get(
+            "/api/search?q=test", headers={"X-API-Key": "secret-key"}
+        )
+        assert response.status_code == 501  # middleware passed; endpoint returned 501
+
+    def test_auth_disabled_when_api_key_not_set(self, client_no_db, monkeypatch):
+        """When API_KEY env var is absent, all requests pass through without auth."""
+        monkeypatch.delenv("API_KEY", raising=False)
+        monkeypatch.setattr(app_module, "_SEARCH_AVAILABLE", False)
+        monkeypatch.setattr(app_module, "_redis", None)
+
+        response = client_no_db.get("/api/search?q=test")
+        assert response.status_code == 501  # no auth gate; endpoint returned 501
+
+    def test_static_pages_not_protected(self, client_no_db, monkeypatch):
+        """Static routes (/, /globe, etc.) must be accessible without an API key."""
+        monkeypatch.setenv("API_KEY", "secret-key")
+        monkeypatch.setattr(app_module, "_redis", None)
+
+        response = client_no_db.get("/")
+        assert response.status_code != 401  # not gated by auth

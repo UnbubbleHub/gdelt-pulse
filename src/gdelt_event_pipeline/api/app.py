@@ -189,10 +189,22 @@ def _get_redis():
 
 @app.middleware("http")
 async def rate_limit_middleware(request: Request, call_next) -> Response:
-    """Per-IP rate limiter. Uses Upstash Redis when configured; falls back to in-memory."""
+    """Per-IP rate limiter and API key auth for /api/* paths."""
     if not request.url.path.startswith("/api/"):
         return await call_next(request)
 
+    # API key auth — skipped if API_KEY env var is not set (local dev / Railway)
+    expected_key = os.environ.get("API_KEY")
+    if expected_key:
+        provided_key = request.headers.get("X-API-Key")
+        if provided_key != expected_key:
+            return Response(
+                content='{"detail":"Invalid or missing API key."}',
+                status_code=401,
+                media_type="application/json",
+            )
+
+    # Rate limiting (Redis or in-memory fallback)
     client_ip = request.client.host if request.client else "unknown"
     now = time.time()
     redis = _get_redis()
