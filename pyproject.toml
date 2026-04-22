@@ -26,9 +26,6 @@ dev = [
     "pre-commit>=4.0.0",
     "build>=1.2.2",
 ]
-pipeline = [
-    "sentence-transformers>=3.0.0",
-]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/gdelt_event_pipeline"]
