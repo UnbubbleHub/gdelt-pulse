@@ -10,12 +10,12 @@ WORKDIR /app
 
 # Install dependencies first (layer caching)
 COPY pyproject.toml uv.lock README.md ./
-RUN uv sync --frozen --no-dev --no-install-project
+RUN uv sync --frozen --no-dev --group pipeline --no-install-project
 
 # Copy source code and schema
 COPY src/ src/
 COPY sql/ sql/
-RUN uv sync --frozen --no-dev
+RUN uv sync --frozen --no-dev --group pipeline
 
 # Download the embedding model at build time so it's baked into the image
 # (avoids downloading ~90MB on every container start)
