@@ -1,10 +1,14 @@
 {
-  "functions": {
-    "api/index.py": {
-      "maxDuration": 30,
-      "includeFiles": "src/**,sql/**"
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python",
+      "config": {
+        "maxDuration": 30,
+        "includeFiles": "src/**,sql/**"
+      }
     }
-  },
+  ],
   "routes": [
     { "src": "/(.*)", "dest": "/api/index.py" }
   ]
