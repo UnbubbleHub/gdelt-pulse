@@ -288,7 +288,6 @@ dependencies = [
     { name = "psycopg", extra = ["binary"] },
     { name = "psycopg-pool" },
     { name = "python-dotenv" },
-    { name = "sentence-transformers" },
     { name = "upstash-redis" },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -300,6 +299,9 @@ dev = [
     { name = "pytest" },
     { name = "ruff" },
 ]
+pipeline = [
+    { name = "sentence-transformers" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -309,7 +311,6 @@ requires-dist = [
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2.0" },
     { name = "psycopg-pool", specifier = ">=3.2.0" },
     { name = "python-dotenv", specifier = ">=1.0.0" },
-    { name = "sentence-transformers", specifier = ">=3.0.0" },
     { name = "upstash-redis", specifier = ">=1.7.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.34.0" },
 ]
@@ -321,6 +322,7 @@ dev = [
     { name = "pytest", specifier = ">=8.3.0" },
     { name = "ruff", specifier = ">=0.15.6" },
 ]
+pipeline = [{ name = "sentence-transformers", specifier = ">=3.0.0" }]
 
 [[package]]
 name = "h11"

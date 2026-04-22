@@ -12,7 +12,6 @@ dependencies = [
     "psycopg[binary]>=3.2.0",
     "psycopg-pool>=3.2.0",
     "pgvector>=0.3.0",
-    "sentence-transformers>=3.0.0",
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.34.0",
     "python-dotenv>=1.0.0",
@@ -26,6 +25,9 @@ dev = [
     "ruff>=0.15.6",
     "pre-commit>=4.0.0",
     "build>=1.2.2",
+]
+pipeline = [
+    "sentence-transformers>=3.0.0",
 ]
 
 [tool.hatch.build.targets.wheel]
