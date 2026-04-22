@@ -82,8 +82,8 @@ class TestEmbeddingBackend:
 
         assert result == [fake_vec]
 
-    def test_sentence_transformers_backend_used_by_default(self, monkeypatch):
-        """When EMBEDDING_BACKEND is unset, embed_texts must use sentence-transformers."""
+    def test_fastembed_backend_used_by_default(self, monkeypatch):
+        """When EMBEDDING_BACKEND is unset, embed_texts must use fastembed."""
         monkeypatch.delenv("EMBEDDING_BACKEND", raising=False)
         from gdelt_event_pipeline.embeddings.embed import embed_texts
 
