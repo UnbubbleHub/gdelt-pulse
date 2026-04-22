@@ -21,9 +21,7 @@ class DatabaseSettings:
     database: str = field(default_factory=lambda: os.environ.get("PGDATABASE", "gdelt_pulse"))
     url: str = field(
         default_factory=lambda: (
-            os.environ.get("DATABASE_URL")
-            or os.environ.get("DATABASE_PUBLIC_URL")
-            or ""
+            os.environ.get("DATABASE_URL") or os.environ.get("DATABASE_PUBLIC_URL") or ""
         )
     )
 
