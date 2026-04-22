@@ -29,8 +29,7 @@ class TestSearchGuard:
         assert "not available" in response.json()["detail"].lower()
 
     def test_search_available_flag_true_in_full_environment(self):
-        """In the dev/Railway environment sentence_transformers is installed,
-        so the module-level flag must be True."""
+        """fastembed is in the main dependencies, so the module-level flag must be True."""
         assert app_module._SEARCH_AVAILABLE is True
 
     def test_search_returns_501_when_search_available_flag_is_false(

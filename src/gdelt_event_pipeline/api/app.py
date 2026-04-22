@@ -33,7 +33,7 @@ from gdelt_event_pipeline.storage.database import close_pool, init_pool
 # Detect whether the configured embedding backend is importable.
 # On Vercel with EMBEDDING_BACKEND=fastembed, checks for fastembed.
 # Elsewhere defaults to sentence-transformers.
-_backend = os.environ.get("EMBEDDING_BACKEND", "sentence-transformers")
+_backend = os.environ.get("EMBEDDING_BACKEND", "fastembed")
 try:
     if _backend == "fastembed":
         import fastembed as _fe_check  # noqa: F401

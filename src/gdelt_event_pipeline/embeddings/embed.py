@@ -39,13 +39,13 @@ def embed_texts(
     """Encode a list of texts into embedding vectors.
 
     Backend is selected by the EMBEDDING_BACKEND env var:
-      - "fastembed"            → fastembed.TextEmbedding (Vercel)
-      - "sentence-transformers" or unset → SentenceTransformer (Railway / local)
+      - "fastembed" or unset  → fastembed.TextEmbedding (default)
+      - "sentence-transformers" → SentenceTransformer (requires optional install)
     """
     if not texts:
         return []
 
-    backend = os.environ.get("EMBEDDING_BACKEND", "sentence-transformers")
+    backend = os.environ.get("EMBEDDING_BACKEND", "fastembed")
     if backend == "fastembed":
         fe_model = load_fe_model(model_name)
         return [v.tolist() for v in fe_model.embed(texts)]

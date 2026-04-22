@@ -61,29 +61,17 @@ class TestLazyImport:
 
 class TestEmbeddingBackend:
     def test_fastembed_backend_used_when_env_set(self, monkeypatch):
-        """When EMBEDDING_BACKEND=fastembed, embed_texts must call fastembed.TextEmbedding."""
-        import sys
-        from unittest.mock import MagicMock, patch
-
+        """When EMBEDDING_BACKEND=fastembed, embed_texts returns valid embeddings."""
         monkeypatch.setenv("EMBEDDING_BACKEND", "fastembed")
+        from gdelt_event_pipeline.embeddings.embed import embed_texts
 
-        import numpy as np
+        result = embed_texts(["test headline"])
+        assert len(result) == 1
+        assert len(result[0]) == 384
+        assert all(isinstance(v, float) for v in result[0])
 
-        fake_vec = [0.1] * 384
-        mock_model = MagicMock()
-        mock_model.embed.return_value = iter([np.array(fake_vec)])
-
-        fe_mock = MagicMock(TextEmbedding=MagicMock(return_value=mock_model))
-        with patch.dict(sys.modules, {"fastembed": fe_mock}):
-            # Re-import embed_texts so it picks up the env var at call time
-            from gdelt_event_pipeline.embeddings.embed import embed_texts
-
-            result = embed_texts(["test headline"])
-
-        assert result == [fake_vec]
-
-    def test_sentence_transformers_backend_used_by_default(self, monkeypatch):
-        """When EMBEDDING_BACKEND is unset, embed_texts must use sentence-transformers."""
+    def test_fastembed_backend_used_by_default(self, monkeypatch):
+        """When EMBEDDING_BACKEND is unset, embed_texts must use fastembed."""
         monkeypatch.delenv("EMBEDDING_BACKEND", raising=False)
         from gdelt_event_pipeline.embeddings.embed import embed_texts
 
