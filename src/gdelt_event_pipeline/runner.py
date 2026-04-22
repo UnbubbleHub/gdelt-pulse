@@ -153,6 +153,14 @@ def main() -> None:
     settings = get_settings()
 
     logger.info("Starting continuous pipeline (interval=%ds)", interval)
+
+    if not settings.db.url and settings.db.host == "localhost":
+        logger.error(
+            "No DATABASE_URL or PGHOST set — refusing to connect to localhost. "
+            "On Railway, link the Postgres plugin variables to this service."
+        )
+        sys.exit(1)
+
     init_pool(settings.db)
 
     # Auto-create schema on fresh databases (e.g. Railway first deploy)
