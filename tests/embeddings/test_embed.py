@@ -65,7 +65,11 @@ class TestEmbeddingBackend:
         import sys
         from unittest.mock import MagicMock, patch
 
+        import gdelt_event_pipeline.embeddings.embed as embed_module
+
         monkeypatch.setenv("EMBEDDING_BACKEND", "fastembed")
+        # Clear the module-level model cache so load_fe_model calls TextEmbedding via the mock.
+        monkeypatch.setattr(embed_module, "_fe_model", {})
 
         import numpy as np
 
@@ -75,7 +79,6 @@ class TestEmbeddingBackend:
 
         fe_mock = MagicMock(TextEmbedding=MagicMock(return_value=mock_model))
         with patch.dict(sys.modules, {"fastembed": fe_mock}):
-            # Re-import embed_texts so it picks up the env var at call time
             from gdelt_event_pipeline.embeddings.embed import embed_texts
 
             result = embed_texts(["test headline"])
