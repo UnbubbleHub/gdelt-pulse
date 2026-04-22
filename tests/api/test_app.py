@@ -162,3 +162,35 @@ class TestApiKeyAuth:
 
         response = client_no_db.get("/")
         assert response.status_code == 200
+
+
+class TestDeveloperExperience:
+    def test_swagger_ui_route_returns_200(self, client_no_db):
+        """GET /api/docs must return 200 (Swagger UI enabled)."""
+        response = client_no_db.get("/api/docs")
+        assert response.status_code == 200
+
+    def test_openapi_json_route_returns_200(self, client_no_db):
+        """GET /api/openapi.json must return valid OpenAPI JSON."""
+        response = client_no_db.get("/api/openapi.json")
+        assert response.status_code == 200
+        data = response.json()
+        assert "openapi" in data
+        assert "paths" in data
+
+    def test_developers_page_returns_200(self, client_no_db):
+        """GET /developers must return 200 (static HTML served)."""
+        response = client_no_db.get("/developers")
+        assert response.status_code == 200
+        assert "text/html" in response.headers.get("content-type", "")
+
+    def test_cors_allows_any_origin(self, client_no_db):
+        """CORS preflight must respond with Access-Control-Allow-Origin: * for /api/ paths."""
+        response = client_no_db.options(
+            "/api/stats",
+            headers={
+                "Origin": "https://example.com",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+        assert response.headers.get("access-control-allow-origin") == "*"

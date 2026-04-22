@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GDELT Pulse — Developer Docs</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a0a0a;
+    color: #e0e0e0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    padding: 48px 24px 80px;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; }
+  a { color: #7eb8f7; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  h1 { font-size: 2rem; font-weight: 600; letter-spacing: -0.03em; margin-bottom: 8px; }
+  h2 { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+       color: #888; margin: 48px 0 16px; border-bottom: 1px solid #222; padding-bottom: 8px; }
+  h3 { font-size: 0.95rem; font-weight: 600; color: #ccc; margin: 28px 0 8px; }
+  p { color: #aaa; margin-bottom: 12px; }
+  code {
+    font-family: "SF Mono", "Fira Code", Menlo, monospace;
+    font-size: 0.88em;
+    background: #161616;
+    border: 1px solid #2a2a2a;
+    border-radius: 4px;
+    padding: 2px 6px;
+    color: #e0e0e0;
+  }
+  pre {
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 6px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    margin: 10px 0 18px;
+  }
+  pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 0.875rem;
+    color: #c8d9f0;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 0.875rem; margin-bottom: 16px; }
+  th {
+    text-align: left;
+    padding: 8px 12px;
+    background: #111;
+    border-bottom: 1px solid #2a2a2a;
+    color: #888;
+    font-weight: 500;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  td { padding: 9px 12px; border-bottom: 1px solid #1a1a1a; vertical-align: top; }
+  td:first-child { white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  .method { color: #7eb8f7; font-family: monospace; font-size: 0.8rem; font-weight: 600; }
+  .path { font-family: monospace; color: #c8d9f0; }
+  .param { font-family: monospace; font-size: 0.82rem; color: #aaa; }
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #1a1a1a;
+  }
+  .topbar-back { color: #888; font-size: 0.875rem; }
+  .swagger-link {
+    display: inline-block;
+    background: #1a2a3a;
+    border: 1px solid #2a3a4a;
+    color: #7eb8f7;
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    margin-top: 4px;
+  }
+  .swagger-link:hover { background: #1e3248; text-decoration: none; }
+  .info-row { display: flex; gap: 32px; margin-bottom: 8px; }
+  .info-item label { display: block; font-size: 0.75rem; text-transform: uppercase;
+                     letter-spacing: 0.08em; color: #555; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <a class="topbar-back" href="/">&larr; GDELT Pulse</a>
+    <a class="swagger-link" href="/api/docs">Interactive Docs (Swagger UI) &rarr;</a>
+  </div>
+
+  <h1>GDELT Pulse API</h1>
+  <p>Hybrid semantic + keyword search over global news events. All endpoints are read-only (<code>GET</code>).</p>
+
+  <h2>Quick Start</h2>
+
+  <div class="info-row">
+    <div class="info-item">
+      <label>Base URL</label>
+      <code id="baseUrl"></code>
+    </div>
+    <div class="info-item">
+      <label>Auth Header</label>
+      <code>X-API-Key: &lt;your-key&gt;</code>
+    </div>
+    <div class="info-item">
+      <label>Rate Limit</label>
+      <code>30 req / 60 s per IP</code>
+    </div>
+  </div>
+
+  <p style="margin-top:12px">The <code>X-API-Key</code> header is only required when the server has an <code>API_KEY</code>
+  environment variable set. Local dev instances and public deployments without a key set allow unauthenticated requests.</p>
+
+  <pre><code>curl "<span class="base-url-placeholder"></span>/api/stats" \
+  -H "X-API-Key: your-key-here"</code></pre>
+
+  <h2>Endpoints</h2>
+
+  <h3>Core</h3>
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Key params</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="method">GET</span></td>
+        <td><span class="path">/api/stats</span></td>
+        <td>—</td>
+        <td>Total articles, clusters, embeddings, largest cluster</td>
+      </tr>
+      <tr>
+        <td><span class="method">GET</span></td>
+        <td><span class="path">/api/articles</span></td>
+        <td><span class="param">limit</span> (1–200, default 50)</td>
+        <td>Recent articles, newest first</td>
+      </tr>
+      <tr>
+        <td><span class="method">GET</span></td>
+        <td><span class="path">/api/clusters</span></td>
+        <td><span class="param">limit, sort, location, person, org, theme, domain, source, date_from, date_to</span></td>
+        <td>Active event clusters with optional filtering</td>
+      </tr>
+      <tr>
+        <td><span class="method">GET</span></td>
+        <td><span class="path">/api/clusters/{id}</span></td>
+        <td>—</td>
+        <td>Single cluster with all member articles</td>
+      </tr>
+      <tr>
+        <td><span class="method">GET</span></td>
+        <td><span class="path">/api/search</span></td>
+        <td><span class="param">q (required), limit, semantic_weight, clusters, location, person, org, theme, domain, source, date_from, date_to</span></td>
+        <td>Hybrid semantic + keyword search via RRF</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Globe</h3>
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Key params</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="method">GET</span></td>
+        <td><span class="path">/api/globe/clusters</span></td>
+        <td><span class="param">mode (live|rising|silent), limit</span></td>
+        <td>Top clusters with geographic coordinates for 3D globe rendering</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Polarization</h3>
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Key params</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="method">GET</span></td>
+        <td><span class="path">/api/polarization</span></td>
+        <td><span class="param">limit, min_articles</span></td>
+        <td>Story clusters ranked by narrative tone divergence across sources</td>
+      </tr>
+      <tr>
+        <td><span class="method">GET</span></td>
+        <td><span class="path">/api/polarization/{id}</span></td>
+        <td>—</td>
+        <td>Per-article tone breakdown for a single cluster, grouped by source</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Attention Asymmetry</h3>
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Key params</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="method">GET</span></td>
+        <td><span class="path">/api/asymmetry</span></td>
+        <td>—</td>
+        <td>Coverage volume vs crisis intensity by country; reveals over- and underreported regions</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Geopolitical Gravity</h3>
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Key params</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="method">GET</span></td>
+        <td><span class="path">/api/gravity/graph</span></td>
+        <td><span class="param">min_weight, limit_edges</span></td>
+        <td>Country co-mention graph (nodes + edges) for gravity map</td>
+      </tr>
+      <tr>
+        <td><span class="method">GET</span></td>
+        <td><span class="path">/api/gravity/country/{code}</span></td>
+        <td>—</td>
+        <td>Single country: top connections, top clusters, avg tone (ISO 3166-1 alpha-2 code)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Source DNA</h3>
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Key params</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="method">GET</span></td>
+        <td><span class="path">/api/sources/fingerprints</span></td>
+        <td><span class="param">limit, sort, min_articles</span></td>
+        <td>Per-source tone fingerprints, top themes, and top countries</td>
+      </tr>
+      <tr>
+        <td><span class="method">GET</span></td>
+        <td><span class="path">/api/sources/{domain}/detail</span></td>
+        <td>—</td>
+        <td>Full fingerprint for one source domain: tone timeline, all themes, category breakdown</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Story Propagation</h3>
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Key params</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="method">GET</span></td>
+        <td><span class="path">/api/propagation/stories</span></td>
+        <td><span class="param">limit, min_sources</span></td>
+        <td>Multi-source clusters suitable for propagation analysis</td>
+      </tr>
+      <tr>
+        <td><span class="method">GET</span></td>
+        <td><span class="path">/api/propagation/{id}</span></td>
+        <td>—</td>
+        <td>Chronological timeline of how a story spread across sources</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Topic Velocity</h3>
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Key params</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="method">GET</span></td>
+        <td><span class="path">/api/velocity/topics</span></td>
+        <td><span class="param">hours (6–168, default 48), limit</span></td>
+        <td>Themes with rising or declining velocity over a configurable time window</td>
+      </tr>
+      <tr>
+        <td><span class="method">GET</span></td>
+        <td><span class="path">/api/velocity/timeline</span></td>
+        <td><span class="param">theme (required), hours</span></td>
+        <td>Hourly article count for a specific GDELT theme code</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Examples</h2>
+
+  <h3>Search</h3>
+  <pre><code>curl "<span class="base-url-placeholder"></span>/api/search?q=earthquake+Turkey&semantic_weight=0.7&location=Turkey&limit=10" \
+  -H "X-API-Key: your-key-here"</code></pre>
+
+  <h3>List clusters with filters</h3>
+  <pre><code>curl "<span class="base-url-placeholder"></span>/api/clusters?sort=articles&theme=MILITARY_CONFLICT&limit=20" \
+  -H "X-API-Key: your-key-here"</code></pre>
+
+  <h3>Globe data (rising stories)</h3>
+  <pre><code>curl "<span class="base-url-placeholder"></span>/api/globe/clusters?mode=rising&limit=12" \
+  -H "X-API-Key: your-key-here"</code></pre>
+
+  <h3>Polarization ranking</h3>
+  <pre><code>curl "<span class="base-url-placeholder"></span>/api/polarization?limit=20&min_articles=30" \
+  -H "X-API-Key: your-key-here"</code></pre>
+
+  <h3>Attention asymmetry</h3>
+  <pre><code>curl "<span class="base-url-placeholder"></span>/api/asymmetry" \
+  -H "X-API-Key: your-key-here"</code></pre>
+
+  <h3>Country gravity detail</h3>
+  <pre><code>curl "<span class="base-url-placeholder"></span>/api/gravity/country/US" \
+  -H "X-API-Key: your-key-here"</code></pre>
+
+  <h3>Source fingerprint</h3>
+  <pre><code>curl "<span class="base-url-placeholder"></span>/api/sources/bbc.co.uk/detail" \
+  -H "X-API-Key: your-key-here"</code></pre>
+
+  <h3>Story propagation timeline</h3>
+  <pre><code>curl "<span class="base-url-placeholder"></span>/api/propagation/stories?min_sources=5&limit=10" \
+  -H "X-API-Key: your-key-here"</code></pre>
+
+  <h3>Topic velocity (rising themes)</h3>
+  <pre><code>curl "<span class="base-url-placeholder"></span>/api/velocity/topics?hours=24&limit=20" \
+  -H "X-API-Key: your-key-here"</code></pre>
+
+  <p style="margin-top:24px">For full parameter details and to try requests in the browser, use the
+  <a href="/api/docs">interactive Swagger UI</a>.</p>
+
+  <h2>OpenAPI Spec</h2>
+  <p>The machine-readable spec is available at <a href="/api/openapi.json"><code>/api/openapi.json</code></a>
+  — import it into Postman, Insomnia, or any OpenAPI-compatible tooling.</p>
+
+</div>
+
+<script>
+  const base = window.location.origin;
+  document.getElementById('baseUrl').textContent = base;
+  document.querySelectorAll('.base-url-placeholder').forEach(el => {
+    el.textContent = base;
+  });
+</script>
+</body>
+</html>

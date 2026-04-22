@@ -146,17 +146,14 @@ app = FastAPI(
     description="Hybrid semantic + keyword search over GDELT news events.",
     version="0.1.0",
     lifespan=lifespan,
-    docs_url=None,
+    docs_url="/api/docs",
     redoc_url=None,
-    openapi_url=None,
+    openapi_url="/api/openapi.json",
 )
-
-_settings = get_settings()
-_cors_origins = _settings.api.cors_origins or ["http://localhost:8000"]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_cors_origins,
+    allow_origins=["*"],
     allow_methods=["GET"],
     allow_headers=["*"],
 )
@@ -287,6 +284,12 @@ def propagation_page():
 def velocity_page():
     """Serve the Topic Velocity frontend."""
     return FileResponse(STATIC_DIR / "velocity.html")
+
+
+@app.get("/developers", include_in_schema=False)
+def developers_page():
+    """Serve the developer reference page."""
+    return FileResponse(STATIC_DIR / "developers.html")
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────
