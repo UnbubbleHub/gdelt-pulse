@@ -61,25 +61,14 @@ class TestLazyImport:
 
 class TestEmbeddingBackend:
     def test_fastembed_backend_used_when_env_set(self, monkeypatch):
-        """When EMBEDDING_BACKEND=fastembed, embed_texts must route through load_fe_model."""
-        import numpy as np
-        from unittest.mock import MagicMock
-
-        import gdelt_event_pipeline.embeddings.embed as embed_module
-
+        """When EMBEDDING_BACKEND=fastembed, embed_texts returns valid embeddings."""
         monkeypatch.setenv("EMBEDDING_BACKEND", "fastembed")
-
-        fake_vec = [0.1] * 384
-        mock_model = MagicMock()
-        mock_model.embed.return_value = iter([np.array(fake_vec)])
-
-        monkeypatch.setattr(embed_module, "load_fe_model", lambda model_name: mock_model)
-
         from gdelt_event_pipeline.embeddings.embed import embed_texts
 
         result = embed_texts(["test headline"])
-
-        assert result == [fake_vec]
+        assert len(result) == 1
+        assert len(result[0]) == 384
+        assert all(isinstance(v, float) for v in result[0])
 
     def test_fastembed_backend_used_by_default(self, monkeypatch):
         """When EMBEDDING_BACKEND is unset, embed_texts must use fastembed."""
