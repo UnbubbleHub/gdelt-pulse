@@ -58,20 +58,10 @@ class ClusteringSettings:
 
 
 @dataclass(frozen=True)
-class ApiSettings:
-    cors_origins: list[str] = field(
-        default_factory=lambda: [
-            o.strip() for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip()
-        ]
-    )
-
-
-@dataclass(frozen=True)
 class Settings:
     db: DatabaseSettings = field(default_factory=DatabaseSettings)
     embedding: EmbeddingSettings = field(default_factory=EmbeddingSettings)
     clustering: ClusteringSettings = field(default_factory=ClusteringSettings)
-    api: ApiSettings = field(default_factory=ApiSettings)
 
 
 def get_settings() -> Settings:

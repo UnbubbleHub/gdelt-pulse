@@ -156,6 +156,7 @@ app.add_middleware(
     allow_origins=["*"],
     allow_methods=["GET"],
     allow_headers=["*"],
+    allow_credentials=False,  # wildcard only valid without credentials; API uses X-API-Key
 )
 
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
