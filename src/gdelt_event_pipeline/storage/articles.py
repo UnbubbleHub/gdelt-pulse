@@ -9,74 +9,122 @@ from psycopg.rows import dict_row
 
 from gdelt_event_pipeline.storage.database import get_pool
 
+# 14 article fields + first_seen_at/last_seen_at reusing gdelt_timestamp = 16 placeholders per row
+_UPSERT_COLUMNS = (
+    "gkg_record_id",
+    "gdelt_timestamp",
+    "url",
+    "canonical_url",
+    "domain",
+    "source_common_name",
+    "canonical_source",
+    "title",
+    "themes",
+    "locations",
+    "organizations",
+    "persons",
+    "all_names",
+    "tone",
+)
+_ROW_PLACEHOLDERS = "(" + ", ".join(["%s"] * (len(_UPSERT_COLUMNS) + 2)) + ")"
 
-def upsert_article(article: dict[str, Any]) -> dict[str, Any]:
-    """Insert or update an article record.
+_UPSERT_CONFLICT_CLAUSE = """
+ON CONFLICT (canonical_url) DO UPDATE SET
+    themes         = CASE
+                        WHEN COALESCE(jsonb_array_length(EXCLUDED.themes), 0)
+                           > COALESCE(jsonb_array_length(articles.themes), 0)
+                        THEN EXCLUDED.themes
+                        ELSE articles.themes
+                     END,
+    locations      = CASE
+                        WHEN COALESCE(jsonb_array_length(EXCLUDED.locations), 0)
+                           > COALESCE(jsonb_array_length(articles.locations), 0)
+                        THEN EXCLUDED.locations
+                        ELSE articles.locations
+                     END,
+    organizations  = CASE
+                        WHEN COALESCE(jsonb_array_length(EXCLUDED.organizations), 0)
+                           > COALESCE(jsonb_array_length(articles.organizations), 0)
+                        THEN EXCLUDED.organizations
+                        ELSE articles.organizations
+                     END,
+    persons        = CASE
+                        WHEN COALESCE(jsonb_array_length(EXCLUDED.persons), 0)
+                           > COALESCE(jsonb_array_length(articles.persons), 0)
+                        THEN EXCLUDED.persons
+                        ELSE articles.persons
+                     END,
+    all_names      = CASE
+                        WHEN COALESCE(jsonb_array_length(EXCLUDED.all_names), 0)
+                           > COALESCE(jsonb_array_length(articles.all_names), 0)
+                        THEN EXCLUDED.all_names
+                        ELSE articles.all_names
+                     END,
+    tone           = COALESCE(EXCLUDED.tone, articles.tone),
+    first_seen_at  = LEAST(articles.first_seen_at, EXCLUDED.first_seen_at),
+    last_seen_at   = GREATEST(articles.last_seen_at, EXCLUDED.last_seen_at),
+    updated_at     = now()
+"""
 
-    Uses canonical_url as the dedupe key.  On conflict:
-    - merges metadata if the new observation is richer
-    - keeps first_seen_at as the minimum
-    - updates last_seen_at to the new gdelt_timestamp
+
+def _flatten_params(article: dict[str, Any]) -> list[Any]:
+    """Return positional params in the order the INSERT expects.
+
+    first_seen_at and last_seen_at are both seeded from gdelt_timestamp.
     """
+    base = [article.get(col) for col in _UPSERT_COLUMNS]
+    ts = article.get("gdelt_timestamp")
+    base.extend([ts, ts])
+    return base
+
+
+def upsert_articles(
+    articles: list[dict[str, Any]],
+    *,
+    chunk_size: int = 500,
+) -> int:
+    """Batch-upsert articles using a multi-row INSERT per chunk.
+
+    The caller MUST deduplicate by canonical_url before calling; a single
+    statement cannot touch the same conflict target twice (Postgres raises
+    "ON CONFLICT DO UPDATE command cannot affect row a second time").
+
+    Returns the number of rows written.  Raises on database errors — chunks
+    are atomic: a single failing chunk rolls back and aborts the call.
+    """
+    if not articles:
+        return 0
+
     pool = get_pool()
-    with pool.connection() as conn:
-        with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute(
-                """
-                INSERT INTO articles (
-                    gkg_record_id, gdelt_timestamp, url, canonical_url,
-                    domain, source_common_name, canonical_source, title,
-                    themes, locations, organizations, persons, all_names, tone,
-                    first_seen_at, last_seen_at
-                ) VALUES (
-                    %(gkg_record_id)s, %(gdelt_timestamp)s, %(url)s, %(canonical_url)s,
-                    %(domain)s, %(source_common_name)s, %(canonical_source)s, %(title)s,
-                    %(themes)s, %(locations)s, %(organizations)s, %(persons)s,
-                    %(all_names)s, %(tone)s,
-                    %(gdelt_timestamp)s, %(gdelt_timestamp)s
-                )
-                ON CONFLICT (canonical_url) DO UPDATE SET
-                    themes         = CASE
-                                        WHEN COALESCE(jsonb_array_length(EXCLUDED.themes), 0)
-                                           > COALESCE(jsonb_array_length(articles.themes), 0)
-                                        THEN EXCLUDED.themes
-                                        ELSE articles.themes
-                                     END,
-                    locations      = CASE
-                                        WHEN COALESCE(jsonb_array_length(EXCLUDED.locations), 0)
-                                           > COALESCE(jsonb_array_length(articles.locations), 0)
-                                        THEN EXCLUDED.locations
-                                        ELSE articles.locations
-                                     END,
-                    organizations  = CASE
-                                        WHEN COALESCE(jsonb_array_length(EXCLUDED.organizations), 0)
-                                           > COALESCE(jsonb_array_length(articles.organizations), 0)
-                                        THEN EXCLUDED.organizations
-                                        ELSE articles.organizations
-                                     END,
-                    persons        = CASE
-                                        WHEN COALESCE(jsonb_array_length(EXCLUDED.persons), 0)
-                                           > COALESCE(jsonb_array_length(articles.persons), 0)
-                                        THEN EXCLUDED.persons
-                                        ELSE articles.persons
-                                     END,
-                    all_names      = CASE
-                                        WHEN COALESCE(jsonb_array_length(EXCLUDED.all_names), 0)
-                                           > COALESCE(jsonb_array_length(articles.all_names), 0)
-                                        THEN EXCLUDED.all_names
-                                        ELSE articles.all_names
-                                     END,
-                    tone           = COALESCE(EXCLUDED.tone, articles.tone),
-                    first_seen_at  = LEAST(articles.first_seen_at, EXCLUDED.first_seen_at),
-                    last_seen_at   = GREATEST(articles.last_seen_at, EXCLUDED.last_seen_at),
-                    updated_at     = now()
-                RETURNING *
-                """,
-                article,
-            )
-            row = cur.fetchone()
-        conn.commit()
-    return row
+    total_written = 0
+    columns_sql = ", ".join([*_UPSERT_COLUMNS, "first_seen_at", "last_seen_at"])
+
+    for start in range(0, len(articles), chunk_size):
+        chunk = articles[start : start + chunk_size]
+        values_sql = ", ".join([_ROW_PLACEHOLDERS] * len(chunk))
+        params: list[Any] = []
+        for article in chunk:
+            params.extend(_flatten_params(article))
+
+        statement = (
+            f"INSERT INTO articles ({columns_sql}) VALUES {values_sql}"
+            f"{_UPSERT_CONFLICT_CLAUSE}RETURNING id"
+        )
+
+        with pool.connection() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(statement, params)
+                rows = cur.fetchall()
+            conn.commit()
+
+        total_written += len(rows)
+
+    return total_written
+
+
+def upsert_article(article: dict[str, Any]) -> int:
+    """Single-row convenience wrapper around `upsert_articles`."""
+    return upsert_articles([article])
 
 
 def get_article_by_canonical_url(canonical_url: str) -> dict[str, Any] | None:

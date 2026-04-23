@@ -14,13 +14,15 @@ from gdelt_event_pipeline.storage.articles import (
     get_untitled_articles,
     increment_scrape_attempts,
     update_article_title,
-    upsert_article,
+    upsert_articles,
 )
 from gdelt_event_pipeline.storage.pipeline_state import (
     update_pipeline_state,
 )
 
 logger = logging.getLogger(__name__)
+
+UPSERT_CHUNK_SIZE = 500
 
 
 @dataclass
@@ -45,8 +47,8 @@ def run_ingestion(
 
     1. Resolve the GKG file URL (latest or explicit)
     2. Download and parse the CSV rows
-    3. Normalize each row
-    4. Upsert into the database (unless dry_run)
+    3. Normalize each row and deduplicate by canonical URL
+    4. Batch-upsert into the database in chunks (unless dry_run)
     5. Update pipeline_state checkpoint
 
     Returns an IngestionResult with counts.
@@ -62,10 +64,10 @@ def run_ingestion(
     result.rows_fetched = len(rows)
     logger.info("Fetched %d rows", result.rows_fetched)
 
-    # 3-4. Normalize and upsert
+    # 3. Normalize + deduplicate in memory.  Multi-row INSERTs can't touch the
+    # same ON CONFLICT target twice, so we have to dedupe before the DB call.
     seen_canonical_urls: set[str] = set()
-    last_timestamp = None
-    last_record_id = None
+    articles_to_upsert: list[dict] = []
 
     for row in rows:
         article = normalize_row(row)
@@ -75,29 +77,31 @@ def run_ingestion(
 
         result.rows_normalized += 1
 
-        # Deduplicate within this batch
-        canonical = article[
-            "canonical_url"
-        ]  # it is the normalized URL, so should be consistent across duplicates
+        canonical = article["canonical_url"]
         if canonical in seen_canonical_urls:
             result.duplicate_urls += 1
             continue
         seen_canonical_urls.add(canonical)
 
-        if dry_run:
-            result.rows_upserted += 1
-            continue
+        articles_to_upsert.append(article)
 
-        try:
-            upsert_article(article)
-            result.rows_upserted += 1
+    # 4. Batch upsert
+    last_timestamp = None
+    last_record_id = None
 
-            # Track latest for checkpoint
-            last_timestamp = article["gdelt_timestamp"]
-            last_record_id = article["gkg_record_id"]
-        except Exception:
-            logger.exception("Failed to upsert article %s", article.get("canonical_url"))
-            result.rows_failed += 1
+    if dry_run:
+        result.rows_upserted = len(articles_to_upsert)
+    elif articles_to_upsert:
+        for start in range(0, len(articles_to_upsert), UPSERT_CHUNK_SIZE):
+            chunk = articles_to_upsert[start : start + UPSERT_CHUNK_SIZE]
+            try:
+                written = upsert_articles(chunk, chunk_size=UPSERT_CHUNK_SIZE)
+                result.rows_upserted += written
+                last_timestamp = chunk[-1]["gdelt_timestamp"]
+                last_record_id = chunk[-1]["gkg_record_id"]
+            except Exception:
+                logger.exception("Failed to upsert chunk of %d articles", len(chunk))
+                result.rows_failed += len(chunk)
 
     # 5. Update checkpoint
     if not dry_run and last_timestamp is not None:
