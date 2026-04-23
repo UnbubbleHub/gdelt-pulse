@@ -167,22 +167,48 @@ def get_cluster_articles(cluster_id: str) -> list[dict[str, Any]]:
 
 
 def get_cluster_entity_sample(cluster_id: str, *, limit: int = 5) -> list[dict[str, Any]]:
-    """Fetch entity fields from a cluster's most recent articles."""
+    """Fetch entity fields from a single cluster's most recent articles."""
+    return get_cluster_entity_samples([cluster_id], limit=limit).get(cluster_id, [])
+
+
+def get_cluster_entity_samples(
+    cluster_ids: list[str], *, limit: int = 5
+) -> dict[str, list[dict[str, Any]]]:
+    """Fetch entity samples for several clusters in a single query.
+
+    Returns a dict mapping cluster_id → list of entity rows (locations,
+    persons, organizations) from each cluster's `limit` most recent articles.
+    Missing clusters are absent from the dict (caller should default to []).
+
+    Uses LATERAL to apply the per-cluster ORDER BY / LIMIT without a full
+    scan, so one RTT replaces up to N per-cluster queries.
+    """
+    if not cluster_ids:
+        return {}
     pool = get_pool()
+    results: dict[str, list[dict[str, Any]]] = {cid: [] for cid in cluster_ids}
     with pool.connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
                 """
-                SELECT a.locations, a.persons, a.organizations
-                FROM articles a
-                JOIN cluster_memberships cm ON cm.article_id = a.id
-                WHERE cm.cluster_id = %s
-                ORDER BY a.gdelt_timestamp DESC
-                LIMIT %s
+                SELECT c.id::text AS cluster_id,
+                       s.locations, s.persons, s.organizations
+                FROM unnest(%s::uuid[]) AS c(id)
+                CROSS JOIN LATERAL (
+                    SELECT a.locations, a.persons, a.organizations
+                    FROM articles a
+                    JOIN cluster_memberships cm ON cm.article_id = a.id
+                    WHERE cm.cluster_id = c.id
+                    ORDER BY a.gdelt_timestamp DESC
+                    LIMIT %s
+                ) s
                 """,
-                (cluster_id, limit),
+                (cluster_ids, limit),
             )
-            return cur.fetchall()
+            for row in cur.fetchall():
+                cid = row.pop("cluster_id")
+                results[cid].append(row)
+    return results
 
 
 def update_cluster_centroid(cluster_id: str, centroid: list[float]) -> None:
