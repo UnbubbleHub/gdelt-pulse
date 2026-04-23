@@ -249,7 +249,7 @@ def increment_scrape_attempts(article_ids: list[str]) -> None:
 
 
 def update_article_title(article_id: str, title: str) -> None:
-    """Set the title for an article."""
+    """Set the title for a single article."""
     pool = get_pool()
     with pool.connection() as conn:
         with conn.cursor() as cur:
@@ -262,6 +262,36 @@ def update_article_title(article_id: str, title: str) -> None:
                 (title, article_id),
             )
         conn.commit()
+
+
+def update_article_titles(titles: dict[str, str]) -> int:
+    """Set titles for many articles in a single UPDATE.
+
+    `titles` maps article_id → title.  Returns the number of rows updated.
+    """
+    if not titles:
+        return 0
+
+    pool = get_pool()
+    pairs = list(titles.items())
+    values_sql = ", ".join(["(%s::uuid, %s)"] * len(pairs))
+    params: list[Any] = []
+    for article_id, title in pairs:
+        params.extend([article_id, title])
+
+    statement = f"""
+        UPDATE articles
+        SET title = v.title, updated_at = now()
+        FROM (VALUES {values_sql}) AS v(id, title)
+        WHERE articles.id = v.id
+    """
+
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(statement, params)
+            affected = cur.rowcount
+        conn.commit()
+    return affected
 
 
 def update_article_embedding(article_id: str, embedding: list[float], model: str) -> None:

@@ -13,7 +13,7 @@ from gdelt_event_pipeline.normalization.normalize import normalize_row
 from gdelt_event_pipeline.storage.articles import (
     get_untitled_articles,
     increment_scrape_attempts,
-    update_article_title,
+    update_article_titles,
     upsert_articles,
 )
 from gdelt_event_pipeline.storage.pipeline_state import (
@@ -129,7 +129,7 @@ def run_title_scraping(
     *,
     batch_size: int | None = None,
     timeout: int = 10,
-    max_workers: int = 8,
+    max_workers: int = 32,
 ) -> tuple[int, int]:
     """Scrape titles for articles that don't have one yet.
 
@@ -149,8 +149,9 @@ def run_title_scraping(
     all_ids = [str(a["id"]) for a in articles]
     increment_scrape_attempts(all_ids)
 
-    for article_id, title in titles.items():
-        update_article_title(article_id, title)
+    # Persist successful titles in one batched UPDATE — otherwise each write
+    # pays a round trip to Postgres, which dominates cycle time on remote DBs.
+    update_article_titles(titles)
 
     logger.info("Updated %d/%d article titles", len(titles), len(articles))
     return len(articles), len(titles)
