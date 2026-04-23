@@ -340,6 +340,18 @@ def developers_page():
     return FileResponse(STATIC_DIR / "developers.html")
 
 
+@app.get("/dashboard", include_in_schema=False)
+def dashboard_page():
+    """Serve the API key dashboard (Clerk-gated in the browser)."""
+    return FileResponse(STATIC_DIR / "dashboard.html")
+
+
+@app.get("/api/auth/config", include_in_schema=False)
+def auth_config():
+    """Return public Clerk configuration for the frontend."""
+    return {"clerk_publishable_key": os.environ.get("CLERK_PUBLISHABLE_KEY", "")}
+
+
 # ── Endpoints ─────────────────────────────────────────────────────────
 
 
