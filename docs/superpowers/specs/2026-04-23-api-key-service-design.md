@@ -16,11 +16,16 @@ Replace the single static `API_KEY` environment variable with a full per-user AP
 ```
 User browser
   │
+  ├─ /developers  ──────→  Public API docs page (no auth required)
+  │                         Links to /dashboard to get a key
+  │
   ├─ /login, /signup  ──→  Clerk hosted pages (email+password / Google / GitHub)
   │                         Clerk issues a session JWT stored in cookie
   │
-  ├─ /dashboard  ──────→  Vanilla JS page, reads Clerk session JWT
-  │                         calls POST/DELETE /api/auth/keys to manage their key
+  ├─ /dashboard  ──────→  Clerk-gated vanilla JS page
+  │                         Redirect to /login if not authenticated
+  │                         Authenticated users create and revoke their API key here
+  │                         calls GET/POST/DELETE /api/auth/keys
   │
   └─ /api/*  ──────────→  FastAPI middleware
                              if X-API-Key present → SHA-256 hash → lookup in Neon
@@ -29,14 +34,20 @@ User browser
                              if no key → 30 req/60s limit (per-IP, existing behavior)
 ```
 
+**Access rules:**
+- `/developers` — fully public, no auth required
+- `/dashboard` — requires Clerk session; redirects to sign-in if unauthenticated
+- `/api/auth/keys` — requires valid Clerk JWT in `Authorization: Bearer` header
+- `/api/*` (data endpoints) — public, optional `X-API-Key` for higher rate limit
+
 **New pieces:**
 - **Clerk** — managed auth (email+password, Google OAuth, GitHub OAuth), issues JWTs
 - **`api_keys` table** — added to existing Neon DB, stores hashed keys
 - **`/api/auth/keys` endpoints** — Clerk-JWT-protected, generate/revoke keys
-- **`/dashboard` page** — vanilla JS key management UI
+- **`/dashboard` page** — Clerk-gated vanilla JS key management UI
 - **Updated middleware** — hash-based DB lookup replaces single env-var compare
 
-**Unchanged:** all existing `/api/*` endpoints, Upstash Redis rate limiter, pipeline logic.
+**Unchanged:** `/developers` page, all existing `/api/*` endpoints, Upstash Redis rate limiter, pipeline logic.
 
 ---
 
