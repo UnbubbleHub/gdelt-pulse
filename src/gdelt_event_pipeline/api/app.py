@@ -253,8 +253,7 @@ async def rate_limit_middleware(request: Request, call_next) -> Response:
             except Exception:
                 pass
 
-        import threading as _t
-        _t.Thread(target=_update_last_used, daemon=True).start()
+        _threading.Thread(target=_update_last_used, daemon=True).start()
 
     # Rate limiting (Redis or in-memory fallback)
     now = time.time()
