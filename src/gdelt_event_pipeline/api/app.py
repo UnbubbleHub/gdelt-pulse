@@ -29,6 +29,7 @@ from gdelt_event_pipeline.storage.clusters import (
     get_cluster_by_id,
 )
 from gdelt_event_pipeline.storage.database import close_pool, init_pool
+from gdelt_event_pipeline.api.keys import router as keys_router
 
 # Detect whether the configured embedding backend is importable.
 # On Vercel with EMBEDDING_BACKEND=fastembed, checks for fastembed.
@@ -168,6 +169,7 @@ app.add_middleware(
 )
 
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+app.include_router(keys_router)
 
 
 # ── Rate limiting ────────────────────────────────────────────────────
