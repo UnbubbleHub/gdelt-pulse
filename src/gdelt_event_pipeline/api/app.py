@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import hmac
+import hashlib
 import os
 import threading as _threading
 import time
@@ -163,7 +163,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_methods=["GET"],
+    allow_methods=["GET", "POST", "DELETE"],
     allow_headers=["*"],
     allow_credentials=False,  # wildcard only valid without credentials; API uses X-API-Key
 )
@@ -174,8 +174,9 @@ app.include_router(keys_router)
 
 # ── Rate limiting ────────────────────────────────────────────────────
 
-RATE_LIMIT_MAX = 30  # requests per window
-RATE_LIMIT_WINDOW = 60  # seconds
+RATE_LIMIT_MAX = 30       # anonymous requests per window
+RATE_LIMIT_MAX_KEY = 200  # key-authenticated requests per window
+RATE_LIMIT_WINDOW = 60    # seconds
 
 _rate_limit_store: dict[str, list[float]] = defaultdict(list)
 _redis = None
@@ -199,29 +200,68 @@ def _get_redis():
 
 @app.middleware("http")
 async def rate_limit_middleware(request: Request, call_next) -> Response:
-    """Per-IP rate limiter and API key auth for /api/* paths."""
+    """Optional API key auth + per-IP/per-key rate limiting for /api/* paths."""
     if not request.url.path.startswith("/api/"):
         return await call_next(request)
 
-    # API key auth — skipped if API_KEY env var is not set (local dev / Railway)
-    expected_key = os.environ.get("API_KEY")
-    if expected_key:
-        provided_key = request.headers.get("X-API-Key") or ""
-        if not hmac.compare_digest(provided_key, expected_key):
+    # /api/auth/* endpoints handle their own Clerk JWT auth — skip middleware
+    if request.url.path.startswith("/api/auth/"):
+        return await call_next(request)
+
+    rate_limit_max = RATE_LIMIT_MAX
+    client_ip = request.client.host if request.client else "unknown"
+    rate_limit_id = client_ip
+
+    # Optional API key auth
+    provided_key = request.headers.get("X-API-Key")
+    if provided_key:
+        key_hash = hashlib.sha256(provided_key.encode()).hexdigest()
+        from gdelt_event_pipeline.storage.database import get_pool as _get_pool
+
+        pool = _get_pool()
+        with pool.connection() as conn:
+            from psycopg.rows import dict_row as _dict_row
+
+            with conn.cursor(row_factory=_dict_row) as cur:
+                cur.execute(
+                    "SELECT id, user_id FROM api_keys "
+                    "WHERE key_hash = %s AND revoked_at IS NULL",
+                    (key_hash,),
+                )
+                row = cur.fetchone()
+        if row is None:
             return Response(
                 content='{"detail":"Invalid or missing API key."}',
                 status_code=401,
                 media_type="application/json",
                 headers={"WWW-Authenticate": 'ApiKey realm="GDELT Pulse API"'},
             )
+        rate_limit_max = RATE_LIMIT_MAX_KEY
+        rate_limit_id = f"key:{row['user_id']}"
+        # Update last_used_at without blocking the response
+        key_id = row["id"]
+
+        def _update_last_used(_pool=pool, _key_id=key_id):
+            try:
+                with _pool.connection() as _conn:
+                    with _conn.cursor() as _cur:
+                        _cur.execute(
+                            "UPDATE api_keys SET last_used_at = NOW() WHERE id = %s",
+                            (_key_id,),
+                        )
+                    _conn.commit()
+            except Exception:
+                pass
+
+        import threading as _t
+        _t.Thread(target=_update_last_used, daemon=True).start()
 
     # Rate limiting (Redis or in-memory fallback)
-    client_ip = request.client.host if request.client else "unknown"
     now = time.time()
     redis = _get_redis()
 
     if redis is not None:
-        key = f"ratelimit:{client_ip}"
+        key = f"ratelimit:{rate_limit_id}"
         window_start = now - RATE_LIMIT_WINDOW
         pipe = redis.pipeline()
         pipe.zremrangebyscore(key, "-inf", window_start)
@@ -229,17 +269,15 @@ async def rate_limit_middleware(request: Request, call_next) -> Response:
         pipe.zadd(key, {f"{now}-{os.urandom(4).hex()}": now})
         pipe.expire(key, RATE_LIMIT_WINDOW)
         results = pipe.execute()
-        count = results[1]  # count before this request; >= RATE_LIMIT_MAX means window is full
+        count = results[1]
     else:
-        # In-memory fallback: per-instance, not shared across Vercel instances
-        # time.time() used (not monotonic) to keep the clock consistent with the Redis path
-        timestamps = _rate_limit_store[client_ip]
-        _rate_limit_store[client_ip] = [t for t in timestamps if now - t < RATE_LIMIT_WINDOW]
-        count = len(_rate_limit_store[client_ip])
-        if count < RATE_LIMIT_MAX:
-            _rate_limit_store[client_ip].append(now)
+        timestamps = _rate_limit_store[rate_limit_id]
+        _rate_limit_store[rate_limit_id] = [t for t in timestamps if now - t < RATE_LIMIT_WINDOW]
+        count = len(_rate_limit_store[rate_limit_id])
+        if count < rate_limit_max:
+            _rate_limit_store[rate_limit_id].append(now)
 
-    if count >= RATE_LIMIT_MAX:
+    if count >= rate_limit_max:
         return Response(
             content='{"detail":"Rate limit exceeded. Try again later."}',
             status_code=429,
