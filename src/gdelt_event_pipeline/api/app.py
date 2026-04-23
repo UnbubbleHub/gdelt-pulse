@@ -98,33 +98,41 @@ def _split_csv(value: str | None) -> list[str] | None:
 
 
 def _ensure_schema() -> None:
-    """Create tables if they don't exist (first deploy on Railway etc.)."""
+    """Run any missing schema migrations on first deploy."""
     import logging
 
     from gdelt_event_pipeline.storage.database import get_pool
 
     logger = logging.getLogger(__name__)
     pool = get_pool()
+
+    migrations = [
+        ("articles", Path(__file__).resolve().parents[3] / "sql" / "001_schema.sql"),
+        ("api_keys", Path(__file__).resolve().parents[3] / "sql" / "002_api_keys.sql"),
+    ]
+
     with pool.connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT EXISTS ("
-                "  SELECT 1 FROM information_schema.tables"
-                "  WHERE table_name = 'articles'"
-                ")"
-            )
-            row = cur.fetchone()
-            exists = row[0] if isinstance(row, (tuple, list)) else row.get("exists", False)
-        if not exists:
-            logger.info("Tables not found — running schema initialization...")
-            schema_path = Path(__file__).resolve().parents[3] / "sql" / "001_schema.sql"
-            if not schema_path.exists():
-                schema_path = Path("/app/sql/001_schema.sql")
-            sql = schema_path.read_text()
+        for table_name, schema_path in migrations:
             with conn.cursor() as cur:
-                cur.execute(sql)
-            conn.commit()
-            logger.info("Schema created successfully.")
+                cur.execute(
+                    "SELECT EXISTS ("
+                    "  SELECT 1 FROM information_schema.tables"
+                    "  WHERE table_name = %s"
+                    ")",
+                    (table_name,),
+                )
+                row = cur.fetchone()
+                exists = row[0] if isinstance(row, (tuple, list)) else row.get("exists", False)
+            if not exists:
+                logger.info("Table '%s' missing — running migration %s", table_name, schema_path.name)
+                # Try the repo path first, then the Docker path
+                if not schema_path.exists():
+                    schema_path = Path(f"/app/sql/{schema_path.name}")
+                sql = schema_path.read_text()
+                with conn.cursor() as cur:
+                    cur.execute(sql)
+                conn.commit()
+                logger.info("Migration %s complete.", schema_path.name)
 
 
 @asynccontextmanager
