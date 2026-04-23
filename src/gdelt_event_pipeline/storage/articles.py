@@ -295,6 +295,7 @@ def update_article_titles(titles: dict[str, str]) -> int:
 
 
 def update_article_embedding(article_id: str, embedding: list[float], model: str) -> None:
+    """Set the embedding for a single article."""
     pool = get_pool()
     with pool.connection() as conn:
         with conn.cursor() as cur:
@@ -307,3 +308,47 @@ def update_article_embedding(article_id: str, embedding: list[float], model: str
                 (embedding, model, article_id),
             )
         conn.commit()
+
+
+def update_article_embeddings(
+    updates: list[tuple[str, list[float]]],
+    model: str,
+    *,
+    chunk_size: int = 500,
+) -> int:
+    """Batch-update embeddings in a single UPDATE ... FROM (VALUES ...) per chunk.
+
+    `updates` is a list of (article_id, vector) pairs.  `model` is the
+    embedding_model name — constant for the batch (it comes from settings).
+
+    Returns the total number of rows updated across all chunks.
+    """
+    if not updates:
+        return 0
+
+    pool = get_pool()
+    total_affected = 0
+
+    for start in range(0, len(updates), chunk_size):
+        chunk = updates[start : start + chunk_size]
+        values_sql = ", ".join(["(%s::uuid, %s::vector)"] * len(chunk))
+        params: list[Any] = [model]
+        for article_id, vector in chunk:
+            params.extend([article_id, vector])
+
+        statement = f"""
+            UPDATE articles
+            SET embedding = v.embedding,
+                embedding_model = %s,
+                updated_at = now()
+            FROM (VALUES {values_sql}) AS v(id, embedding)
+            WHERE articles.id = v.id
+        """
+
+        with pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(statement, params)
+                total_affected += cur.rowcount
+            conn.commit()
+
+    return total_affected

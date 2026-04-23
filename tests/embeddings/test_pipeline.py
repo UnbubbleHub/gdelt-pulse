@@ -18,8 +18,13 @@ def _make_article(article_id, title, themes=None):
     }
 
 
+def _batch_update_mock(updates, model, **kwargs):
+    """Mimic update_article_embeddings: return the row count it wrote."""
+    return len(updates)
+
+
 class TestRunEmbedding:
-    @patch("gdelt_event_pipeline.embeddings.pipeline.update_article_embedding")
+    @patch("gdelt_event_pipeline.embeddings.pipeline.update_article_embeddings")
     @patch("gdelt_event_pipeline.embeddings.pipeline.embed_texts")
     @patch("gdelt_event_pipeline.embeddings.pipeline.get_unembedded_articles")
     def test_basic_flow(self, mock_get, mock_embed, mock_update):
@@ -28,6 +33,7 @@ class TestRunEmbedding:
             _make_article("id-2", "Stock market crash"),
         ]
         mock_embed.return_value = [[0.1] * 384, [0.2] * 384]
+        mock_update.side_effect = _batch_update_mock
 
         settings = EmbeddingSettings()
         result = run_embedding(settings, limit=10)
@@ -38,9 +44,10 @@ class TestRunEmbedding:
         assert result.articles_failed == 0
 
         mock_embed.assert_called_once()
-        assert mock_update.call_count == 2
+        # Both embeddings go in a single batched UPDATE now
+        assert mock_update.call_count == 1
 
-    @patch("gdelt_event_pipeline.embeddings.pipeline.update_article_embedding")
+    @patch("gdelt_event_pipeline.embeddings.pipeline.update_article_embeddings")
     @patch("gdelt_event_pipeline.embeddings.pipeline.embed_texts")
     @patch("gdelt_event_pipeline.embeddings.pipeline.get_unembedded_articles")
     def test_no_articles(self, mock_get, mock_embed, mock_update):
@@ -52,7 +59,7 @@ class TestRunEmbedding:
         mock_embed.assert_not_called()
         mock_update.assert_not_called()
 
-    @patch("gdelt_event_pipeline.embeddings.pipeline.update_article_embedding")
+    @patch("gdelt_event_pipeline.embeddings.pipeline.update_article_embeddings")
     @patch("gdelt_event_pipeline.embeddings.pipeline.embed_texts")
     @patch("gdelt_event_pipeline.embeddings.pipeline.get_unembedded_articles")
     def test_skips_empty_text(self, mock_get, mock_embed, mock_update):
@@ -61,6 +68,7 @@ class TestRunEmbedding:
             _make_article("id-2", "Valid title"),
         ]
         mock_embed.return_value = [[0.1] * 384]
+        mock_update.side_effect = _batch_update_mock
 
         result = run_embedding()
         assert result.articles_skipped == 1
@@ -71,7 +79,7 @@ class TestRunEmbedding:
         assert len(texts_arg) == 1
         assert "Valid title" in texts_arg[0]
 
-    @patch("gdelt_event_pipeline.embeddings.pipeline.update_article_embedding")
+    @patch("gdelt_event_pipeline.embeddings.pipeline.update_article_embeddings")
     @patch("gdelt_event_pipeline.embeddings.pipeline.embed_texts")
     @patch("gdelt_event_pipeline.embeddings.pipeline.get_unembedded_articles")
     def test_skips_no_title_even_with_metadata(self, mock_get, mock_embed, mock_update):
@@ -81,12 +89,13 @@ class TestRunEmbedding:
             _make_article("id-2", "Valid title"),
         ]
         mock_embed.return_value = [[0.1] * 384]
+        mock_update.side_effect = _batch_update_mock
 
         result = run_embedding()
         assert result.articles_skipped == 1
         assert result.articles_embedded == 1
 
-    @patch("gdelt_event_pipeline.embeddings.pipeline.update_article_embedding")
+    @patch("gdelt_event_pipeline.embeddings.pipeline.update_article_embeddings")
     @patch("gdelt_event_pipeline.embeddings.pipeline.embed_texts")
     @patch("gdelt_event_pipeline.embeddings.pipeline.get_unembedded_articles")
     def test_db_failure_counted(self, mock_get, mock_embed, mock_update):
@@ -95,15 +104,17 @@ class TestRunEmbedding:
         mock_update.side_effect = RuntimeError("DB error")
 
         result = run_embedding()
+        # Whole batch is counted as failed when the single UPDATE raises
         assert result.articles_failed == 1
         assert result.articles_embedded == 0
 
-    @patch("gdelt_event_pipeline.embeddings.pipeline.update_article_embedding")
+    @patch("gdelt_event_pipeline.embeddings.pipeline.update_article_embeddings")
     @patch("gdelt_event_pipeline.embeddings.pipeline.embed_texts")
     @patch("gdelt_event_pipeline.embeddings.pipeline.get_unembedded_articles")
     def test_passes_settings_to_embed(self, mock_get, mock_embed, mock_update):
         mock_get.return_value = [_make_article("id-1", "Title")]
         mock_embed.return_value = [[0.1] * 384]
+        mock_update.side_effect = _batch_update_mock
 
         settings = EmbeddingSettings(
             model_name="custom-model",
@@ -117,4 +128,4 @@ class TestRunEmbedding:
             model_name="custom-model",
             batch_size=16,
         )
-        mock_update.assert_called_once_with("id-1", [0.1] * 384, "custom-model")
+        mock_update.assert_called_once_with([("id-1", [0.1] * 384)], "custom-model")
