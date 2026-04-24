@@ -242,7 +242,9 @@ def main() -> None:
                     )
             else:
                 if consecutive_failures > 0:
-                    logger.info("Cycle %d recovered after %d failure(s)", cycle, consecutive_failures)
+                    logger.info(
+                        "Cycle %d recovered after %d failure(s)", cycle, consecutive_failures
+                    )
                 consecutive_failures = 0
                 wait = max(0, interval - elapsed)
 
