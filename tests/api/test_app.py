@@ -117,49 +117,52 @@ class TestRateLimiting:
 
 
 class TestApiKeyAuth:
-    def test_returns_401_when_key_is_missing(self, client_no_db, monkeypatch):
-        """When API_KEY is set and X-API-Key header is absent, return 401."""
-        monkeypatch.setenv("API_KEY", "secret-key")
-        monkeypatch.setattr(app_module, "_SEARCH_AVAILABLE", False)
+    def test_no_key_header_passes_with_anonymous_limit(self, client_no_db, monkeypatch):
+        """Requests with no X-API-Key go through with the anonymous rate limit."""
         monkeypatch.setattr(app_module, "_redis", None)
+        monkeypatch.setattr(app_module, "_SEARCH_AVAILABLE", False)
 
         response = client_no_db.get("/api/search?q=test")
-        assert response.status_code == 401
-        assert "api key" in response.json()["detail"].lower()
-
-    def test_returns_401_when_key_is_wrong(self, client_no_db, monkeypatch):
-        """When API_KEY is set and X-API-Key header has wrong value, return 401."""
-        monkeypatch.setenv("API_KEY", "secret-key")
-        monkeypatch.setattr(app_module, "_SEARCH_AVAILABLE", False)
-        monkeypatch.setattr(app_module, "_redis", None)
-
-        response = client_no_db.get("/api/search?q=test", headers={"X-API-Key": "wrong"})
-        assert response.status_code == 401
-        assert "api key" in response.json()["detail"].lower()
-
-    def test_passes_through_when_key_is_correct(self, client_no_db, monkeypatch):
-        """When API_KEY is set and X-API-Key matches, middleware passes through."""
-        monkeypatch.setenv("API_KEY", "secret-key")
-        monkeypatch.setattr(app_module, "_SEARCH_AVAILABLE", False)
-        monkeypatch.setattr(app_module, "_redis", None)
-
-        response = client_no_db.get("/api/search?q=test", headers={"X-API-Key": "secret-key"})
         assert response.status_code == 501  # middleware passed; endpoint returned 501
 
-    def test_auth_disabled_when_api_key_not_set(self, client_no_db, monkeypatch):
-        """When API_KEY env var is absent, all requests pass through without auth."""
-        monkeypatch.delenv("API_KEY", raising=False)
-        monkeypatch.setattr(app_module, "_SEARCH_AVAILABLE", False)
+    def test_invalid_key_returns_401(self, client_no_db, monkeypatch):
+        """When X-API-Key does not match any active key in DB, return 401."""
+        from unittest.mock import MagicMock
+
         monkeypatch.setattr(app_module, "_redis", None)
 
-        response = client_no_db.get("/api/search?q=test")
-        assert response.status_code == 501  # no auth gate; endpoint returned 501
+        mock_cur = MagicMock()
+        mock_cur.__enter__ = lambda s: s
+        mock_cur.__exit__ = MagicMock(return_value=False)
+        mock_cur.fetchone.return_value = None  # key not found
 
-    def test_static_pages_not_protected(self, client_no_db, monkeypatch):
-        """Static routes (/, /globe, etc.) must be accessible without an API key."""
-        monkeypatch.setenv("API_KEY", "secret-key")
-        monkeypatch.setattr(app_module, "_redis", None)
+        mock_conn = MagicMock()
+        mock_conn.__enter__ = lambda s: s
+        mock_conn.__exit__ = MagicMock(return_value=False)
+        mock_conn.cursor.return_value = mock_cur
 
+        mock_pool = MagicMock()
+        mock_pool.connection.return_value = mock_conn
+
+        import gdelt_event_pipeline.storage.database as db_module
+
+        with patch.object(db_module, "get_pool", return_value=mock_pool):
+            response = client_no_db.get(
+                "/api/search?q=test", headers={"X-API-Key": "gdp_invalidkey"}
+            )
+
+        assert response.status_code == 401
+        assert "api key" in response.json()["detail"].lower()
+
+    def test_auth_endpoints_skip_middleware(self, client_no_db):
+        """/api/auth/* paths bypass the key check and rate limiter."""
+        # /api/auth/keys requires a valid Clerk JWT — without one it returns 422 (missing Header)
+        # but NOT 401 from the middleware, proving middleware was skipped
+        response = client_no_db.get("/api/auth/keys")
+        assert response.status_code == 422  # FastAPI schema validation, not 401 from middleware
+
+    def test_static_pages_not_protected(self, client_no_db):
+        """Static routes (/, /globe, etc.) must be accessible without any API key."""
         response = client_no_db.get("/")
         assert response.status_code == 200
 
