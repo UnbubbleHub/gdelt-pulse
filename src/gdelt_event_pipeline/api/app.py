@@ -178,9 +178,9 @@ app.include_router(keys_router)
 
 # ── Rate limiting ────────────────────────────────────────────────────
 
-RATE_LIMIT_MAX = 30       # anonymous requests per window
+RATE_LIMIT_MAX = 30  # anonymous requests per window
 RATE_LIMIT_MAX_KEY = 200  # key-authenticated requests per window
-RATE_LIMIT_WINDOW = 60    # seconds
+RATE_LIMIT_WINDOW = 60  # seconds
 
 _rate_limit_store: dict[str, list[float]] = defaultdict(list)
 _redis = None
@@ -228,8 +228,7 @@ async def rate_limit_middleware(request: Request, call_next) -> Response:
 
             with conn.cursor(row_factory=_dict_row) as cur:
                 cur.execute(
-                    "SELECT id, user_id FROM api_keys "
-                    "WHERE key_hash = %s AND revoked_at IS NULL",
+                    "SELECT id, user_id FROM api_keys WHERE key_hash = %s AND revoked_at IS NULL",
                     (key_hash,),
                 )
                 row = cur.fetchone()

@@ -145,6 +145,7 @@ class TestApiKeyAuth:
         mock_pool.connection.return_value = mock_conn
 
         import gdelt_event_pipeline.storage.database as db_module
+
         with patch.object(db_module, "get_pool", return_value=mock_pool):
             response = client_no_db.get(
                 "/api/search?q=test", headers={"X-API-Key": "gdp_invalidkey"}

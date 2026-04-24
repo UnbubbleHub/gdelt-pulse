@@ -10,6 +10,7 @@ from fastapi import HTTPException
 def clear_jwks_cache():
     """Clear the lru_cache between tests so env changes take effect."""
     import gdelt_event_pipeline.api.auth as auth_module
+
     auth_module._jwks_client.cache_clear()
     yield
     auth_module._jwks_client.cache_clear()
@@ -18,6 +19,7 @@ def clear_jwks_cache():
 def _call(authorization: str) -> str:
     """Call require_clerk_user directly (FastAPI Header default is just a default value)."""
     from gdelt_event_pipeline.api.auth import require_clerk_user
+
     return require_clerk_user(authorization=authorization)
 
 
@@ -33,7 +35,9 @@ class TestRequireClerkUser:
         assert exc_info.value.status_code == 401
 
     def test_invalid_jwt_raises_401(self, monkeypatch):
-        monkeypatch.setenv("CLERK_JWKS_URL", "https://example.clerk.accounts.dev/.well-known/jwks.json")
+        monkeypatch.setenv(
+            "CLERK_JWKS_URL", "https://example.clerk.accounts.dev/.well-known/jwks.json"
+        )
 
         mock_client = MagicMock()
         mock_client.get_signing_key_from_jwt.side_effect = Exception("invalid token")
@@ -46,7 +50,9 @@ class TestRequireClerkUser:
         assert exc_info.value.detail == "Unauthorized."
 
     def test_valid_jwt_returns_user_id(self, monkeypatch):
-        monkeypatch.setenv("CLERK_JWKS_URL", "https://example.clerk.accounts.dev/.well-known/jwks.json")
+        monkeypatch.setenv(
+            "CLERK_JWKS_URL", "https://example.clerk.accounts.dev/.well-known/jwks.json"
+        )
 
         mock_signing_key = MagicMock()
         mock_signing_key.key = "fake-key"
@@ -65,6 +71,7 @@ class TestRequireClerkUser:
     def test_missing_jwks_url_raises_runtime_error(self, monkeypatch):
         monkeypatch.delenv("CLERK_JWKS_URL", raising=False)
         import gdelt_event_pipeline.api.auth as auth_module
+
         auth_module._jwks_client.cache_clear()
 
         with pytest.raises(RuntimeError, match="CLERK_JWKS_URL"):
