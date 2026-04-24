@@ -1,6 +1,6 @@
 """Tests for /api/auth/keys endpoints."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -9,9 +9,8 @@ from fastapi.testclient import TestClient
 import gdelt_event_pipeline.api.app as app_module
 from gdelt_event_pipeline.api.auth import require_clerk_user
 
-
 TEST_USER_ID = "user_test123"
-TEST_NOW = datetime(2026, 4, 23, 12, 0, 0, tzinfo=timezone.utc)
+TEST_NOW = datetime(2026, 4, 23, 12, 0, 0, tzinfo=UTC)
 
 
 @pytest.fixture
@@ -71,7 +70,12 @@ class TestGetKey:
         with patch("gdelt_event_pipeline.api.keys.get_pool", return_value=_mock_pool_no_key()):
             resp = client.get("/api/auth/keys")
         assert resp.status_code == 200
-        assert resp.json() == {"active": False, "prefix": None, "created_at": None, "last_used_at": None}
+        assert resp.json() == {
+            "active": False,
+            "prefix": None,
+            "created_at": None,
+            "last_used_at": None,
+        }
 
     def test_returns_active_key_metadata(self, client):
         with patch("gdelt_event_pipeline.api.keys.get_pool", return_value=_mock_pool_with_key()):

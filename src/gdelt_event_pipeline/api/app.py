@@ -19,6 +19,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from gdelt_event_pipeline.api.keys import router as keys_router
 from gdelt_event_pipeline.config.settings import get_settings
 from gdelt_event_pipeline.query.models import SearchFilters, SearchRequest
 from gdelt_event_pipeline.query.search import hybrid_search
@@ -29,7 +30,6 @@ from gdelt_event_pipeline.storage.clusters import (
     get_cluster_by_id,
 )
 from gdelt_event_pipeline.storage.database import close_pool, init_pool
-from gdelt_event_pipeline.api.keys import router as keys_router
 
 # Detect whether the configured embedding backend is importable.
 # On Vercel with EMBEDDING_BACKEND=fastembed, checks for fastembed.
@@ -125,7 +125,11 @@ def _ensure_schema() -> None:
                 row = cur.fetchone()
                 exists = row[0] if isinstance(row, (tuple, list)) else row.get("exists", False)
             if not exists:
-                logger.info("Table '%s' missing — running migration %s", table_name, schema_path.name)
+                logger.info(
+                    "Table '%s' missing — running migration %s",
+                    table_name,
+                    schema_path.name,
+                )
                 # Try the repo path first, then the Docker path
                 if not schema_path.exists():
                     schema_path = Path(f"/app/sql/{schema_path.name}")

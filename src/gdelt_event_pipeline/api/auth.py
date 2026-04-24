@@ -34,5 +34,5 @@ def require_clerk_user(authorization: str = Header(...)) -> str:
         return payload["sub"]
     except HTTPException:
         raise
-    except Exception:
-        raise HTTPException(status_code=401, detail="Unauthorized.")
+    except Exception as err:
+        raise HTTPException(status_code=401, detail="Unauthorized.") from err

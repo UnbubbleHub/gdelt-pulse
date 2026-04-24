@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import secrets
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from psycopg.rows import dict_row
@@ -64,7 +64,7 @@ def get_key(user_id: str = Depends(require_clerk_user)) -> KeyMeta:
 @router.post("/keys", response_model=KeyCreated, status_code=201)
 def create_key(user_id: str = Depends(require_clerk_user)) -> KeyCreated:
     full_key, prefix, key_hash = _generate_key()
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=UTC)
     pool = get_pool()
     with pool.connection() as conn:
         with conn.cursor() as cur:
@@ -83,7 +83,7 @@ def create_key(user_id: str = Depends(require_clerk_user)) -> KeyCreated:
 
 @router.delete("/keys")
 def revoke_key(user_id: str = Depends(require_clerk_user)) -> dict:
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=UTC)
     pool = get_pool()
     with pool.connection() as conn:
         with conn.cursor() as cur:
