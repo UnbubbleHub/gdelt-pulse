@@ -1,0 +1,27 @@
+name: Sync requirements.txt
+
+on:
+  push:
+    paths:
+      - "pyproject.toml"
+      - "uv.lock"
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - uses: astral-sh/setup-uv@v4
+
+      - name: Regenerate requirements.txt
+        run: uv export --group api --no-group dev --no-emit-project --no-hashes > requirements.txt
+
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add requirements.txt
+          git diff --cached --quiet || git commit -m "chore: sync requirements.txt from uv.lock" && git push
