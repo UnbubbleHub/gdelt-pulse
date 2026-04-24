@@ -17,7 +17,8 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "fastembed>=0.8.0",
     "upstash-redis>=1.7.0",
-    "PyJWT[cryptography]>=2.8.0",
+    "PyJWT>=2.8.0",
+    "cryptography>=46.0.7",
 ]
 
 [dependency-groups]

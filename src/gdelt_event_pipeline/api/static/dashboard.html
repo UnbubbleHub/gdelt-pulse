@@ -182,18 +182,19 @@
     return;
   }
 
-  // 2. Load Clerk JS SDK from CDN
+  // 2. Load Clerk JS SDK from CDN (key as data attribute prevents auto-init error)
   await new Promise((resolve, reject) => {
     const s = document.createElement('script');
     s.src = 'https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5/dist/clerk.browser.js';
+    s.setAttribute('data-clerk-publishable-key', publishableKey);
     s.crossOrigin = 'anonymous';
     s.onload = resolve;
     s.onerror = () => reject(new Error('Failed to load Clerk JS'));
     document.head.appendChild(s);
   });
 
-  // 3. Initialize and load Clerk
-  const clerk = new window.Clerk(publishableKey);
+  // 3. window.Clerk is a singleton instance in v5 — call load() directly
+  const clerk = window.Clerk;
   await clerk.load();
 
   if (!clerk.user) {
@@ -212,16 +213,24 @@
 
   // Helper: get a fresh session token for API calls
   async function getToken() {
-    return clerk.session.getToken();
+    if (!clerk.session) throw new Error('No active session');
+    const token = await clerk.session.getToken();
+    if (!token) throw new Error('Could not retrieve session token');
+    return token;
   }
 
-  // Helper: authenticated fetch
+  // Helper: authenticated fetch — throws on non-2xx
   async function apiFetch(path, options = {}) {
     const token = await getToken();
-    return fetch(path, {
+    const res = await fetch(path, {
       ...options,
       headers: { 'Authorization': `Bearer ${token}`, ...(options.headers || {}) },
     });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail || `HTTP ${res.status}`);
+    }
+    return res;
   }
 
   // 5. UI state management
@@ -266,6 +275,7 @@
         showState('no-key');
       }
     } catch (e) {
+      console.error('loadKeyState failed:', e);
       showState('no-key');
     }
   }
@@ -292,7 +302,8 @@
       document.getElementById('new-key-value').textContent = data.key;
       showState('new-key');
     } catch (e) {
-      alert('Failed to generate key. Please try again.');
+      console.error('Generate key failed:', e);
+      alert(`Failed to generate key: ${e.message}`);
     } finally {
       this.disabled = false;
       this.textContent = 'Generate API Key';
@@ -310,7 +321,8 @@
       document.getElementById('new-key-value').textContent = data.key;
       showState('new-key');
     } catch (e) {
-      alert('Failed to regenerate key. Please try again.');
+      console.error('Regenerate key failed:', e);
+      alert(`Failed to regenerate key: ${e.message}`);
     } finally {
       this.disabled = false;
       this.textContent = 'Regenerate Key';
