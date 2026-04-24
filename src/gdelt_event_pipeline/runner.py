@@ -192,9 +192,9 @@ def main() -> None:
     signal.signal(signal.SIGTERM, _handle_signal)
     signal.signal(signal.SIGINT, _handle_signal)
 
-    _BACKOFF_GRACE = 3        # failures before backoff kicks in
+    _BACKOFF_GRACE = 3  # failures before backoff kicks in
     _BACKOFF_START = 30 * 60  # 30 min
-    _BACKOFF_CAP = 120 * 60   # 120 min
+    _BACKOFF_CAP = 120 * 60  # 120 min
     _ALERT_THRESHOLD = 5
 
     def _next_wait(consecutive_failures: int) -> int:

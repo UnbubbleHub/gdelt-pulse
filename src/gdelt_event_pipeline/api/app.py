@@ -33,6 +33,7 @@ from gdelt_event_pipeline.storage.database import close_pool, init_pool
 
 try:
     import fastembed as _fe_check  # noqa: F401
+
     _SEARCH_AVAILABLE = True
 except ImportError:
     _SEARCH_AVAILABLE = False
