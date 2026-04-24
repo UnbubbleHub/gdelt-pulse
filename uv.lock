@@ -415,7 +415,7 @@ requires-dist = [
     { name = "pgvector", specifier = ">=0.3.0" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2.0" },
     { name = "psycopg-pool", specifier = ">=3.2.0" },
-    { name = "pyjwt", extras = ["cryptography"], specifier = ">=2.8.0" },
+    { name = "pyjwt", specifier = ">=2.8.0" },
     { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "upstash-redis", specifier = ">=1.7.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.34.0" },
