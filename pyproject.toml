@@ -9,19 +9,22 @@ description = "GDELT event ingestion and clustering pipeline"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    # shared — used by both API and pipeline
     "psycopg[binary]>=3.2.0",
     "psycopg-pool>=3.2.0",
     "pgvector>=0.3.0",
-    "fastapi>=0.115.0",
-    "uvicorn[standard]>=0.34.0",
     "python-dotenv>=1.0.0",
     "fastembed>=0.8.0",
+]
+
+[dependency-groups]
+api = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.34.0",
     "upstash-redis>=1.7.0",
     "PyJWT>=2.8.0",
     "cryptography>=46.0.7",
 ]
-
-[dependency-groups]
 dev = [
     "pytest>=8.3.0",
     "ruff>=0.15.6",

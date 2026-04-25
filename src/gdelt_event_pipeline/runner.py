@@ -139,6 +139,21 @@ def run_cycle(settings) -> dict[str, str]:
         logger.exception("Clustering failed")
         summary["cluster"] = "ERROR"
 
+    # 5. Refresh gravity materialized views
+    try:
+        from gdelt_event_pipeline.storage.database import get_pool
+
+        pool = get_pool()
+        with pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("REFRESH MATERIALIZED VIEW mv_country_comentions")
+                cur.execute("REFRESH MATERIALIZED VIEW mv_country_stats")
+            conn.commit()
+        summary["gravity_refresh"] = "ok"
+    except Exception:
+        logger.exception("Gravity view refresh failed")
+        summary["gravity_refresh"] = "ERROR"
+
     return summary
 
 
@@ -177,6 +192,22 @@ def main() -> None:
     signal.signal(signal.SIGTERM, _handle_signal)
     signal.signal(signal.SIGINT, _handle_signal)
 
+    _BACKOFF_GRACE = 3  # failures before backoff kicks in
+    _BACKOFF_START = 30 * 60  # 30 min
+    _BACKOFF_CAP = 120 * 60  # 120 min
+    _ALERT_THRESHOLD = 5
+
+    def _next_wait(consecutive_failures: int) -> int:
+        if consecutive_failures <= _BACKOFF_GRACE:
+            return interval
+        step = consecutive_failures - _BACKOFF_GRACE  # 1, 2, 3, ...
+        return min(_BACKOFF_START * (2 ** (step - 1)), _BACKOFF_CAP)
+
+    def _is_failed_cycle(summary: dict[str, str]) -> bool:
+        tracked = {v for k, v in summary.items() if k != "cleanup"}
+        return bool(tracked) and all(v == "ERROR" for v in tracked)
+
+    consecutive_failures = 0
     cycle = 0
     try:
         while not shutdown:
@@ -195,19 +226,39 @@ def main() -> None:
                 " | ".join(parts),
             )
 
+            if _is_failed_cycle(summary):
+                consecutive_failures += 1
+                wait = _next_wait(consecutive_failures)
+                logger.error(
+                    "Cycle %d: all stages failed (consecutive_failures=%d), retrying in %.0f min",
+                    cycle,
+                    consecutive_failures,
+                    wait / 60,
+                )
+                if consecutive_failures == _ALERT_THRESHOLD:
+                    logger.error(
+                        "ALERT: %d consecutive pipeline failures — possible outage",
+                        consecutive_failures,
+                    )
+            else:
+                if consecutive_failures > 0:
+                    logger.info(
+                        "Cycle %d recovered after %d failure(s)", cycle, consecutive_failures
+                    )
+                consecutive_failures = 0
+                wait = max(0, interval - elapsed)
+
             if shutdown:
                 break
 
-            # Sleep only the remaining time so we never skip a GDELT window
-            remaining = max(0, interval - elapsed)
-            if remaining == 0:
+            if wait == 0:
                 logger.warning(
                     "Cycle took %.1fs (> %ds interval), starting next immediately",
                     elapsed,
                     interval,
                 )
             else:
-                sleep_until = time.monotonic() + remaining
+                sleep_until = time.monotonic() + wait
                 while time.monotonic() < sleep_until and not shutdown:
                     time.sleep(1)
     finally:

@@ -1,4 +1,4 @@
-"""Tests for embedding generation."""
+"""Tests for embedding generation (fastembed backend)."""
 
 from gdelt_event_pipeline.embeddings.embed import embed_texts
 
@@ -43,46 +43,14 @@ def _cosine_similarity(a: list[float], b: list[float]) -> float:
     return dot / (norm_a * norm_b)
 
 
-class TestLazyImport:
-    def test_module_loads_without_sentence_transformers(self, monkeypatch):
-        """embed.py must not import sentence_transformers at module load time.
-        After the lazy-import fix, importing the module with sentence_transformers
-        blocked must succeed without raising ModuleNotFoundError."""
-        import sys
-
-        # Block sentence_transformers from being importable
-        monkeypatch.setitem(sys.modules, "sentence_transformers", None)
-        # Remove the cached embed module so Python re-imports it fresh
-        monkeypatch.delitem(sys.modules, "gdelt_event_pipeline.embeddings.embed", raising=False)
-
-        # Must NOT raise ModuleNotFoundError / ImportError
-        import gdelt_event_pipeline.embeddings.embed  # noqa: F401
-
-
 class TestEmbeddingBackend:
-    def test_fastembed_backend_used_when_env_set(self, monkeypatch):
-        """When EMBEDDING_BACKEND=fastembed, embed_texts returns valid embeddings."""
-        monkeypatch.setenv("EMBEDDING_BACKEND", "fastembed")
-        from gdelt_event_pipeline.embeddings.embed import embed_texts
-
+    def test_fastembed_returns_valid_embeddings(self):
+        """embed_texts returns correctly shaped float vectors."""
         result = embed_texts(["test headline"])
         assert len(result) == 1
         assert len(result[0]) == 384
         assert all(isinstance(v, float) for v in result[0])
 
-    def test_fastembed_backend_used_by_default(self, monkeypatch):
-        """When EMBEDDING_BACKEND is unset, embed_texts must use fastembed."""
-        monkeypatch.delenv("EMBEDDING_BACKEND", raising=False)
-        from gdelt_event_pipeline.embeddings.embed import embed_texts
-
-        result = embed_texts(["Hello world"])
-        assert len(result) == 1
-        assert len(result[0]) == 384
-
-    def test_empty_list_returns_empty_regardless_of_backend(self, monkeypatch):
-        """Empty input must return [] for both backends without calling any model."""
-        for backend in ("sentence-transformers", "fastembed"):
-            monkeypatch.setenv("EMBEDDING_BACKEND", backend)
-            from gdelt_event_pipeline.embeddings.embed import embed_texts
-
-            assert embed_texts([]) == []
+    def test_empty_list_returns_empty(self):
+        """Empty input returns [] without calling any model."""
+        assert embed_texts([]) == []
