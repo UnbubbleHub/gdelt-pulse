@@ -4,8 +4,8 @@ GDELT Pulse is designed as a split deployment: the API runs on **Vercel** (serve
 
 ```
 ┌───────────┐     ┌──────────────────┐     ┌───────────┐
-│  Vercel   │────►│   Neon (Postgres  │◄────│  Railway  │
-│  (API)    │     │   + pgvector)    │     │ (Pipeline) │
+│  Vercel   │────►│   Neon (Postgres │◄────│  Railway  │
+│  (API)    │     │   + pgvector)    │     │ (Pipeline)│
 └───────────┘     └──────────────────┘     └───────────┘
 ```
 
