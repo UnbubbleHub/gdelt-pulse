@@ -20,7 +20,7 @@ from gdelt_event_pipeline.storage.clusters import (
     assign_article_to_cluster,
     create_cluster,
     find_nearest_cluster,
-    get_cluster_entity_sample,
+    get_cluster_entity_samples,
     update_cluster_centroid,
 )
 
@@ -63,15 +63,19 @@ def assign_article(
     # Stage 1: find top candidates by cosine similarity (within temporal window)
     candidates = find_nearest_cluster(embedding, limit=N_CANDIDATES, max_age_hours=max_age_hours)
 
-    # Stage 2: score each candidate with entity overlap
+    # Stage 2: score each candidate with entity overlap.  One query fetches
+    # entity samples for all candidates — cheaper than N per-candidate round
+    # trips against a remote DB.
+    candidate_ids = [str(c["id"]) for c in candidates]
+    entity_samples = get_cluster_entity_samples(candidate_ids, limit=5)
+
     best_match = None
     best_score = -1.0
 
     for candidate in candidates:
         cosine_sim = 1.0 - candidate["cosine_distance"]
 
-        # Fetch entities from the cluster's recent articles
-        sample = get_cluster_entity_sample(str(candidate["id"]), limit=5)
+        sample = entity_samples.get(str(candidate["id"]), [])
         cluster_entities = merge_entity_sets([extract_entity_sets(row) for row in sample])
 
         entity_overlap = compute_entity_overlap(article_entities, cluster_entities)

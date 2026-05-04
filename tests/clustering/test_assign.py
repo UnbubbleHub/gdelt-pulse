@@ -36,13 +36,13 @@ def _make_cluster(cluster_id="clust-1", cosine_distance=0.1, article_count=5, ce
 
 @patch("gdelt_event_pipeline.clustering.assign.update_cluster_centroid")
 @patch("gdelt_event_pipeline.clustering.assign.assign_article_to_cluster")
-@patch("gdelt_event_pipeline.clustering.assign.get_cluster_entity_sample")
+@patch("gdelt_event_pipeline.clustering.assign.get_cluster_entity_samples")
 @patch("gdelt_event_pipeline.clustering.assign.find_nearest_cluster")
 def test_assigns_to_existing_above_threshold(
-    mock_find, mock_sample, mock_assign, mock_update_centroid
+    mock_find, mock_samples, mock_assign, mock_update_centroid
 ):
     mock_find.return_value = [_make_cluster(cosine_distance=0.1)]
-    mock_sample.return_value = []  # no entity data
+    mock_samples.return_value = {}  # no entity data for any candidate
 
     result = assign_article(_make_article())
 
@@ -54,11 +54,11 @@ def test_assigns_to_existing_above_threshold(
 
 @patch("gdelt_event_pipeline.clustering.assign.update_cluster_centroid")
 @patch("gdelt_event_pipeline.clustering.assign.assign_article_to_cluster")
-@patch("gdelt_event_pipeline.clustering.assign.get_cluster_entity_sample")
+@patch("gdelt_event_pipeline.clustering.assign.get_cluster_entity_samples")
 @patch("gdelt_event_pipeline.clustering.assign.find_nearest_cluster")
-def test_max_age_hours_forwarded_to_find(mock_find, mock_sample, mock_assign, mock_update):
+def test_max_age_hours_forwarded_to_find(mock_find, mock_samples, mock_assign, mock_update):
     mock_find.return_value = [_make_cluster(cosine_distance=0.1)]
-    mock_sample.return_value = []
+    mock_samples.return_value = {}
 
     assign_article(_make_article(), max_age_hours=48)
 
@@ -67,11 +67,11 @@ def test_max_age_hours_forwarded_to_find(mock_find, mock_sample, mock_assign, mo
 
 @patch("gdelt_event_pipeline.clustering.assign.assign_article_to_cluster")
 @patch("gdelt_event_pipeline.clustering.assign.create_cluster")
-@patch("gdelt_event_pipeline.clustering.assign.get_cluster_entity_sample")
+@patch("gdelt_event_pipeline.clustering.assign.get_cluster_entity_samples")
 @patch("gdelt_event_pipeline.clustering.assign.find_nearest_cluster")
-def test_creates_new_cluster_below_threshold(mock_find, mock_sample, mock_create, mock_assign):
+def test_creates_new_cluster_below_threshold(mock_find, mock_samples, mock_create, mock_assign):
     mock_find.return_value = [_make_cluster(cosine_distance=0.5)]
-    mock_sample.return_value = []
+    mock_samples.return_value = {}
     mock_create.return_value = {"id": "new-clust"}
 
     result = assign_article(_make_article())
@@ -95,22 +95,24 @@ def test_creates_new_cluster_when_none_exist(mock_find, mock_create, mock_assign
 
 @patch("gdelt_event_pipeline.clustering.assign.update_cluster_centroid")
 @patch("gdelt_event_pipeline.clustering.assign.assign_article_to_cluster")
-@patch("gdelt_event_pipeline.clustering.assign.get_cluster_entity_sample")
+@patch("gdelt_event_pipeline.clustering.assign.get_cluster_entity_samples")
 @patch("gdelt_event_pipeline.clustering.assign.find_nearest_cluster")
-def test_entity_overlap_boosts_borderline_match(mock_find, mock_sample, mock_assign, mock_update):
+def test_entity_overlap_boosts_borderline_match(mock_find, mock_samples, mock_assign, mock_update):
     # cosine similarity = 0.68 (below 0.70 threshold)
     mock_find.return_value = [_make_cluster(cosine_distance=0.32)]
 
     # But strong entity overlap should push it above threshold
     import json
 
-    mock_sample.return_value = [
-        {
-            "locations": json.dumps([{"name": "Berlin"}]),
-            "persons": json.dumps(["Scholz"]),
-            "organizations": None,
-        }
-    ]
+    mock_samples.return_value = {
+        "clust-1": [
+            {
+                "locations": json.dumps([{"name": "Berlin"}]),
+                "persons": json.dumps(["Scholz"]),
+                "organizations": None,
+            }
+        ]
+    }
 
     article = _make_article(
         locations=json.dumps([{"name": "Berlin"}]),
@@ -125,9 +127,9 @@ def test_entity_overlap_boosts_borderline_match(mock_find, mock_sample, mock_ass
 
 @patch("gdelt_event_pipeline.clustering.assign.assign_article_to_cluster")
 @patch("gdelt_event_pipeline.clustering.assign.create_cluster")
-@patch("gdelt_event_pipeline.clustering.assign.get_cluster_entity_sample")
+@patch("gdelt_event_pipeline.clustering.assign.get_cluster_entity_samples")
 @patch("gdelt_event_pipeline.clustering.assign.find_nearest_cluster")
-def test_picks_best_candidate_across_multiple(mock_find, mock_sample, mock_create, mock_assign):
+def test_picks_best_candidate_across_multiple(mock_find, mock_samples, mock_create, mock_assign):
     # Two candidates: first has closer cosine but no entity match,
     # second has slightly worse cosine but strong entity match
     mock_find.return_value = [
@@ -137,18 +139,22 @@ def test_picks_best_candidate_across_multiple(mock_find, mock_sample, mock_creat
 
     import json
 
-    mock_sample.side_effect = [
-        # close-no-entity: no matching entities
-        [{"locations": json.dumps([{"name": "Tokyo"}]), "persons": None, "organizations": None}],
-        # far-with-entity: matching entities
-        [
+    mock_samples.return_value = {
+        "close-no-entity": [
+            {
+                "locations": json.dumps([{"name": "Tokyo"}]),
+                "persons": None,
+                "organizations": None,
+            }
+        ],
+        "far-with-entity": [
             {
                 "locations": json.dumps([{"name": "Berlin"}]),
                 "persons": json.dumps(["Scholz"]),
                 "organizations": None,
             }
         ],
-    ]
+    }
 
     article = _make_article(
         locations=json.dumps([{"name": "Berlin"}]),
@@ -164,14 +170,14 @@ def test_picks_best_candidate_across_multiple(mock_find, mock_sample, mock_creat
 
 @patch("gdelt_event_pipeline.clustering.assign.update_cluster_centroid")
 @patch("gdelt_event_pipeline.clustering.assign.assign_article_to_cluster")
-@patch("gdelt_event_pipeline.clustering.assign.get_cluster_entity_sample")
+@patch("gdelt_event_pipeline.clustering.assign.get_cluster_entity_samples")
 @patch("gdelt_event_pipeline.clustering.assign.find_nearest_cluster")
-def test_centroid_updated_on_assignment(mock_find, mock_sample, mock_assign, mock_update_centroid):
+def test_centroid_updated_on_assignment(mock_find, mock_samples, mock_assign, mock_update_centroid):
     centroid = [1.0] * 384
     mock_find.return_value = [
         _make_cluster(cosine_distance=0.05, article_count=1, centroid=centroid)
     ]
-    mock_sample.return_value = []
+    mock_samples.return_value = {}
 
     article = _make_article(embedding=[0.0] * 384)
     assign_article(article)

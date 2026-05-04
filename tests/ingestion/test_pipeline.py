@@ -20,14 +20,15 @@ def _make_gkg_row(record_id="20260315120000-1", url="http://example.com/article"
 
 class TestRunIngestion:
     @patch("gdelt_event_pipeline.ingestion.pipeline.update_pipeline_state")
-    @patch("gdelt_event_pipeline.ingestion.pipeline.upsert_article")
+    @patch("gdelt_event_pipeline.ingestion.pipeline.upsert_articles")
     @patch("gdelt_event_pipeline.ingestion.pipeline.download_and_parse_gkg")
     def test_basic_flow(self, mock_download, mock_upsert, mock_update_state):
         mock_download.return_value = [
             _make_gkg_row("rec-1", "http://a.com/1"),
             _make_gkg_row("rec-2", "http://b.com/2"),
         ]
-        mock_upsert.return_value = {"id": "some-uuid"}
+        # Batch upsert returns the number of rows it wrote.
+        mock_upsert.side_effect = lambda articles, **kwargs: len(articles)
 
         result = run_ingestion(gkg_url="http://example.com/test.gkg.csv.zip")
 
@@ -35,11 +36,12 @@ class TestRunIngestion:
         assert result.rows_normalized == 2
         assert result.rows_upserted == 2
         assert result.rows_failed == 0
-        assert mock_upsert.call_count == 2
+        # Both articles go in a single batch now
+        assert mock_upsert.call_count == 1
         mock_update_state.assert_called_once()
 
     @patch("gdelt_event_pipeline.ingestion.pipeline.update_pipeline_state")
-    @patch("gdelt_event_pipeline.ingestion.pipeline.upsert_article")
+    @patch("gdelt_event_pipeline.ingestion.pipeline.upsert_articles")
     @patch("gdelt_event_pipeline.ingestion.pipeline.download_and_parse_gkg")
     def test_dry_run_skips_db(self, mock_download, mock_upsert, mock_update_state):
         mock_download.return_value = [_make_gkg_row()]
@@ -51,7 +53,7 @@ class TestRunIngestion:
         mock_update_state.assert_not_called()
 
     @patch("gdelt_event_pipeline.ingestion.pipeline.update_pipeline_state")
-    @patch("gdelt_event_pipeline.ingestion.pipeline.upsert_article")
+    @patch("gdelt_event_pipeline.ingestion.pipeline.upsert_articles")
     @patch("gdelt_event_pipeline.ingestion.pipeline.download_and_parse_gkg")
     def test_skips_unnormalizable_rows(self, mock_download, mock_upsert, mock_update_state):
         # Row too short → normalize_row returns None
@@ -64,7 +66,7 @@ class TestRunIngestion:
         mock_upsert.assert_not_called()
 
     @patch("gdelt_event_pipeline.ingestion.pipeline.update_pipeline_state")
-    @patch("gdelt_event_pipeline.ingestion.pipeline.upsert_article")
+    @patch("gdelt_event_pipeline.ingestion.pipeline.upsert_articles")
     @patch("gdelt_event_pipeline.ingestion.pipeline.download_and_parse_gkg")
     def test_deduplicates_within_batch(self, mock_download, mock_upsert, mock_update_state):
         # Same URL appears twice
@@ -72,7 +74,7 @@ class TestRunIngestion:
             _make_gkg_row("rec-1", "http://a.com/article"),
             _make_gkg_row("rec-2", "http://a.com/article"),
         ]
-        mock_upsert.return_value = {"id": "some-uuid"}
+        mock_upsert.side_effect = lambda articles, **kwargs: len(articles)
 
         result = run_ingestion(gkg_url="http://example.com/test.gkg.csv.zip")
 
@@ -82,7 +84,7 @@ class TestRunIngestion:
         assert mock_upsert.call_count == 1
 
     @patch("gdelt_event_pipeline.ingestion.pipeline.update_pipeline_state")
-    @patch("gdelt_event_pipeline.ingestion.pipeline.upsert_article")
+    @patch("gdelt_event_pipeline.ingestion.pipeline.upsert_articles")
     @patch("gdelt_event_pipeline.ingestion.pipeline.download_and_parse_gkg")
     def test_upsert_failure_counted(self, mock_download, mock_upsert, mock_update_state):
         mock_download.return_value = [_make_gkg_row()]
@@ -97,7 +99,7 @@ class TestRunIngestion:
 
     @patch("gdelt_event_pipeline.ingestion.pipeline.get_latest_gkg_url")
     @patch("gdelt_event_pipeline.ingestion.pipeline.update_pipeline_state")
-    @patch("gdelt_event_pipeline.ingestion.pipeline.upsert_article")
+    @patch("gdelt_event_pipeline.ingestion.pipeline.upsert_articles")
     @patch("gdelt_event_pipeline.ingestion.pipeline.download_and_parse_gkg")
     def test_resolves_url_when_not_provided(
         self, mock_download, mock_upsert, mock_update_state, mock_get_url
@@ -111,7 +113,7 @@ class TestRunIngestion:
         mock_download.assert_called_once_with("http://example.com/latest.gkg.csv.zip", timeout=30)
 
     @patch("gdelt_event_pipeline.ingestion.pipeline.update_pipeline_state")
-    @patch("gdelt_event_pipeline.ingestion.pipeline.upsert_article")
+    @patch("gdelt_event_pipeline.ingestion.pipeline.upsert_articles")
     @patch("gdelt_event_pipeline.ingestion.pipeline.download_and_parse_gkg")
     def test_empty_fetch_no_checkpoint(self, mock_download, mock_upsert, mock_update_state):
         mock_download.return_value = []
@@ -127,7 +129,7 @@ class TestRunIngestion:
 
 class TestRunTitleScraping:
     @patch("gdelt_event_pipeline.ingestion.pipeline.increment_scrape_attempts")
-    @patch("gdelt_event_pipeline.ingestion.pipeline.update_article_title")
+    @patch("gdelt_event_pipeline.ingestion.pipeline.update_article_titles")
     @patch("gdelt_event_pipeline.ingestion.scraper.scrape_titles")
     @patch("gdelt_event_pipeline.ingestion.pipeline.get_untitled_articles")
     def test_scrapes_and_updates(self, mock_get, mock_scrape, mock_update, mock_increment):
@@ -141,12 +143,12 @@ class TestRunTitleScraping:
 
         assert attempted == 2
         assert succeeded == 1
-        mock_update.assert_called_once_with("id-1", "Title A")
+        mock_update.assert_called_once_with({"id-1": "Title A"})
         # All attempted articles get their counter bumped, not just successes
         mock_increment.assert_called_once_with(["id-1", "id-2"])
 
     @patch("gdelt_event_pipeline.ingestion.pipeline.increment_scrape_attempts")
-    @patch("gdelt_event_pipeline.ingestion.pipeline.update_article_title")
+    @patch("gdelt_event_pipeline.ingestion.pipeline.update_article_titles")
     @patch("gdelt_event_pipeline.ingestion.scraper.scrape_titles")
     @patch("gdelt_event_pipeline.ingestion.pipeline.get_untitled_articles")
     def test_no_untitled_articles(self, mock_get, mock_scrape, mock_update, mock_increment):

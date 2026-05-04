@@ -10,7 +10,7 @@ from gdelt_event_pipeline.embeddings.embed import embed_texts
 from gdelt_event_pipeline.embeddings.text import compose_embedding_text
 from gdelt_event_pipeline.storage.articles import (
     get_unembedded_articles,
-    update_article_embedding,
+    update_article_embeddings,
 )
 
 logger = logging.getLogger(__name__)
@@ -80,18 +80,18 @@ def run_embedding(
         batch_size=settings.batch_size,
     )
 
-    # Store results
-    for article, vector in zip(valid_articles, vectors, strict=True):
-        try:
-            update_article_embedding(
-                str(article["id"]),
-                vector,
-                settings.model_name,
-            )
-            result.articles_embedded += 1
-        except Exception:
-            logger.exception("Failed to store embedding for article %s", article.get("id"))
-            result.articles_failed += 1
+    # Store results in one batched UPDATE (chunked internally) — avoids N
+    # per-row round trips that dominate cycle time on a remote Postgres.
+    updates = [
+        (str(article["id"]), list(vector))
+        for article, vector in zip(valid_articles, vectors, strict=True)
+    ]
+    try:
+        written = update_article_embeddings(updates, settings.model_name)
+        result.articles_embedded = written
+    except Exception:
+        logger.exception("Failed to store embeddings (%d articles)", len(updates))
+        result.articles_failed = len(updates)
 
     logger.info(
         "Embedding complete: fetched=%d embedded=%d skipped=%d failed=%d",
