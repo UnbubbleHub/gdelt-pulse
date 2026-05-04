@@ -3,935 +3,659 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GDELT Pulse</title>
+<title>gdelt-pulse</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;450;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;450;500;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/pulse.css">
 <style>
-/* ── Page transitions ─────────────────────────────── */
-.page { display: none; min-height: 100vh; }
-.page.active { display: block; animation: slideUp 0.45s var(--ease) both; }
-
-/* ── Landing ──────────────────────────────────────── */
-.landing {
+.page {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  padding: var(--sp-6) var(--sp-5);
+}
+
+/* ── Header ───────────────────────────────── */
+.header {
   text-align: center;
-  padding: var(--sp-5);
+  padding: 10vh 0 var(--sp-9);
+  max-width: 520px;
 }
 
-.landing-title {
-  font-size: clamp(3.2rem, 8vw, 6rem);
+.brand {
+  font-family: 'Fira Code', monospace;
+  font-size: clamp(2rem, 5.5vw, 2.75rem);
   font-weight: 600;
-  letter-spacing: -0.045em;
-  line-height: 0.95;
-  margin-bottom: var(--sp-4);
-  animation: slideUp 0.6s var(--ease) both;
-}
-
-.landing-title span {
-  color: var(--text-3);
-}
-
-.landing-sub {
-  font-size: clamp(0.9375rem, 1.5vw, 1.0625rem);
-  color: var(--text-3);
-  max-width: 400px;
-  margin-bottom: var(--sp-7);
-  font-weight: 400;
-  animation: slideUp 0.6s var(--ease) 0.08s both;
-}
-
-.landing-actions {
-  display: flex;
-  gap: var(--sp-3);
-  margin-bottom: var(--sp-9);
-  animation: slideUp 0.6s var(--ease) 0.16s both;
-}
-
-/* ── Feature grid ─────────────────────────────────── */
-.features {
-  width: 100%;
-  max-width: 680px;
-  animation: slideUp 0.6s var(--ease) 0.24s both;
-}
-
-.features-label {
-  font-size: 0.6875rem;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-3);
-  margin-bottom: var(--sp-4);
-}
-
-.features-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1px;
-  background: var(--border);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-}
-
-.feature-link {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: var(--sp-5) var(--sp-3);
-  background: var(--bg);
-  color: var(--text-3);
-  font-size: 0.75rem;
-  font-weight: 450;
-  text-decoration: none;
-  transition: background var(--duration) var(--ease), color var(--duration);
-  cursor: pointer;
-}
-
-.feature-link:hover {
-  background: var(--surface);
-  color: var(--text);
-}
-
-.feature-link svg { width: 20px; height: 20px; opacity: 0.5; transition: opacity var(--duration); }
-.feature-link:hover svg { opacity: 0.9; }
-
-/* ── Top stories (landing preview) ────────────────── */
-.preview-section {
-  width: 100%;
-  max-width: 680px;
-  margin-top: var(--sp-6);
-  animation: slideUp 0.6s var(--ease) 0.32s both;
-}
-
-.section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--sp-4);
-}
-
-.section-label {
-  font-size: 0.6875rem;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-3);
-}
-
-.section-link {
-  font-size: 0.75rem;
-  color: var(--text-3);
-  cursor: pointer;
-  background: none;
-  border: none;
-  font-family: var(--font);
-  font-weight: 450;
-  transition: color var(--duration);
-}
-.section-link:hover { color: var(--text); }
-
-.preview-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  background: var(--border);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-}
-
-.preview-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-4);
-  padding: var(--sp-4) var(--sp-5);
-  background: var(--bg);
-  cursor: pointer;
-  transition: background var(--duration) var(--ease);
-}
-
-.preview-item:hover { background: var(--surface); }
-
-.preview-title {
-  font-size: 0.875rem;
-  font-weight: 450;
-  line-height: 1.4;
-  color: var(--text-2);
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  transition: color var(--duration);
-}
-
-.preview-item:hover .preview-title { color: var(--text); }
-
-.preview-meta {
-  font-size: 0.6875rem;
-  color: var(--text-3);
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-
-/* ── Clusters page ────────────────────────────────── */
-.page-container {
-  max-width: 860px;
-  margin: 0 auto;
-  padding: 80px var(--sp-5) var(--sp-8);
-}
-
-.page-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--sp-5);
-  flex-wrap: wrap;
-  gap: var(--sp-3);
-}
-
-.page-header h1 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-.page-header p {
-  font-size: 0.8125rem;
-  color: var(--text-3);
-  margin-top: 2px;
-}
-
-.page-actions {
-  display: flex;
-  gap: var(--sp-2);
-  align-items: center;
-}
-
-/* Filter panel */
-.filter-panel {
-  max-height: 0;
-  overflow: hidden;
-  opacity: 0;
-  transition: max-height 0.35s var(--ease), opacity 0.25s, margin 0.35s var(--ease);
-  border-radius: var(--radius-lg);
-  margin-bottom: 0;
-}
-
-.filter-panel.open {
-  max-height: 280px;
-  opacity: 1;
-  padding: var(--sp-4) var(--sp-5);
-  margin-bottom: var(--sp-4);
-  border: 1px solid var(--border);
-  background: var(--surface);
-}
-
-.filter-grid {
-  display: flex;
-  gap: var(--sp-2);
-  flex-wrap: wrap;
+  color: var(--accent);
   margin-bottom: var(--sp-3);
 }
 
-.filter-item {
-  flex: 1 1 130px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.filter-item label {
-  font-size: 0.625rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-3);
-  font-weight: 500;
-}
-
-.filter-actions {
-  display: flex;
-  gap: var(--sp-2);
-}
-
-/* Active filter pills */
-.active-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--sp-4); }
-.active-filters:empty { display: none; }
-
-.filter-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 12px;
-  border-radius: var(--radius-full);
-  background: var(--surface-2);
-  color: var(--text-2);
-  font-size: 0.6875rem;
-  font-weight: 450;
-  border: 1px solid var(--border);
-}
-
-.filter-pill button {
-  background: none; border: none; color: var(--text-3);
-  cursor: pointer; font-size: 0.85rem; line-height: 1; padding: 0;
-  transition: color var(--duration);
-}
-.filter-pill button:hover { color: var(--text); }
-
-/* ── Cluster cards ────────────────────────────────── */
-.cl-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: var(--sp-4) var(--sp-5);
-  margin-bottom: 6px;
-  cursor: pointer;
-  transition: all var(--duration) var(--ease);
-}
-
-.cl-card:hover {
-  border-color: var(--border-active);
-  background: var(--surface-2);
-}
-
-.cl-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: var(--sp-3);
-  margin-bottom: 4px;
-}
-
-.cl-title {
-  font-size: 0.875rem;
-  font-weight: 450;
-  line-height: 1.4;
-  letter-spacing: -0.01em;
-}
-
-.cl-badge {
-  font-size: 0.6875rem;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-3);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.cl-meta { font-size: 0.75rem; color: var(--text-3); }
-.cl-sim { font-size: 0.6875rem; color: var(--text-3); margin-bottom: 4px; font-variant-numeric: tabular-nums; }
-
-/* ── Article cards ────────────────────────────────── */
-.card-article {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: var(--sp-4) var(--sp-5);
-  margin-bottom: 6px;
-  transition: border-color var(--duration) var(--ease);
-}
-
-.card-article:hover { border-color: var(--border-hover); }
-
-.card-rank {
-  font-size: 0.6875rem;
-  color: var(--text-3);
-  margin-bottom: 4px;
-  font-variant-numeric: tabular-nums;
-}
-.card-rank .hi { color: var(--text-2); font-weight: 500; }
-
-.card-title {
-  font-size: 0.875rem;
-  font-weight: 450;
-  margin-bottom: 4px;
-  line-height: 1.45;
-}
-
-.card-title a { color: var(--text); text-decoration: none; transition: color var(--duration); }
-.card-title a:hover { color: var(--text-2); text-decoration: underline; text-underline-offset: 2px; }
-
-.card-meta {
-  display: flex;
-  gap: var(--sp-3);
+.byline {
   font-size: 0.75rem;
   color: var(--text-3);
-  margin-bottom: var(--sp-2);
+  letter-spacing: 0.04em;
+  margin-bottom: var(--sp-6);
+}
+.byline a { color: var(--text-2); }
+.byline a:hover { color: var(--text); }
+
+.desc {
+  text-align: center;
+  font-size: 1rem;
+  color: var(--text-2);
+  line-height: 1.75;
+  max-width: 500px;
+}
+.desc strong { color: var(--text); font-weight: 500; }
+
+/* ── Cards ────────────────────────────────── */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-4);
+  width: 100%;
+  max-width: 1000px;
+  margin-bottom: var(--sp-10);
 }
 
-.tags { display: flex; gap: 4px; flex-wrap: wrap; }
-
-/* ── Search ───────────────────────────────────────── */
-.search-container {
-  max-width: 600px;
-  margin: 0 auto var(--sp-5);
-}
-
-.search-row {
+.card-feat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-6);
+  transition: border-color var(--duration);
   display: flex;
-  gap: var(--sp-2);
+  flex-direction: column;
 }
+.card-feat:hover { border-color: var(--border-hover); }
 
-.search-input-wrap {
-  flex: 1;
-  position: relative;
-}
-
-.search-input-wrap svg {
-  position: absolute;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-3);
-  pointer-events: none;
-}
-
-.search-controls {
+.card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--sp-4);
-  margin-top: var(--sp-3);
-  flex-wrap: wrap;
-}
-
-.weight-row {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  font-size: 0.75rem;
-  color: var(--text-3);
-}
-
-.weight-val {
-  font-variant-numeric: tabular-nums;
-  color: var(--text-2);
-  font-size: 0.75rem;
-  min-width: 26px;
-  text-align: center;
-}
-
-.search-filter-panel {
-  max-height: 0;
-  overflow: hidden;
-  opacity: 0;
-  transition: max-height 0.35s var(--ease), opacity 0.25s, padding 0.35s var(--ease);
-  border-radius: var(--radius-lg);
-  max-width: 600px;
-  margin: var(--sp-1) auto 0;
-}
-
-.search-filter-panel.open {
-  max-height: 240px;
-  opacity: 1;
-  padding: var(--sp-4) var(--sp-5);
   margin-bottom: var(--sp-5);
-  border: 1px solid var(--border);
-  background: var(--surface);
+  color: var(--accent-text);
+}
+.card-icon svg { width: 20px; height: 20px; }
+
+.card-feat h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: var(--sp-3);
 }
 
-/* Results */
-.results-wrap { max-width: 860px; margin: 0 auto; }
-
-.results-meta {
-  display: flex; gap: var(--sp-4); margin-bottom: var(--sp-4);
-  font-size: 0.75rem; color: var(--text-3); justify-content: center;
+.card-feat p {
+  font-size: 0.8125rem;
+  color: var(--text-3);
+  line-height: 1.65;
+  flex: 1;
 }
-.results-meta strong { color: var(--text-2); font-weight: 500; font-variant-numeric: tabular-nums; }
 
-/* Segmented control */
-.segmented {
+.card-detail {
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--border);
+  font-family: 'Fira Code', monospace;
+  font-size: 0.6875rem;
+  color: var(--text-3);
+  line-height: 1.8;
+}
+
+.card-detail span {
+  color: var(--text-2);
+}
+
+/* ── Code examples ────────────────────────── */
+.code-section {
+  width: 100%;
+  max-width: 1000px;
+  margin-bottom: var(--sp-10);
+}
+
+.code-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: var(--sp-3);
+}
+
+.code-tabs {
   display: inline-flex;
   gap: 2px;
   padding: 3px;
   border-radius: var(--radius-full);
   border: 1px solid var(--border);
-  margin-bottom: var(--sp-5);
+  margin-bottom: var(--sp-3);
 }
 
-.seg-btn {
-  padding: 7px 18px;
+.code-tab {
+  padding: 5px 14px;
   border: none;
   background: none;
   border-radius: var(--radius-full);
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   font-family: var(--font);
   font-weight: 450;
   color: var(--text-3);
   cursor: pointer;
-  transition: all var(--duration) var(--ease);
+  transition: all var(--duration);
+}
+.code-tab:hover { color: var(--text-2); }
+.code-tab.active { background: var(--surface-2); color: var(--text); }
+
+.code-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--sp-4) var(--sp-5);
+  overflow-x: auto;
+  display: none;
+}
+.code-block.active { display: block; }
+
+.code-block pre {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.75rem;
+  line-height: 1.7;
+  color: var(--text-2);
+  white-space: pre;
+  margin: 0;
 }
 
-.seg-btn:hover { color: var(--text-2); }
-.seg-btn.active { background: var(--surface-2); color: var(--text); }
+.code-block .cm { color: var(--text-3); }
+.code-block .str { color: var(--positive); }
+.code-block .kw { color: var(--accent-text); }
+.code-block .fn { color: var(--warning); }
 
-.seg-count {
+/* ── Try it ────────────────────────────────── */
+.try-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 1000px;
+  margin-bottom: var(--sp-10);
+}
+
+.try-label {
   font-size: 0.6875rem;
-  margin-left: 4px;
-  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: var(--sp-3);
+}
+
+.try-form {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  margin-bottom: var(--sp-3);
+}
+
+.try-input {
+  width: 100%;
+  height: 48px;
+  padding: 0 52px 0 18px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.875rem;
+  font-family: var(--font);
+  outline: none;
+  transition: border-color var(--duration);
+}
+.try-input:focus { border-color: var(--text-3); }
+.try-input::placeholder { color: var(--text-3); }
+
+.try-btn {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  transition: background var(--duration);
+}
+.try-btn:hover { background: #3b5de7; }
+.try-btn svg { width: 18px; height: 18px; }
+
+.try-pills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: var(--sp-4);
+}
+
+.try-pill {
+  font-size: 0.6875rem;
+  padding: 5px 14px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--text-3);
+  font-family: var(--font);
+  cursor: pointer;
+  transition: border-color var(--duration), color var(--duration);
+}
+.try-pill:hover { border-color: var(--accent); color: var(--accent-text); }
+
+.try-results {
+  display: none;
+  width: 100%;
+  max-width: 560px;
+}
+.try-results.visible { display: block; animation: slideUp 0.25s var(--ease) both; }
+
+.try-meta {
+  font-size: 0.6875rem;
+  color: var(--text-3);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  margin-bottom: var(--sp-2);
+}
+
+.try-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.try-card {
+  background: var(--surface);
+  padding: var(--sp-3) var(--sp-4);
+  transition: background var(--duration);
+}
+.try-card:hover { background: var(--surface-2); }
+
+.try-card-title {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.35;
+  margin-bottom: 4px;
+}
+
+.try-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.tbadge {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.625rem;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.tbadge-count { background: var(--accent-dim); color: var(--accent-text); }
+.tbadge-loc { background: rgba(52, 211, 153, 0.06); color: var(--positive); }
+.tbadge-theme { background: rgba(251, 191, 36, 0.06); color: var(--warning); }
+.tbadge-neg { background: rgba(248, 113, 113, 0.06); color: var(--negative); }
+.tbadge-pos { background: rgba(52, 211, 153, 0.06); color: var(--positive); }
+
+.try-empty {
+  text-align: center;
+  padding: var(--sp-5);
+  color: var(--text-3);
+  font-size: 0.8125rem;
+}
+
+.try-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding: var(--sp-6);
+  color: var(--text-3);
+  font-size: 0.8125rem;
+}
+
+/* ── Links row ────────────────────────────── */
+.links-row {
+  display: flex;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-10);
+}
+
+.link-card {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  transition: border-color var(--duration), background var(--duration);
+  min-width: 180px;
+}
+.link-card:hover {
+  border-color: var(--border-hover);
+  background: var(--surface-2);
+}
+
+.link-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+.link-card:hover .link-icon { color: var(--text-2); }
+.link-icon svg { width: 16px; height: 16px; }
+
+.link-text h4 {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.link-text p {
+  font-size: 0.6875rem;
   color: var(--text-3);
 }
-.seg-btn.active .seg-count { color: var(--text-2); }
 
-/* ── Card animations ──────────────────────────────── */
-.card-anim { animation: slideUp 0.3s var(--ease) both; }
-
-/* ── Responsive ───────────────────────────────────── */
-@media (max-width: 768px) {
-  .landing-title { font-size: clamp(2.5rem, 10vw, 3.5rem); }
-  .landing-actions { flex-direction: column; }
-  .features-grid { grid-template-columns: repeat(2, 1fr); }
-  .page-container { padding: 64px var(--sp-4) var(--sp-6); }
-  .page-header { flex-direction: column; align-items: flex-start; }
-  .cl-top { flex-direction: column; gap: 4px; }
-  .search-row { flex-direction: column; }
+/* ── Footer ───────────────────────────────── */
+.foot {
+  margin-top: auto;
+  padding-top: var(--sp-5);
 }
 
-@media (max-width: 480px) {
-  .features-grid { grid-template-columns: repeat(2, 1fr); }
+.foot a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.6875rem;
+  color: var(--text-3);
+  transition: color var(--duration);
+}
+.foot a:hover { color: var(--text-2); }
+
+/* ── Responsive ───────────────────────────── */
+@media (max-width: 768px) {
+  .page { padding: var(--sp-4); }
+  .header { padding: 6vh 0 var(--sp-7); }
+  .cards { grid-template-columns: 1fr; max-width: 480px; }
+  .links-row { flex-direction: column; width: 100%; max-width: 480px; }
+  .link-card { min-width: unset; }
+  .brand { font-size: 1.5rem; }
 }
 </style>
 </head>
 <body>
+<div class="page">
 
-<!-- LANDING -->
-<div class="page active" id="pg-landing">
-  <div class="landing">
-    <h1 class="landing-title">GDELT <span>Pulse</span></h1>
-    <p class="landing-sub">Real-time clustering and semantic search across world events.</p>
-    <div class="landing-actions">
-      <button class="btn btn-primary btn-lg" onclick="navTo('clusters')">Explore Clusters</button>
-      <button class="btn btn-lg" onclick="navTo('search')">Search Events</button>
-    </div>
-
-    <div class="features">
-      <div class="features-grid">
-        <a class="feature-link" href="/globe">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-          Globe
-        </a>
-        <a class="feature-link" href="/polarization">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="10"/></svg>
-          Polarization
-        </a>
-        <a class="feature-link" href="/gravity">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><circle cx="5" cy="19" r="2"/><line x1="14.5" y1="9.5" x2="17.5" y2="6.5"/><line x1="9.5" y1="9.5" x2="6.5" y2="6.5"/><line x1="14.5" y1="14.5" x2="17.5" y2="17.5"/><line x1="9.5" y1="14.5" x2="6.5" y2="17.5"/></svg>
-          Gravity
-        </a>
-        <a class="feature-link" href="/asymmetry">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-          Asymmetry
-        </a>
-        <a class="feature-link" href="/sources">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7V4a2 2 0 0 1 2-2h8.5L20 7.5V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3"/><polyline points="14 2 14 8 20 8"/><line x1="2" y1="15" x2="12" y2="15"/><polyline points="9 12 12 15 9 18"/></svg>
-          Sources
-        </a>
-        <a class="feature-link" href="/propagation">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          Propagation
-        </a>
-        <a class="feature-link" href="/velocity">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-          Velocity
-        </a>
-        <a class="feature-link" onclick="navTo('clusters')" style="cursor:pointer">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          Search
-        </a>
-        <a class="feature-link" href="/developers">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-          Developers
-        </a>
-      </div>
-    </div>
-
-    <section class="preview-section">
-      <div class="section-header">
-        <span class="section-label">Trending stories</span>
-        <button class="section-link" onclick="navTo('clusters')">View all &rarr;</button>
-      </div>
-      <div id="previewClusters" class="preview-list">
-        <div class="loading">Loading<span class="spinner"></span></div>
-      </div>
-    </section>
-  </div>
+<!-- Header -->
+<div class="header">
+  <div class="brand">[gdelt-pulse]</div>
+  <div class="byline">by <a href="https://github.com/UnbubbleHub" target="_blank" rel="noopener">UnbubbleHub</a></div>
+  <p class="desc">
+    Open API that continuously ingests <strong>GDELT's global news feed</strong>,
+    clusters related articles into events, and exposes them through
+    <strong>semantic search</strong> with rich entity metadata.
+  </p>
 </div>
 
-<!-- CLUSTERS -->
-<div class="page" id="pg-clusters">
-  <div class="topbar">
-    <a class="topbar-back" onclick="navTo('landing')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-      GDELT Pulse
-    </a>
+<!-- Try it -->
+<section class="try-section">
+  <div class="try-label">Try it</div>
+  <form class="try-form" id="sf">
+    <input class="try-input" id="si" type="text" placeholder="Search clusters..." autocomplete="off">
+    <button class="try-btn" type="submit">
+      <svg viewBox="0 0 18 18" fill="none"><path d="M3.75 9H14.25M9.75 4.5L14.25 9L9.75 13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </form>
+  <div class="try-pills">
+    <button class="try-pill" type="button" data-q="climate policy">climate policy</button>
+    <button class="try-pill" type="button" data-q="AI regulation">AI regulation</button>
+    <button class="try-pill" type="button" data-q="military conflict">military conflict</button>
   </div>
-  <div class="page-container">
-    <div class="page-header">
-      <div>
-        <h1>Event Clusters</h1>
-        <p id="clusterCount">Groups of related articles about the same event</p>
-      </div>
-      <div class="page-actions">
-        <button class="btn btn-sm" id="cfToggle">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
-          Filters
-        </button>
-        <select class="select" id="cfSort">
-          <option value="articles">Most articles</option>
-          <option value="recent">Most recent</option>
-          <option value="oldest">Oldest first</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="filter-panel" id="cfPanel">
-      <div class="filter-grid">
-        <div class="filter-item"><label>Location</label><input class="input" type="text" id="cfLoc" placeholder="e.g. Turkey"></div>
-        <div class="filter-item"><label>Person</label><input class="input" type="text" id="cfPer" placeholder="e.g. Biden"></div>
-        <div class="filter-item"><label>Organization</label><input class="input" type="text" id="cfOrg" placeholder="e.g. NATO"></div>
-        <div class="filter-item"><label>Theme</label><input class="input" type="text" id="cfThm" placeholder="e.g. ARMEDCONFLICT"></div>
-        <div class="filter-item"><label>Domain</label><input class="input" type="text" id="cfDom" placeholder="e.g. bbc.co.uk"></div>
-        <div class="filter-item"><label>Source</label><input class="input" type="text" id="cfSrc" placeholder="e.g. reuters"></div>
-        <div class="filter-item"><label>Date from</label><input class="input" type="date" id="cfDF"></div>
-        <div class="filter-item"><label>Date to</label><input class="input" type="date" id="cfDT"></div>
-      </div>
-      <div class="filter-actions">
-        <button class="btn btn-primary btn-sm" id="cfApply">Apply</button>
-        <button class="btn btn-sm" id="cfClear">Clear</button>
-      </div>
-    </div>
-
-    <div class="active-filters" id="activeFilters"></div>
-    <div id="clList"><div class="loading">Loading<span class="spinner"></span></div></div>
+  <div class="try-results" id="res">
+    <div class="try-meta" id="resMeta"></div>
+    <div id="resBody"></div>
   </div>
+</section>
+
+<!-- Feature cards -->
+<div class="cards">
+
+  <div class="card-feat">
+    <div class="card-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </div>
+    <h3>Hybrid search</h3>
+    <p>Combine semantic vector search with keyword matching. Adjustable weighting lets you tune precision vs. recall. Filter results by location, person, organization, theme, source domain, or date range.</p>
+    <div class="card-detail">
+      <span>GET</span> /api/search?q=...&amp;location=...&amp;clusters=true
+    </div>
+  </div>
+
+  <div class="card-feat">
+    <div class="card-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="5" r="2"/><line x1="14.5" y1="9.5" x2="17.5" y2="6.5"/><line x1="9.5" y1="9.5" x2="6.5" y2="6.5"/></svg>
+    </div>
+    <h3>Event clusters</h3>
+    <p>Articles are automatically grouped into story clusters using vector similarity on embeddings. Browse clusters by recency, article count, or filter by entity and location to find trending events.</p>
+    <div class="card-detail">
+      <span>GET</span> /api/clusters?sort=articles&amp;theme=...
+    </div>
+  </div>
+
+  <div class="card-feat">
+    <div class="card-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    </div>
+    <h3>Rich metadata</h3>
+    <p>Every article carries extracted themes, geolocated places with coordinates, persons, organizations, tone analysis scores, and source attribution — all parsed from the GDELT Global Knowledge Graph.</p>
+    <div class="card-detail">
+      <span>GET</span> /api/articles?location=...&amp;theme=...
+    </div>
+  </div>
+
 </div>
 
-<!-- SEARCH -->
-<div class="page" id="pg-search">
-  <div class="topbar">
-    <a class="topbar-back" onclick="navTo('landing')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-      GDELT Pulse
-    </a>
+<!-- Code examples -->
+<section class="code-section">
+  <div class="code-label">Quick start</div>
+  <div class="code-tabs">
+    <button class="code-tab active" data-lang="curl">curl</button>
+    <button class="code-tab" data-lang="python">Python</button>
+    <button class="code-tab" data-lang="js">JavaScript</button>
   </div>
-  <div class="page-container">
-    <div style="text-align:center; margin-bottom: var(--sp-4)">
-      <h1 style="font-size:1.25rem;font-weight:600;letter-spacing:-0.02em">Search</h1>
-      <p style="font-size:0.8125rem;color:var(--text-3);margin-top:2px">Hybrid semantic + keyword search across events</p>
-    </div>
 
-    <div class="search-container">
-      <div class="search-row">
-        <div class="search-input-wrap">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input class="input input-lg" type="text" id="searchInput" placeholder="Search articles and events..." autocomplete="off" style="padding-left:44px">
-        </div>
-        <button class="btn btn-primary" style="padding:14px 24px;border-radius:var(--radius-lg)" id="searchBtn">Search</button>
-      </div>
+  <div class="code-block active" id="code-curl">
+<pre><span class="cm"># Search clusters by topic</span>
+curl <span class="str">"<span class="bu"></span>/api/search?q=climate+policy&amp;clusters=true&amp;limit=5"</span>
 
-      <div class="search-controls">
-        <div class="weight-row">
-          <span>Semantic</span>
-          <input type="range" id="wSlider" min="0" max="1" step="0.1" value="0.5">
-          <span class="weight-val" id="wVal">0.5</span>
-          <span>Keyword</span>
-        </div>
-        <button class="btn btn-sm" id="searchFilterToggle">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
-          Filters
-        </button>
-      </div>
-    </div>
+<span class="cm"># Browse clusters with filters</span>
+curl <span class="str">"<span class="bu"></span>/api/clusters?sort=articles&amp;location=Europe&amp;limit=10"</span>
 
-    <div class="search-filter-panel" id="searchFilterPanel">
-      <div class="filter-grid" style="margin-bottom:0">
-        <div class="filter-item"><label>Location</label><input class="input" type="text" id="sfLoc" placeholder="e.g. Turkey"></div>
-        <div class="filter-item"><label>Person</label><input class="input" type="text" id="sfPer" placeholder="e.g. Biden"></div>
-        <div class="filter-item"><label>Organization</label><input class="input" type="text" id="sfOrg" placeholder="e.g. NATO"></div>
-        <div class="filter-item"><label>Theme</label><input class="input" type="text" id="sfThm" placeholder="e.g. ECON"></div>
-        <div class="filter-item"><label>Domain</label><input class="input" type="text" id="sfDom" placeholder="e.g. bbc.co.uk"></div>
-        <div class="filter-item"><label>Source</label><input class="input" type="text" id="sfSrc" placeholder="e.g. reuters"></div>
-        <div class="filter-item"><label>Date from</label><input class="input" type="date" id="sfDF"></div>
-        <div class="filter-item"><label>Date to</label><input class="input" type="date" id="sfDT"></div>
-      </div>
-    </div>
+<span class="cm"># Filter articles by theme and location</span>
+curl <span class="str">"<span class="bu"></span>/api/articles?theme=ENV_CLIMATECHANGE&amp;location=Europe"</span>
 
-    <div id="searchResults" style="display:none">
-      <div class="results-wrap">
-        <div class="results-meta" id="searchMeta"></div>
-        <div style="text-align:center">
-          <div class="segmented">
-            <button class="seg-btn active" data-stab="s-arts">Articles<span class="seg-count" id="sArtCnt"></span></button>
-            <button class="seg-btn" data-stab="s-cls">Clusters<span class="seg-count" id="sClCnt"></span></button>
-          </div>
-        </div>
-        <div id="s-arts"></div>
-        <div id="s-cls" style="display:none"></div>
-      </div>
-    </div>
+<span class="cm"># Higher rate limits with API key</span>
+curl -H <span class="str">"X-API-Key: gdp_..."</span> \
+  <span class="str">"<span class="bu"></span>/api/search?q=trade+war&amp;clusters=true"</span></pre>
   </div>
+
+  <div class="code-block" id="code-python">
+<pre><span class="kw">import</span> requests
+
+API = <span class="str">"<span class="bu"></span>/api"</span>
+
+data = requests.<span class="fn">get</span>(f<span class="str">"{API}/search"</span>, params={
+    <span class="str">"q"</span>: <span class="str">"climate policy"</span>,
+    <span class="str">"clusters"</span>: <span class="str">"true"</span>,
+    <span class="str">"location"</span>: <span class="str">"Europe"</span>,
+    <span class="str">"limit"</span>: 10,
+}).<span class="fn">json</span>()
+
+<span class="kw">for</span> c <span class="kw">in</span> data[<span class="str">"clusters"</span>]:
+    cl = c[<span class="str">"cluster"</span>]
+    <span class="fn">print</span>(f<span class="str">"{cl['representative_title']}  ({cl['article_count']} articles)"</span>)</pre>
+  </div>
+
+  <div class="code-block" id="code-js">
+<pre><span class="kw">const</span> data = <span class="kw">await</span> <span class="fn">fetch</span>(
+  <span class="str">"<span class="bu"></span>/api/search?q=climate+policy&amp;clusters=true"</span>
+).<span class="fn">then</span>(r => r.<span class="fn">json</span>());
+
+data.clusters.<span class="fn">forEach</span>(({ cluster }) =>
+  console.<span class="fn">log</span>(<span class="str">`${cluster.representative_title} (${cluster.article_count})`</span>)
+);</pre>
+  </div>
+</section>
+
+<!-- Navigation links -->
+<div class="links-row">
+
+  <a class="link-card" href="/api/docs">
+    <div class="link-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    </div>
+    <div class="link-text">
+      <h4>API Docs</h4>
+      <p>Interactive Swagger UI</p>
+    </div>
+  </a>
+
+  <a class="link-card" href="/developers">
+    <div class="link-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+    </div>
+    <div class="link-text">
+      <h4>Reference</h4>
+      <p>Endpoints, params, examples</p>
+    </div>
+  </a>
+
+  <a class="link-card" href="/dashboard">
+    <div class="link-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    </div>
+    <div class="link-text">
+      <h4>Dashboard</h4>
+      <p>Get your API key</p>
+    </div>
+  </a>
+
 </div>
 
-<!-- Modal -->
-<div class="overlay" id="overlay">
-  <div class="modal">
-    <button class="modal-close" id="modalX">&times;</button>
-    <h2 id="mTitle" style="font-size:1.1rem;font-weight:600;margin-bottom:4px;padding-right:44px;letter-spacing:-0.02em"></h2>
-    <div class="cl-meta" id="mMeta" style="margin-bottom:var(--sp-4);font-size:0.75rem;color:var(--text-3)"></div>
-    <div id="mBody"></div>
-  </div>
+<!-- Footer -->
+<footer class="foot">
+  <a href="https://github.com/UnbubbleHub/gdelt-pulse" target="_blank" rel="noopener">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+    Open source on GitHub
+  </a>
+</footer>
+
 </div>
 
 <script>
-const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s), API='/api';
+const B = location.origin;
+document.querySelectorAll('.bu').forEach(e => { e.textContent = B; });
 
-// ── Navigation ─────────────────────────────────────────
-function navTo(page) {
-  $$('.page').forEach(p => p.classList.remove('active'));
-  $(`#pg-${page}`).classList.add('active');
-  if (page === 'landing') loadLanding();
-  if (page === 'clusters') loadClustersPage();
-  if (page === 'search') setTimeout(() => $('#searchInput').focus(), 100);
-  history.replaceState(null, '', page === 'landing' ? '/' : `#${page}`);
-}
-
-const initPage = location.hash.replace('#', '') || 'landing';
-if (initPage !== 'landing') navTo(initPage);
-
-// ── Landing page ────────────────────────────────────────
-let _landingLoaded = false;
-async function loadLanding() {
-  if (_landingLoaded) return;
-  try {
-    const clusters = await fetch(`${API}/clusters?limit=6&sort=articles`).then(r => r.json());
-    _landingLoaded = true;
-
-    const el = $('#previewClusters');
-    el.innerHTML = clusters.length
-      ? clusters.map((c, i) => mkPreviewItem(c, i)).join('')
-      : '<div class="empty">No clusters yet</div>';
-    el.querySelectorAll('.preview-item').forEach(el =>
-      el.addEventListener('click', () => openCluster(el.dataset.id))
-    );
-  } catch (e) {
-    $('#previewClusters').innerHTML = `<div class="empty">${esc(e.message)}</div>`;
-  }
-}
-loadLanding();
-
-function mkPreviewItem(c, idx) {
-  return `<div class="preview-item" data-id="${c.id}" style="animation: slideUp 0.3s var(--ease) ${idx * 50}ms both">
-    <span class="preview-title">${esc(c.representative_title || '(untitled)')}</span>
-    <span class="preview-meta">${fmtDate(c.last_article_at)}</span>
-  </div>`;
-}
-
-// ── Clusters page ───────────────────────────────────────
-$('#cfToggle').addEventListener('click', () => {
-  const panel = $('#cfPanel');
-  panel.classList.toggle('open');
-  $('#cfToggle').classList.toggle('active', panel.classList.contains('open'));
-});
-
-$('#cfSort').addEventListener('change', loadClustersPage);
-
-async function loadClustersPage() {
-  const el = $('#clList');
-  el.innerHTML = '<div class="loading">Loading<span class="spinner"></span></div>';
-
-  const loc = $('#cfLoc').value.trim();
-  const per = $('#cfPer').value.trim();
-  const org = $('#cfOrg').value.trim();
-  const thm = $('#cfThm').value.trim();
-  const dom = $('#cfDom').value.trim();
-  const src = $('#cfSrc').value.trim();
-  const df = $('#cfDF').value;
-  const dt = $('#cfDT').value;
-  const sort = $('#cfSort').value;
-
-  renderActiveFilters({ loc, per, org, thm, dom, src, df, dt });
-
-  try {
-    const p = new URLSearchParams({ limit: '200', sort });
-    if (loc) p.set('location', loc);
-    if (per) p.set('person', per);
-    if (org) p.set('org', org);
-    if (thm) p.set('theme', thm);
-    if (dom) p.set('domain', dom);
-    if (src) p.set('source', src);
-    if (df) p.set('date_from', df);
-    if (dt) p.set('date_to', dt);
-
-    const clusters = await fetch(`${API}/clusters?${p}`).then(r => {
-      if (!r.ok) throw new Error(`Server error ${r.status}`);
-      return r.json();
-    });
-
-    $('#clusterCount').textContent = `Showing ${clusters.length} cluster${clusters.length !== 1 ? 's' : ''}`;
-    el.innerHTML = clusters.length
-      ? clusters.map((c, i) => mkClCard(c, i)).join('')
-      : '<div class="empty">No clusters match your filters</div>';
-    bindCl('#clList');
-  } catch (e) {
-    el.innerHTML = `<div class="empty">${esc(e.message)}</div>`;
-  }
-}
-
-function renderActiveFilters(f) {
-  const el = $('#activeFilters');
-  const labels = { loc: 'Location', per: 'Person', org: 'Org', thm: 'Theme', dom: 'Domain', src: 'Source', df: 'From', dt: 'To' };
-  const inputIds = { loc: 'cfLoc', per: 'cfPer', org: 'cfOrg', thm: 'cfThm', dom: 'cfDom', src: 'cfSrc', df: 'cfDF', dt: 'cfDT' };
-  let html = '';
-  for (const [k, v] of Object.entries(f)) {
-    if (v) html += `<span class="filter-pill">${labels[k]}: ${esc(v)}<button data-clear="${inputIds[k]}">&times;</button></span>`;
-  }
-  el.innerHTML = html;
-  el.querySelectorAll('button[data-clear]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      $(`#${btn.dataset.clear}`).value = '';
-      loadClustersPage();
-    });
-  });
-}
-
-$('#cfApply').addEventListener('click', loadClustersPage);
-$('#cfClear').addEventListener('click', () => {
-  ['cfLoc','cfPer','cfOrg','cfThm','cfDom','cfSrc','cfDF','cfDT'].forEach(id => $(`#${id}`).value = '');
-  loadClustersPage();
-});
-
-// ── Search ──────────────────────────────────────────────
-$('#searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
-$('#searchBtn').addEventListener('click', doSearch);
-$('#searchFilterToggle').addEventListener('click', () => {
-  $('#searchFilterPanel').classList.toggle('open');
-  $('#searchFilterToggle').classList.toggle('active', $('#searchFilterPanel').classList.contains('open'));
-});
-$('#wSlider').addEventListener('input', () => { $('#wVal').textContent = $('#wSlider').value; });
-
-$$('.seg-btn[data-stab]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    $$('.seg-btn[data-stab]').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    const tab = btn.dataset.stab;
-    $('#s-arts').style.display = tab === 's-arts' ? '' : 'none';
-    $('#s-cls').style.display = tab === 's-cls' ? '' : 'none';
+document.querySelectorAll('.code-tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.code-tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.code-block').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('code-' + t.dataset.lang).classList.add('active');
   });
 });
 
-async function doSearch() {
-  const q = $('#searchInput').value.trim();
-  if (!q) return;
-  $('#searchResults').style.display = 'block';
-  $('#s-arts').innerHTML = '<div class="loading">Searching<span class="spinner"></span></div>';
-  $('#s-cls').innerHTML = '';
-  $('#searchBtn').disabled = true;
+// Fake demo data — instant, no API calls
+const DEMO = {
+  "climate policy": [
+    { title: "EU Carbon Border Tax Takes Effect as Trade Partners Push Back", count: 347, locs: ["Brussels", "Beijing"], themes: ["ENV_CLIMATECHANGE"], tone: -2.1 },
+    { title: "G7 Leaders Pledge $300B Climate Finance Package for Developing Nations", count: 283, locs: ["Rome"], themes: ["ECON_DEBT"], tone: 1.4 },
+    { title: "India Accelerates Coal Phase-Out Timeline After Record Heatwave Deaths", count: 198, locs: ["New Delhi"], themes: ["ENV_CLIMATECHANGE"], tone: -3.5 },
+    { title: "US Strengthens Paris Climate Accord Targets Amid Domestic Opposition", count: 156, locs: ["Washington"], themes: ["ENV_CLIMATECHANGE"], tone: 2.8 },
+  ],
+  "AI regulation": [
+    { title: "EU AI Act Enforcement Begins with First Wave of Compliance Audits", count: 412, locs: ["Brussels"], themes: ["REGULATION"], tone: -0.8 },
+    { title: "China Mandates AI Watermarking for All Synthetically Generated Content", count: 289, locs: ["Beijing"], themes: ["MEDIA_CENSORSHIP"], tone: -1.9 },
+    { title: "OpenAI and Google Face Congressional Hearings on Foundation Model Safety", count: 231, locs: ["Washington"], themes: ["LEGISLATION"], tone: -2.4 },
+    { title: "UK Establishes AI Safety Institute with $500M Government Backing", count: 174, locs: ["London"], themes: ["SCIENCE"], tone: 3.1 },
+  ],
+  "military conflict": [
+    { title: "UN Security Council Emergency Session on Escalating Middle East Tensions", count: 587, locs: ["New York", "Gaza"], themes: ["MILITARY_CONFLICT"], tone: -5.2 },
+    { title: "NATO Deploys Additional Forces to Eastern European Borders", count: 423, locs: ["Warsaw", "Bucharest"], themes: ["MILITARY_CONFLICT"], tone: -3.8 },
+    { title: "Peace Negotiations Resume in Geneva with New Ceasefire Proposal", count: 312, locs: ["Geneva"], themes: ["PEACE_NEGOTIATIONS"], tone: 1.2 },
+    { title: "Red Cross Reports Humanitarian Crisis as Civilian Casualties Mount", count: 276, locs: ["Gaza"], themes: ["HUMANITARIAN_AID"], tone: -6.1 },
+  ],
+};
 
-  const p = new URLSearchParams({ q, limit: 30, semantic_weight: $('#wSlider').value, clusters: 'true' });
-  const fv = (id, k) => { const v = $(id).value.trim(); if (v) p.set(k, v); };
-  fv('#sfLoc', 'location'); fv('#sfPer', 'person'); fv('#sfOrg', 'org'); fv('#sfThm', 'theme');
-  fv('#sfDom', 'domain'); fv('#sfSrc', 'source'); fv('#sfDF', 'date_from'); fv('#sfDT', 'date_to');
+const sf = document.getElementById('sf');
+const si = document.getElementById('si');
+const res = document.getElementById('res');
+const resMeta = document.getElementById('resMeta');
+const resBody = document.getElementById('resBody');
 
-  try {
-    const d = await fetch(`${API}/search?${p}`).then(r => {
-      if (!r.ok) throw new Error(`Server error ${r.status}`);
-      return r.json();
-    });
-    $('#searchMeta').innerHTML = `Semantic: <strong>${d.total_semantic_hits}</strong> &middot; Keyword: <strong>${d.total_keyword_hits}</strong> &middot; Results: <strong>${d.articles.length}</strong>`;
-    $('#sArtCnt').textContent = d.articles.length || '';
-    $('#sClCnt').textContent = d.clusters.length || '';
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-    $('#s-arts').innerHTML = d.articles.length
-      ? d.articles.map((sa, i) => mkCard(sa.article, i + 1, sa, i)).join('')
-      : '<div class="empty">No articles found</div>';
-
-    $('#s-cls').innerHTML = d.clusters.length
-      ? d.clusters.map((sc, i) => mkSearchClCard(sc, i)).join('')
-      : '<div class="empty">No matching clusters</div>';
-    bindCl('#s-cls');
-  } catch (e) {
-    $('#s-arts').innerHTML = `<div class="empty">${esc(e.message)}</div>`;
-  } finally {
-    $('#searchBtn').disabled = false;
-  }
+function toneTag(t) {
+  if (t <= -2) return `<span class="tbadge tbadge-neg">tone ${t.toFixed(1)}</span>`;
+  if (t >= 2) return `<span class="tbadge tbadge-pos">tone +${t.toFixed(1)}</span>`;
+  return '';
 }
 
-// ── Card builders ───────────────────────────────────────
-function mkCard(a, rank, scored, idx) {
-  const title = esc(a.title || '(no title)'), url = a.canonical_url || a.url || '#';
-  const delay = idx !== undefined ? `style="animation-delay:${Math.min(idx, 15) * 35}ms"` : '';
-  let rk = '';
-  if (scored) {
-    const sm = scored.semantic_rank ? `sem #${scored.semantic_rank}` : 'sem -';
-    const kw = scored.keyword_rank ? `kw #${scored.keyword_rank}` : 'kw -';
-    rk = `<div class="card-rank"><span class="hi">#${rank} &middot; ${scored.rrf_score.toFixed(5)}</span> <span>${sm}</span> <span>${kw}</span></div>`;
-  }
-  let tg = tags(a.locations, 'loc', r => r.name || r) + tags(a.persons, 'per', r => r) + tags(a.organizations, 'org', r => r);
-  return `<div class="card-article card-anim" ${delay}>${rk}<div class="card-title"><a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${title}</a></div><div class="card-meta"><span>${esc(a.domain || '')}</span><span>${fmtDate(a.gdelt_timestamp)}</span></div>${tg ? `<div class="tags">${tg}</div>` : ''}</div>`;
+function show(q) {
+  if (!q.trim()) return;
+  si.value = q;
+  const key = Object.keys(DEMO).find(k => q.toLowerCase().includes(k));
+  const clusters = key ? DEMO[key] : DEMO["climate policy"];
+  resMeta.textContent = `${clusters.length} clusters`;
+  resBody.innerHTML = '<div class="try-list">' + clusters.map(c => {
+    const locs = (c.locs || []).map(l => `<span class="tbadge tbadge-loc">${esc(l)}</span>`).join('');
+    const themes = (c.themes || []).slice(0, 1).map(t => `<span class="tbadge tbadge-theme">${esc(t)}</span>`).join('');
+    return `<div class="try-card">
+      <div class="try-card-title">${esc(c.title)}</div>
+      <div class="try-badges">
+        <span class="tbadge tbadge-count">${c.count} articles</span>
+        ${locs}${themes}${toneTag(c.tone || 0)}
+      </div>
+    </div>`;
+  }).join('') + '</div>';
+  res.classList.add('visible');
 }
 
-function mkClCard(c, idx) {
-  const delay = idx !== undefined ? `style="animation-delay:${Math.min(idx, 15) * 35}ms"` : '';
-  return `<div class="cl-card card-anim" data-id="${c.id}" ${delay}><div class="cl-top"><span class="cl-title">${esc(c.representative_title || '(untitled)')}</span><span class="cl-badge">${c.article_count} articles</span></div><div class="cl-meta">${fmtDate(c.first_article_at)} &mdash; ${fmtDate(c.last_article_at)}</div></div>`;
-}
-
-function mkSearchClCard(sc, idx) {
-  const c = sc.cluster, sim = (1 - sc.cosine_distance).toFixed(4);
-  const delay = idx !== undefined ? `style="animation-delay:${Math.min(idx, 15) * 35}ms"` : '';
-  return `<div class="cl-card card-anim" data-id="${c.id}" ${delay}><div class="cl-sim">similarity ${sim}</div><div class="cl-top"><span class="cl-title">${esc(c.representative_title || '(untitled)')}</span><span class="cl-badge">${c.article_count} articles</span></div><div class="cl-meta">${fmtDate(c.first_article_at)} &mdash; ${fmtDate(c.last_article_at)}</div></div>`;
-}
-
-function bindCl(sel) {
-  $$(`${sel} .cl-card`).forEach(el => el.addEventListener('click', () => openCluster(el.dataset.id)));
-}
-
-// ── Cluster modal ───────────────────────────────────────
-async function openCluster(id) {
-  $('#overlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
-  $('#mTitle').textContent = 'Loading...';
-  $('#mMeta').textContent = '';
-  $('#mBody').innerHTML = '<div class="loading"><span class="spinner"></span></div>';
-
-  try {
-    const d = await fetch(`${API}/clusters/${id}`).then(r => r.json());
-    $('#mTitle').textContent = d.cluster.representative_title || '(untitled cluster)';
-    $('#mMeta').innerHTML = `${d.cluster.article_count} articles &middot; ${fmtDate(d.cluster.first_article_at)} &mdash; ${fmtDate(d.cluster.last_article_at)}`;
-    $('#mBody').innerHTML = d.articles.length
-      ? d.articles.map((a, i) => mkCard(a, null, null, i)).join('')
-      : '<div class="empty">No articles</div>';
-  } catch (e) {
-    $('#mBody').innerHTML = `<div class="empty">${esc(e.message)}</div>`;
-  }
-}
-
-function closeModal() {
-  $('#overlay').classList.remove('open');
-  document.body.style.overflow = '';
-}
-$('#modalX').addEventListener('click', closeModal);
-$('#overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
-
-// ── Helpers ─────────────────────────────────────────────
-function esc(s) { const d = document.createElement('div'); d.textContent = String(s); return d.innerHTML; }
-function fmtDate(s) { if (!s) return ''; const d = new Date(s); return isNaN(d) ? String(s) : d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }); }
-function tags(arr, type, ex) {
-  if (!arr || !Array.isArray(arr)) return '';
-  const seen = new Set();
-  return arr.slice(0, 4).map(item => {
-    const n = typeof item === 'string' ? item : ex(item);
-    if (!n || seen.has(n)) return ''; seen.add(n);
-    return `<span class="tag tag-${type}">${esc(n)}</span>`;
-  }).join('');
-}
+sf.addEventListener('submit', e => { e.preventDefault(); show(si.value); });
+document.querySelectorAll('.try-pill').forEach(p => {
+  p.addEventListener('click', () => show(p.dataset.q));
+});
 </script>
 </body>
 </html>

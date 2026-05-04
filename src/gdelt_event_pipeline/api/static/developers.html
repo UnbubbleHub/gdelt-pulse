@@ -3,338 +3,555 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GDELT Pulse — Developer Docs</title>
+<title>Pulse API — Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;450;500;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/pulse.css">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: #0a0a0a;
-    color: #e0e0e0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    font-size: 15px;
-    line-height: 1.6;
-    padding: 48px 24px 80px;
-  }
-  .wrap { max-width: 860px; margin: 0 auto; }
-  a { color: #7eb8f7; text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  h1 { font-size: 2rem; font-weight: 600; letter-spacing: -0.03em; margin-bottom: 8px; }
-  h2 { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
-       color: #888; margin: 48px 0 16px; border-bottom: 1px solid #222; padding-bottom: 8px; }
-  h3 { font-size: 0.95rem; font-weight: 600; color: #ccc; margin: 28px 0 8px; }
-  p { color: #aaa; margin-bottom: 12px; }
-  code {
-    font-family: "SF Mono", "Fira Code", Menlo, monospace;
-    font-size: 0.88em;
-    background: #161616;
-    border: 1px solid #2a2a2a;
-    border-radius: 4px;
-    padding: 2px 6px;
-    color: #e0e0e0;
-  }
-  pre {
-    background: #111;
-    border: 1px solid #222;
-    border-radius: 6px;
-    padding: 16px 20px;
-    overflow-x: auto;
-    margin: 10px 0 18px;
-  }
-  pre code {
-    background: none;
-    border: none;
-    padding: 0;
-    font-size: 0.875rem;
-    color: #c8d9f0;
-  }
-  table { width: 100%; border-collapse: collapse; font-size: 0.875rem; margin-bottom: 16px; }
-  th {
-    text-align: left;
-    padding: 8px 12px;
-    background: #111;
-    border-bottom: 1px solid #2a2a2a;
-    color: #888;
-    font-weight: 500;
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  td { padding: 9px 12px; border-bottom: 1px solid #1a1a1a; vertical-align: top; }
-  td:first-child { white-space: nowrap; }
-  tr:last-child td { border-bottom: none; }
-  .method { color: #7eb8f7; font-family: monospace; font-size: 0.8rem; font-weight: 600; }
-  .path { font-family: monospace; color: #c8d9f0; }
-  .param { font-family: monospace; font-size: 0.82rem; color: #aaa; }
-  .topbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 40px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #1a1a1a;
-  }
-  .topbar-back { color: #888; font-size: 0.875rem; }
-  .swagger-link {
-    display: inline-block;
-    background: #1a2a3a;
-    border: 1px solid #2a3a4a;
-    color: #7eb8f7;
-    padding: 8px 18px;
-    border-radius: 6px;
-    font-size: 0.875rem;
-    margin-top: 4px;
-  }
-  .swagger-link:hover { background: #1e3248; text-decoration: none; }
-  .info-row { display: flex; gap: 32px; margin-bottom: 8px; }
-  .info-item label { display: block; font-size: 0.75rem; text-transform: uppercase;
-                     letter-spacing: 0.08em; color: #555; margin-bottom: 4px; }
+.ref-wrap {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+
+/* ── Header ──────────────────────────────────── */
+.ref-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--sp-6);
+  padding-bottom: var(--sp-5);
+  border-bottom: 1px solid var(--border);
+}
+
+.ref-back {
+  font-size: 0.875rem;
+  color: var(--text-3);
+  text-decoration: none;
+  transition: color var(--duration);
+}
+.ref-back:hover { color: var(--text-2); }
+
+
+/* ── Title ───────────────────────────────────── */
+.ref-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  margin-bottom: var(--sp-2);
+}
+
+.ref-desc {
+  color: var(--text-3);
+  font-size: 0.9375rem;
+  margin-bottom: var(--sp-6);
+  line-height: 1.6;
+}
+
+/* ── API key callout ─────────────────────────── */
+.ref-callout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--sp-5);
+  margin-bottom: var(--sp-7);
+}
+
+.ref-callout-text h3 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.ref-callout-text p {
+  font-size: 0.8125rem;
+  color: var(--text-3);
+}
+
+.ref-callout-btn {
+  display: inline-flex;
+  padding: 9px 18px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background var(--duration);
+}
+.ref-callout-btn:hover { background: var(--accent-text); }
+
+/* ── Section headings ────────────────────────── */
+.ref-section {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin: var(--sp-7) 0 var(--sp-4);
+  padding-bottom: var(--sp-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.ref-section:first-of-type { margin-top: 0; }
+
+/* ── Info row ────────────────────────────────── */
+.ref-info-row {
+  display: flex;
+  gap: var(--sp-6);
+  margin-bottom: var(--sp-4);
+  flex-wrap: wrap;
+}
+
+.ref-info-item label {
+  display: block;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  margin-bottom: 4px;
+}
+
+.ref-info-item code {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.8125rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 8px;
+  color: var(--text-2);
+}
+
+.ref-note {
+  font-size: 0.8125rem;
+  color: var(--text-3);
+  margin: var(--sp-3) 0 var(--sp-4);
+  line-height: 1.6;
+}
+
+.ref-note code {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.78rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 6px;
+  color: var(--text-2);
+}
+
+/* ── Tables ───────────────────────────────────── */
+.ref-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  margin-bottom: var(--sp-4);
+}
+
+.ref-table th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-3);
+  font-weight: 500;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ref-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  color: var(--text-2);
+}
+
+.ref-table td:first-child { white-space: nowrap; }
+.ref-table tr:last-child td { border-bottom: none; }
+
+.ref-method {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--accent-text);
+}
+
+.ref-path {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.8125rem;
+  color: var(--text);
+}
+
+.ref-param {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.78rem;
+  color: var(--text-3);
+}
+
+/* ── Code blocks ──────────────────────────────── */
+.ref-pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--sp-4) var(--sp-5);
+  overflow-x: auto;
+  margin: var(--sp-3) 0 var(--sp-5);
+}
+
+.ref-pre code {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.8125rem;
+  line-height: 1.65;
+  color: var(--text-2);
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+/* ── Endpoint detail cards ────────────────────── */
+.ref-endpoint {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: var(--sp-4);
+  overflow: hidden;
+}
+
+.ref-endpoint-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5);
+  border-bottom: 1px solid var(--border);
+}
+
+.ref-endpoint-badge {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(52, 211, 153, 0.08);
+  color: var(--positive);
+  flex-shrink: 0;
+}
+
+.ref-endpoint-path {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.875rem;
+  color: var(--text);
+}
+
+.ref-endpoint-desc {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--text-3);
+}
+
+.ref-endpoint-body {
+  padding: var(--sp-4) var(--sp-5);
+}
+
+.ref-endpoint-body h4 {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-3);
+  margin-bottom: var(--sp-2);
+}
+
+/* ── Link cards (same as landing) ─────────────── */
+.ref-links {
+  display: flex;
+  gap: var(--sp-3);
+  margin-top: var(--sp-8);
+  padding-top: var(--sp-6);
+  border-top: 1px solid var(--border);
+}
+
+.ref-link-card {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  transition: border-color var(--duration), background var(--duration);
+  flex: 1;
+}
+.ref-link-card:hover {
+  border-color: var(--border-hover);
+  background: var(--surface-2);
+}
+
+.ref-link-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+.ref-link-card:hover .ref-link-icon { color: var(--text-2); }
+.ref-link-icon svg { width: 16px; height: 16px; }
+
+.ref-link-text h4 {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.ref-link-text p {
+  font-size: 0.6875rem;
+  color: var(--text-3);
+}
+
+/* ── Responsive ──────────────────────────────── */
+@media (max-width: 768px) {
+  .ref-wrap { padding: 32px 16px 64px; }
+  .ref-header { flex-direction: column; gap: var(--sp-3); align-items: flex-start; }
+  .ref-callout { flex-direction: column; align-items: flex-start; }
+  .ref-info-row { flex-direction: column; gap: var(--sp-3); }
+  .ref-endpoint-desc { display: none; }
+  .ref-links { flex-direction: column; }
+}
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="ref-wrap">
 
-  <div class="topbar">
-    <a class="topbar-back" href="/">&larr; GDELT Pulse</a>
-    <a class="swagger-link" href="/api/docs">Interactive Docs (Swagger UI) &rarr;</a>
-  </div>
+  <!-- Title -->
+  <h1 class="ref-title">API Reference</h1>
+  <p class="ref-desc">Read-only endpoints for searching, browsing, and filtering global news events.</p>
 
-  <h1>GDELT Pulse API</h1>
-  <p>Hybrid semantic + keyword search over global news events. All endpoints are read-only (<code>GET</code>).</p>
-
-  <div style="background:#111;border:1px solid #222;border-radius:8px;padding:20px 24px;margin-bottom:32px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
-    <div>
-      <div style="font-weight:600;margin-bottom:4px;">Get your API key</div>
-      <div style="color:#666;font-size:0.85rem;">Create an account to unlock a higher rate limit (200 req/60s vs 30 for anonymous).</div>
+  <!-- API key callout -->
+  <div class="ref-callout">
+    <div class="ref-callout-text">
+      <h3>Get your API key</h3>
+      <p>Create an account to unlock higher rate limits (200 req/60s vs 30 for anonymous).</p>
     </div>
-    <a href="/dashboard" style="background:#7eb8f7;color:#0a0a0a;font-weight:500;font-size:0.875rem;padding:9px 18px;border-radius:6px;white-space:nowrap;text-decoration:none;">Get API Key →</a>
+    <a class="ref-callout-btn" href="/dashboard">Get API Key &rarr;</a>
   </div>
 
-  <h2>Quick Start</h2>
+  <!-- Quick start -->
+  <h2 class="ref-section">Quick start</h2>
 
-  <div class="info-row">
-    <div class="info-item">
+  <div class="ref-info-row">
+    <div class="ref-info-item">
       <label>Base URL</label>
       <code id="baseUrl"></code>
     </div>
-    <div class="info-item">
-      <label>Auth Header</label>
+    <div class="ref-info-item">
+      <label>Auth header</label>
       <code>X-API-Key: &lt;your-key&gt;</code>
     </div>
-    <div class="info-item">
-      <label>Rate Limit</label>
-      <code>30 req / 60 s per IP</code>
+    <div class="ref-info-item">
+      <label>Rate limit</label>
+      <code>30 req / 60s per IP</code>
     </div>
   </div>
 
-  <p style="margin-top:12px">The <code>X-API-Key</code> header is only required when the server has an <code>API_KEY</code>
-  environment variable set. Local dev instances and public deployments without a key set allow unauthenticated requests.</p>
+  <p class="ref-note">The <code>X-API-Key</code> header is optional — anonymous requests are allowed at a lower rate limit. Authenticated requests get 200 req/60s.</p>
 
-  <pre><code>curl "<span class="base-url-placeholder"></span>/api/stats" \
-  -H "X-API-Key: your-key-here"</code></pre>
+  <div class="ref-pre"><code>curl "<span class="base-url-placeholder"></span>/api/search?q=climate+policy" \
+  -H "X-API-Key: your-key-here"</code></div>
 
-  <h2>Endpoints</h2>
+  <!-- Endpoints overview -->
+  <h2 class="ref-section">Endpoints</h2>
 
-  <h3>Core</h3>
-  <table>
-    <thead><tr><th>Method</th><th>Path</th><th>Key params</th><th>Description</th></tr></thead>
+  <table class="ref-table">
+    <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
     <tbody>
       <tr>
-        <td><span class="method">GET</span></td>
-        <td><span class="path">/api/stats</span></td>
-        <td>—</td>
-        <td>Total articles, clusters, embeddings, largest cluster</td>
+        <td><span class="ref-method">GET</span></td>
+        <td><span class="ref-path">/api/search</span></td>
+        <td>Hybrid semantic + keyword search via RRF</td>
       </tr>
       <tr>
-        <td><span class="method">GET</span></td>
-        <td><span class="path">/api/articles</span></td>
-        <td><span class="param">limit</span> (1–200, default 50)</td>
-        <td>Recent articles, newest first</td>
-      </tr>
-      <tr>
-        <td><span class="method">GET</span></td>
-        <td><span class="path">/api/clusters</span></td>
-        <td><span class="param">limit, sort, location, person, org, theme, domain, source, date_from, date_to</span></td>
+        <td><span class="ref-method">GET</span></td>
+        <td><span class="ref-path">/api/clusters</span></td>
         <td>Active event clusters with optional filtering</td>
       </tr>
       <tr>
-        <td><span class="method">GET</span></td>
-        <td><span class="path">/api/clusters/{id}</span></td>
-        <td>—</td>
+        <td><span class="ref-method">GET</span></td>
+        <td><span class="ref-path">/api/clusters/{id}</span></td>
         <td>Single cluster with all member articles</td>
       </tr>
       <tr>
-        <td><span class="method">GET</span></td>
-        <td><span class="path">/api/search</span></td>
-        <td><span class="param">q (required), limit, semantic_weight, clusters, location, person, org, theme, domain, source, date_from, date_to</span></td>
-        <td>Hybrid semantic + keyword search via RRF</td>
+        <td><span class="ref-method">GET</span></td>
+        <td><span class="ref-path">/api/articles</span></td>
+        <td>Recent articles, newest first</td>
+      </tr>
+      <tr>
+        <td><span class="ref-method">GET</span></td>
+        <td><span class="ref-path">/api/stats</span></td>
+        <td>Total articles, clusters, embeddings, largest cluster</td>
       </tr>
     </tbody>
   </table>
 
-  <h3>Globe</h3>
-  <table>
-    <thead><tr><th>Method</th><th>Path</th><th>Key params</th><th>Description</th></tr></thead>
-    <tbody>
-      <tr>
-        <td><span class="method">GET</span></td>
-        <td><span class="path">/api/globe/clusters</span></td>
-        <td><span class="param">mode (live|rising|silent), limit</span></td>
-        <td>Top clusters with geographic coordinates for 3D globe rendering</td>
-      </tr>
-    </tbody>
-  </table>
+  <!-- Endpoint details -->
+  <h2 class="ref-section">Search</h2>
 
-  <h3>Polarization</h3>
-  <table>
-    <thead><tr><th>Method</th><th>Path</th><th>Key params</th><th>Description</th></tr></thead>
-    <tbody>
-      <tr>
-        <td><span class="method">GET</span></td>
-        <td><span class="path">/api/polarization</span></td>
-        <td><span class="param">limit, min_articles</span></td>
-        <td>Story clusters ranked by narrative tone divergence across sources</td>
-      </tr>
-      <tr>
-        <td><span class="method">GET</span></td>
-        <td><span class="path">/api/polarization/{id}</span></td>
-        <td>—</td>
-        <td>Per-article tone breakdown for a single cluster, grouped by source</td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="ref-endpoint">
+    <div class="ref-endpoint-header">
+      <span class="ref-endpoint-badge">GET</span>
+      <span class="ref-endpoint-path">/api/search</span>
+      <span class="ref-endpoint-desc">Hybrid semantic + keyword search</span>
+    </div>
+    <div class="ref-endpoint-body">
+      <h4>Parameters</h4>
+      <table class="ref-table">
+        <thead><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="ref-param">q</span></td><td>string (required)</td><td>Search query</td></tr>
+          <tr><td><span class="ref-param">limit</span></td><td>int (1–100, default 20)</td><td>Max results</td></tr>
+          <tr><td><span class="ref-param">semantic_weight</span></td><td>float (0–1, default 0.5)</td><td>Balance between semantic and keyword scoring</td></tr>
+          <tr><td><span class="ref-param">clusters</span></td><td>bool</td><td>Include cluster-level results</td></tr>
+          <tr><td><span class="ref-param">location</span></td><td>string</td><td>Filter by location name</td></tr>
+          <tr><td><span class="ref-param">person</span></td><td>string</td><td>Filter by person name</td></tr>
+          <tr><td><span class="ref-param">org</span></td><td>string</td><td>Filter by organization</td></tr>
+          <tr><td><span class="ref-param">theme</span></td><td>string</td><td>Filter by GDELT theme code</td></tr>
+          <tr><td><span class="ref-param">domain</span></td><td>string</td><td>Filter by source domain</td></tr>
+          <tr><td><span class="ref-param">source</span></td><td>string</td><td>Filter by source name</td></tr>
+          <tr><td><span class="ref-param">date_from</span></td><td>ISO date</td><td>Start date filter</td></tr>
+          <tr><td><span class="ref-param">date_to</span></td><td>ISO date</td><td>End date filter</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-  <h3>Attention Asymmetry</h3>
-  <table>
-    <thead><tr><th>Method</th><th>Path</th><th>Key params</th><th>Description</th></tr></thead>
-    <tbody>
-      <tr>
-        <td><span class="method">GET</span></td>
-        <td><span class="path">/api/asymmetry</span></td>
-        <td>—</td>
-        <td>Coverage volume vs crisis intensity by country; reveals over- and underreported regions</td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="ref-pre"><code>curl "<span class="base-url-placeholder"></span>/api/search?q=earthquake+Turkey&semantic_weight=0.7&location=Turkey&limit=10" \
+  -H "X-API-Key: your-key-here"</code></div>
 
-  <h3>Geopolitical Gravity</h3>
-  <table>
-    <thead><tr><th>Method</th><th>Path</th><th>Key params</th><th>Description</th></tr></thead>
-    <tbody>
-      <tr>
-        <td><span class="method">GET</span></td>
-        <td><span class="path">/api/gravity/graph</span></td>
-        <td><span class="param">min_weight, limit_edges</span></td>
-        <td>Country co-mention graph (nodes + edges) for gravity map</td>
-      </tr>
-      <tr>
-        <td><span class="method">GET</span></td>
-        <td><span class="path">/api/gravity/country/{code}</span></td>
-        <td>—</td>
-        <td>Single country: top connections, top clusters, avg tone (ISO 3166-1 alpha-2 code)</td>
-      </tr>
-    </tbody>
-  </table>
+  <h2 class="ref-section">Clusters</h2>
 
-  <h3>Source DNA</h3>
-  <table>
-    <thead><tr><th>Method</th><th>Path</th><th>Key params</th><th>Description</th></tr></thead>
-    <tbody>
-      <tr>
-        <td><span class="method">GET</span></td>
-        <td><span class="path">/api/sources/fingerprints</span></td>
-        <td><span class="param">limit, sort, min_articles</span></td>
-        <td>Per-source tone fingerprints, top themes, and top countries</td>
-      </tr>
-      <tr>
-        <td><span class="method">GET</span></td>
-        <td><span class="path">/api/sources/{domain}/detail</span></td>
-        <td>—</td>
-        <td>Full fingerprint for one source domain: tone timeline, all themes, category breakdown</td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="ref-endpoint">
+    <div class="ref-endpoint-header">
+      <span class="ref-endpoint-badge">GET</span>
+      <span class="ref-endpoint-path">/api/clusters</span>
+      <span class="ref-endpoint-desc">List event clusters</span>
+    </div>
+    <div class="ref-endpoint-body">
+      <h4>Parameters</h4>
+      <table class="ref-table">
+        <thead><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="ref-param">limit</span></td><td>int (default 20)</td><td>Max clusters to return</td></tr>
+          <tr><td><span class="ref-param">sort</span></td><td>string</td><td>Sort by: <code>recent</code> or <code>articles</code></td></tr>
+          <tr><td><span class="ref-param">location</span></td><td>string</td><td>Filter by location</td></tr>
+          <tr><td><span class="ref-param">person</span></td><td>string</td><td>Filter by person</td></tr>
+          <tr><td><span class="ref-param">org</span></td><td>string</td><td>Filter by organization</td></tr>
+          <tr><td><span class="ref-param">theme</span></td><td>string</td><td>Filter by theme</td></tr>
+          <tr><td><span class="ref-param">domain</span></td><td>string</td><td>Filter by domain</td></tr>
+          <tr><td><span class="ref-param">source</span></td><td>string</td><td>Filter by source</td></tr>
+          <tr><td><span class="ref-param">date_from</span></td><td>ISO date</td><td>Start date</td></tr>
+          <tr><td><span class="ref-param">date_to</span></td><td>ISO date</td><td>End date</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-  <h3>Story Propagation</h3>
-  <table>
-    <thead><tr><th>Method</th><th>Path</th><th>Key params</th><th>Description</th></tr></thead>
-    <tbody>
-      <tr>
-        <td><span class="method">GET</span></td>
-        <td><span class="path">/api/propagation/stories</span></td>
-        <td><span class="param">limit, min_sources</span></td>
-        <td>Multi-source clusters suitable for propagation analysis</td>
-      </tr>
-      <tr>
-        <td><span class="method">GET</span></td>
-        <td><span class="path">/api/propagation/{id}</span></td>
-        <td>—</td>
-        <td>Chronological timeline of how a story spread across sources</td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="ref-endpoint">
+    <div class="ref-endpoint-header">
+      <span class="ref-endpoint-badge">GET</span>
+      <span class="ref-endpoint-path">/api/clusters/{id}</span>
+      <span class="ref-endpoint-desc">Cluster detail</span>
+    </div>
+    <div class="ref-endpoint-body">
+      <p class="ref-note">Returns the cluster metadata along with all member articles.</p>
+    </div>
+  </div>
 
-  <h3>Topic Velocity</h3>
-  <table>
-    <thead><tr><th>Method</th><th>Path</th><th>Key params</th><th>Description</th></tr></thead>
-    <tbody>
-      <tr>
-        <td><span class="method">GET</span></td>
-        <td><span class="path">/api/velocity/topics</span></td>
-        <td><span class="param">hours (6–168, default 48), limit</span></td>
-        <td>Themes with rising or declining velocity over a configurable time window</td>
-      </tr>
-      <tr>
-        <td><span class="method">GET</span></td>
-        <td><span class="path">/api/velocity/timeline</span></td>
-        <td><span class="param">theme (required), hours</span></td>
-        <td>Hourly article count for a specific GDELT theme code</td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="ref-pre"><code>curl "<span class="base-url-placeholder"></span>/api/clusters?sort=articles&theme=MILITARY_CONFLICT&limit=20" \
+  -H "X-API-Key: your-key-here"</code></div>
 
-  <h2>Examples</h2>
+  <h2 class="ref-section">Articles & Stats</h2>
 
-  <h3>Search</h3>
-  <pre><code>curl "<span class="base-url-placeholder"></span>/api/search?q=earthquake+Turkey&semantic_weight=0.7&location=Turkey&limit=10" \
-  -H "X-API-Key: your-key-here"</code></pre>
+  <div class="ref-endpoint">
+    <div class="ref-endpoint-header">
+      <span class="ref-endpoint-badge">GET</span>
+      <span class="ref-endpoint-path">/api/articles</span>
+      <span class="ref-endpoint-desc">Browse articles with filters</span>
+    </div>
+    <div class="ref-endpoint-body">
+      <h4>Parameters</h4>
+      <table class="ref-table">
+        <thead><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="ref-param">limit</span></td><td>int (1–200, default 50)</td><td>Max articles to return</td></tr>
+          <tr><td><span class="ref-param">location</span></td><td>string</td><td>Filter by location name</td></tr>
+          <tr><td><span class="ref-param">person</span></td><td>string</td><td>Filter by person</td></tr>
+          <tr><td><span class="ref-param">org</span></td><td>string</td><td>Filter by organization</td></tr>
+          <tr><td><span class="ref-param">theme</span></td><td>string</td><td>Filter by GDELT theme code</td></tr>
+          <tr><td><span class="ref-param">domain</span></td><td>string</td><td>Filter by source domain</td></tr>
+          <tr><td><span class="ref-param">source</span></td><td>string</td><td>Filter by source name</td></tr>
+          <tr><td><span class="ref-param">date_from</span></td><td>ISO date</td><td>Start date filter</td></tr>
+          <tr><td><span class="ref-param">date_to</span></td><td>ISO date</td><td>End date filter</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-  <h3>List clusters with filters</h3>
-  <pre><code>curl "<span class="base-url-placeholder"></span>/api/clusters?sort=articles&theme=MILITARY_CONFLICT&limit=20" \
-  -H "X-API-Key: your-key-here"</code></pre>
+  <div class="ref-endpoint">
+    <div class="ref-endpoint-header">
+      <span class="ref-endpoint-badge">GET</span>
+      <span class="ref-endpoint-path">/api/stats</span>
+      <span class="ref-endpoint-desc">Pipeline statistics</span>
+    </div>
+    <div class="ref-endpoint-body">
+      <p class="ref-note">Returns total articles, clusters, embeddings, sources, themes, and largest cluster size.</p>
+    </div>
+  </div>
 
-  <h3>Globe data (rising stories)</h3>
-  <pre><code>curl "<span class="base-url-placeholder"></span>/api/globe/clusters?mode=rising&limit=12" \
-  -H "X-API-Key: your-key-here"</code></pre>
+  <!-- OpenAPI -->
+  <h2 class="ref-section">OpenAPI Spec</h2>
+  <p class="ref-note">The machine-readable spec is available at <a href="/api/openapi.json" style="color:var(--accent-text)">/api/openapi.json</a> — import it into Postman, Insomnia, or any OpenAPI-compatible tooling.</p>
 
-  <h3>Polarization ranking</h3>
-  <pre><code>curl "<span class="base-url-placeholder"></span>/api/polarization?limit=20&min_articles=30" \
-  -H "X-API-Key: your-key-here"</code></pre>
-
-  <h3>Attention asymmetry</h3>
-  <pre><code>curl "<span class="base-url-placeholder"></span>/api/asymmetry" \
-  -H "X-API-Key: your-key-here"</code></pre>
-
-  <h3>Country gravity detail</h3>
-  <pre><code>curl "<span class="base-url-placeholder"></span>/api/gravity/country/US" \
-  -H "X-API-Key: your-key-here"</code></pre>
-
-  <h3>Source fingerprint</h3>
-  <pre><code>curl "<span class="base-url-placeholder"></span>/api/sources/bbc.co.uk/detail" \
-  -H "X-API-Key: your-key-here"</code></pre>
-
-  <h3>Story propagation timeline</h3>
-  <pre><code>curl "<span class="base-url-placeholder"></span>/api/propagation/stories?min_sources=5&limit=10" \
-  -H "X-API-Key: your-key-here"</code></pre>
-
-  <h3>Topic velocity (rising themes)</h3>
-  <pre><code>curl "<span class="base-url-placeholder"></span>/api/velocity/topics?hours=24&limit=20" \
-  -H "X-API-Key: your-key-here"</code></pre>
-
-  <p style="margin-top:24px">For full parameter details and to try requests in the browser, use the
-  <a href="/api/docs">interactive Swagger UI</a>.</p>
-
-  <h2>OpenAPI Spec</h2>
-  <p>The machine-readable spec is available at <a href="/api/openapi.json"><code>/api/openapi.json</code></a>
-  — import it into Postman, Insomnia, or any OpenAPI-compatible tooling.</p>
+  <!-- Navigation -->
+  <div class="ref-links">
+    <a class="ref-link-card" href="/api/docs">
+      <div class="ref-link-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      </div>
+      <div class="ref-link-text">
+        <h4>API Docs</h4>
+        <p>Interactive Swagger UI</p>
+      </div>
+    </a>
+    <a class="ref-link-card" href="/dashboard">
+      <div class="ref-link-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <div class="ref-link-text">
+        <h4>Dashboard</h4>
+        <p>Get your API key</p>
+      </div>
+    </a>
+    <a class="ref-link-card" href="/">
+      <div class="ref-link-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </div>
+      <div class="ref-link-text">
+        <h4>Home</h4>
+        <p>Back to gdelt-pulse</p>
+      </div>
+    </a>
+  </div>
 
 </div>
 

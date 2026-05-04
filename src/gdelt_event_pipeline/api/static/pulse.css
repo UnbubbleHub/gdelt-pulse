@@ -25,10 +25,10 @@
   --text-2: #a1a1aa;
   --text-3: #63636e;
 
-  /* Accent — restrained, not neon */
-  --accent:     #8b8bf5;
-  --accent-dim: rgba(139, 139, 245, 0.08);
-  --accent-text: #b4b4fc;
+  /* Accent — blue-indigo, inspired by Unbubble */
+  --accent:     #4c6ef5;
+  --accent-dim: rgba(76, 110, 245, 0.08);
+  --accent-text: #748ffc;
 
   /* Semantic colors (data only, not UI chrome) */
   --positive: #34d399;
