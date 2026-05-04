@@ -22,7 +22,8 @@ from gdelt_event_pipeline.clustering.pipeline import run_clustering
 from gdelt_event_pipeline.config.settings import get_settings
 from gdelt_event_pipeline.embeddings.pipeline import run_embedding
 from gdelt_event_pipeline.ingestion.pipeline import run_ingestion, run_title_scraping
-from gdelt_event_pipeline.storage.database import close_pool, init_pool
+from gdelt_event_pipeline.storage.database import close_pool, get_pool, init_pool
+from gdelt_event_pipeline.storage.migrations import ensure_schema
 
 logger = logging.getLogger(__name__)
 
@@ -30,40 +31,8 @@ DEFAULT_INTERVAL = 15 * 60  # 15 minutes — matches GDELT update frequency
 TITLE_SCRAPE_BATCH = None  # no limit — scrape all new untitled articles each cycle
 
 
-def _ensure_schema() -> None:
-    """Run schema SQL if tables don't exist yet."""
-    from pathlib import Path
-
-    from gdelt_event_pipeline.storage.database import get_pool
-
-    pool = get_pool()
-    with pool.connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT EXISTS ("
-                "  SELECT 1 FROM information_schema.tables"
-                "  WHERE table_name = 'articles'"
-                ")"
-            )
-            row = cur.fetchone()
-            exists = row[0] if isinstance(row, (tuple, list)) else row.get("exists", False)
-        if not exists:
-            logger.info("Tables not found — running schema initialization...")
-            schema_path = Path(__file__).resolve().parents[2] / "sql" / "001_schema.sql"
-            if not schema_path.exists():
-                # In Docker, sql/ is at /app/sql/
-                schema_path = Path("/app/sql/001_schema.sql")
-            sql = schema_path.read_text()
-            with conn.cursor() as cur:
-                cur.execute(sql)
-            conn.commit()
-            logger.info("Schema created successfully.")
-
-
 def _cleanup_failed_articles() -> int:
     """Delete articles that failed scraping and will never be useful."""
-    from gdelt_event_pipeline.storage.database import get_pool
-
     pool = get_pool()
     with pool.connection() as conn:
         with conn.cursor() as cur:
@@ -139,21 +108,6 @@ def run_cycle(settings) -> dict[str, str]:
         logger.exception("Clustering failed")
         summary["cluster"] = "ERROR"
 
-    # 5. Refresh gravity materialized views
-    try:
-        from gdelt_event_pipeline.storage.database import get_pool
-
-        pool = get_pool()
-        with pool.connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute("REFRESH MATERIALIZED VIEW mv_country_comentions")
-                cur.execute("REFRESH MATERIALIZED VIEW mv_country_stats")
-            conn.commit()
-        summary["gravity_refresh"] = "ok"
-    except Exception:
-        logger.exception("Gravity view refresh failed")
-        summary["gravity_refresh"] = "ERROR"
-
     return summary
 
 
@@ -176,10 +130,10 @@ def main() -> None:
         )
         sys.exit(1)
 
-    init_pool(settings.db)
+    pool = init_pool(settings.db)
 
     # Auto-create schema on fresh databases (e.g. Railway first deploy)
-    _ensure_schema()
+    ensure_schema(pool)
 
     # Graceful shutdown on SIGTERM/SIGINT
     shutdown = False
