@@ -1,6 +1,6 @@
 # API Reference
 
-Base URL: `https://your-deployment.vercel.app` (or `http://localhost:8000` for local dev)
+Base URL: `https://<your-deployment>.vercel.app`
 
 Interactive Swagger docs are available at `/api/docs`.
 

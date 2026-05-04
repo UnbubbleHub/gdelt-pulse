@@ -129,7 +129,7 @@ UPSTASH_REDIS_REST_TOKEN=...
 uv run --group api uvicorn gdelt_event_pipeline.api.app:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-Open [http://localhost:8000](http://localhost:8000) for the landing page, or [http://localhost:8000/api/docs](http://localhost:8000/api/docs) for interactive Swagger docs.
+Open `http://<your-host>:8000` for the landing page, or `http://<your-host>:8000/api/docs` for interactive Swagger docs.
 
 ### Run the pipeline
 

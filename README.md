@@ -9,9 +9,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/UnbubbleHub/gdelt-pulse/actions/workflows/ci.yml"><img src="https://github.com/UnbubbleHub/gdelt-pulse/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/UnbubbleHub/gdelt-pulse/stargazers"><img src="https://img.shields.io/github/stars/UnbubbleHub/gdelt-pulse?style=flat" alt="Stars"></a>
   <img src="https://img.shields.io/badge/python-3.11+-3776ab.svg?logo=python&logoColor=white" alt="Python 3.11+">
-  <img src="https://img.shields.io/badge/tests-353-brightgreen.svg" alt="Tests">
   <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
   <img src="https://img.shields.io/badge/fastapi-0.115+-009688.svg?logo=fastapi&logoColor=white" alt="FastAPI">
 </p>
@@ -68,7 +67,7 @@ uv run python -m gdelt_event_pipeline.embeddings
 uv run python -m gdelt_event_pipeline.clustering -v
 ```
 
-Open [localhost:8000](http://localhost:8000) for the landing page, or [localhost:8000/api/docs](http://localhost:8000/api/docs) for interactive API docs.
+Open `http://<your-host>:8000` for the landing page, or `http://<your-host>:8000/api/docs` for interactive API docs.
 
 > Full setup instructions including database creation, pgvector installation, and configuration: **[Getting Started Guide](docs/getting-started.md)**
 
