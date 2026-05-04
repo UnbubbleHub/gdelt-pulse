@@ -46,6 +46,43 @@ class TestListArticles:
         resp = client_no_db.get("/api/articles?limit=201")
         assert resp.status_code == 422
 
+    def test_filters_use_db_query(self, client_no_db):
+        pool = make_mock_pool()
+        pool._mock_cur.fetchall.return_value = []
+        with patch(
+            "gdelt_event_pipeline.storage.database.get_pool",
+            return_value=pool,
+        ):
+            resp = client_no_db.get("/api/articles?location=Rome&theme=MILITARY_CONFLICT")
+        assert resp.status_code == 200
+        sql = pool._mock_cur.execute.call_args[0][0]
+        assert "ILIKE" in sql
+        assert "locations" in sql
+        assert "themes" in sql
+
+    def test_filters_strip_internal_fields(self, client_no_db):
+        pool = make_mock_pool()
+        pool._mock_cur.fetchall.return_value = [
+            make_article(embedding=[0.1], raw_payload={"x": 1}),
+        ]
+        with patch(
+            "gdelt_event_pipeline.storage.database.get_pool",
+            return_value=pool,
+        ):
+            resp = client_no_db.get("/api/articles?domain=bbc.com")
+        data = resp.json()
+        assert len(data) == 1
+        assert "embedding" not in data[0]
+
+    def test_no_filters_uses_storage_function(self, client_no_db):
+        with patch(
+            "gdelt_event_pipeline.api.routers.articles.get_recent_articles",
+            return_value=[],
+        ) as mock:
+            resp = client_no_db.get("/api/articles")
+        assert resp.status_code == 200
+        mock.assert_called_once()
+
 
 class TestGetStats:
     def test_returns_all_stat_fields(self, client_no_db):

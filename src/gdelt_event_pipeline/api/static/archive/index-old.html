@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GDELT Pulse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;450;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/pulse.css">
+<style>
+/* ── Page transitions ─────────────────────────────── */
+.page { display: none; min-height: 100vh; }
+.page.active { display: block; animation: slideUp 0.45s var(--ease) both; }
+
+/* ── Landing ──────────────────────────────────────── */
+.landing {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--sp-5);
+}
+
+.landing-title {
+  font-size: clamp(3.2rem, 8vw, 6rem);
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 0.95;
+  margin-bottom: var(--sp-4);
+  animation: slideUp 0.6s var(--ease) both;
+}
+
+.landing-title span {
+  color: var(--text-3);
+}
+
+.landing-sub {
+  font-size: clamp(0.9375rem, 1.5vw, 1.0625rem);
+  color: var(--text-3);
+  max-width: 400px;
+  margin-bottom: var(--sp-7);
+  font-weight: 400;
+  animation: slideUp 0.6s var(--ease) 0.08s both;
+}
+
+.landing-actions {
+  display: flex;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-9);
+  animation: slideUp 0.6s var(--ease) 0.16s both;
+}
+
+/* ── Feature grid ─────────────────────────────────── */
+.features {
+  width: 100%;
+  max-width: 680px;
+  animation: slideUp 0.6s var(--ease) 0.24s both;
+}
+
+.features-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: var(--sp-4);
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.feature-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: var(--sp-5) var(--sp-3);
+  background: var(--bg);
+  color: var(--text-3);
+  font-size: 0.75rem;
+  font-weight: 450;
+  text-decoration: none;
+  transition: background var(--duration) var(--ease), color var(--duration);
+  cursor: pointer;
+}
+
+.feature-link:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.feature-link svg { width: 20px; height: 20px; opacity: 0.5; transition: opacity var(--duration); }
+.feature-link:hover svg { opacity: 0.9; }
+
+/* ── Top stories (landing preview) ────────────────── */
+.preview-section {
+  width: 100%;
+  max-width: 680px;
+  margin-top: var(--sp-6);
+  animation: slideUp 0.6s var(--ease) 0.32s both;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sp-4);
+}
+
+.section-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.section-link {
+  font-size: 0.75rem;
+  color: var(--text-3);
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: var(--font);
+  font-weight: 450;
+  transition: color var(--duration);
+}
+.section-link:hover { color: var(--text); }
+
+.preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.preview-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-5);
+  background: var(--bg);
+  cursor: pointer;
+  transition: background var(--duration) var(--ease);
+}
+
+.preview-item:hover { background: var(--surface); }
+
+.preview-title {
+  font-size: 0.875rem;
+  font-weight: 450;
+  line-height: 1.4;
+  color: var(--text-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  transition: color var(--duration);
+}
+
+.preview-item:hover .preview-title { color: var(--text); }
+
+.preview-meta {
+  font-size: 0.6875rem;
+  color: var(--text-3);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Clusters page ────────────────────────────────── */
+.page-container {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 80px var(--sp-5) var(--sp-8);
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sp-5);
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+
+.page-header h1 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.page-header p {
+  font-size: 0.8125rem;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+
+.page-actions {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: center;
+}
+
+/* Filter panel */
+.filter-panel {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.35s var(--ease), opacity 0.25s, margin 0.35s var(--ease);
+  border-radius: var(--radius-lg);
+  margin-bottom: 0;
+}
+
+.filter-panel.open {
+  max-height: 280px;
+  opacity: 1;
+  padding: var(--sp-4) var(--sp-5);
+  margin-bottom: var(--sp-4);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.filter-grid {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-3);
+}
+
+.filter-item {
+  flex: 1 1 130px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.filter-item label {
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  font-weight: 500;
+}
+
+.filter-actions {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+/* Active filter pills */
+.active-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--sp-4); }
+.active-filters:empty { display: none; }
+
+.filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 0.6875rem;
+  font-weight: 450;
+  border: 1px solid var(--border);
+}
+
+.filter-pill button {
+  background: none; border: none; color: var(--text-3);
+  cursor: pointer; font-size: 0.85rem; line-height: 1; padding: 0;
+  transition: color var(--duration);
+}
+.filter-pill button:hover { color: var(--text); }
+
+/* ── Cluster cards ────────────────────────────────── */
+.cl-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--sp-4) var(--sp-5);
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: all var(--duration) var(--ease);
+}
+
+.cl-card:hover {
+  border-color: var(--border-active);
+  background: var(--surface-2);
+}
+
+.cl-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  margin-bottom: 4px;
+}
+
+.cl-title {
+  font-size: 0.875rem;
+  font-weight: 450;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+}
+
+.cl-badge {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cl-meta { font-size: 0.75rem; color: var(--text-3); }
+.cl-sim { font-size: 0.6875rem; color: var(--text-3); margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+
+/* ── Article cards ────────────────────────────────── */
+.card-article {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--sp-4) var(--sp-5);
+  margin-bottom: 6px;
+  transition: border-color var(--duration) var(--ease);
+}
+
+.card-article:hover { border-color: var(--border-hover); }
+
+.card-rank {
+  font-size: 0.6875rem;
+  color: var(--text-3);
+  margin-bottom: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.card-rank .hi { color: var(--text-2); font-weight: 500; }
+
+.card-title {
+  font-size: 0.875rem;
+  font-weight: 450;
+  margin-bottom: 4px;
+  line-height: 1.45;
+}
+
+.card-title a { color: var(--text); text-decoration: none; transition: color var(--duration); }
+.card-title a:hover { color: var(--text-2); text-decoration: underline; text-underline-offset: 2px; }
+
+.card-meta {
+  display: flex;
+  gap: var(--sp-3);
+  font-size: 0.75rem;
+  color: var(--text-3);
+  margin-bottom: var(--sp-2);
+}
+
+.tags { display: flex; gap: 4px; flex-wrap: wrap; }
+
+/* ── Search ───────────────────────────────────────── */
+.search-container {
+  max-width: 600px;
+  margin: 0 auto var(--sp-5);
+}
+
+.search-row {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+.search-input-wrap {
+  flex: 1;
+  position: relative;
+}
+
+.search-input-wrap svg {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-3);
+  pointer-events: none;
+}
+
+.search-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-4);
+  margin-top: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+.weight-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: 0.75rem;
+  color: var(--text-3);
+}
+
+.weight-val {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+  font-size: 0.75rem;
+  min-width: 26px;
+  text-align: center;
+}
+
+.search-filter-panel {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.35s var(--ease), opacity 0.25s, padding 0.35s var(--ease);
+  border-radius: var(--radius-lg);
+  max-width: 600px;
+  margin: var(--sp-1) auto 0;
+}
+
+.search-filter-panel.open {
+  max-height: 240px;
+  opacity: 1;
+  padding: var(--sp-4) var(--sp-5);
+  margin-bottom: var(--sp-5);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+/* Results */
+.results-wrap { max-width: 860px; margin: 0 auto; }
+
+.results-meta {
+  display: flex; gap: var(--sp-4); margin-bottom: var(--sp-4);
+  font-size: 0.75rem; color: var(--text-3); justify-content: center;
+}
+.results-meta strong { color: var(--text-2); font-weight: 500; font-variant-numeric: tabular-nums; }
+
+/* Segmented control */
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  margin-bottom: var(--sp-5);
+}
+
+.seg-btn {
+  padding: 7px 18px;
+  border: none;
+  background: none;
+  border-radius: var(--radius-full);
+  font-size: 0.8125rem;
+  font-family: var(--font);
+  font-weight: 450;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: all var(--duration) var(--ease);
+}
+
+.seg-btn:hover { color: var(--text-2); }
+.seg-btn.active { background: var(--surface-2); color: var(--text); }
+
+.seg-count {
+  font-size: 0.6875rem;
+  margin-left: 4px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+}
+.seg-btn.active .seg-count { color: var(--text-2); }
+
+/* ── Card animations ──────────────────────────────── */
+.card-anim { animation: slideUp 0.3s var(--ease) both; }
+
+/* ── Responsive ───────────────────────────────────── */
+@media (max-width: 768px) {
+  .landing-title { font-size: clamp(2.5rem, 10vw, 3.5rem); }
+  .landing-actions { flex-direction: column; }
+  .features-grid { grid-template-columns: repeat(2, 1fr); }
+  .page-container { padding: 64px var(--sp-4) var(--sp-6); }
+  .page-header { flex-direction: column; align-items: flex-start; }
+  .cl-top { flex-direction: column; gap: 4px; }
+  .search-row { flex-direction: column; }
+}
+
+@media (max-width: 480px) {
+  .features-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- LANDING -->
+<div class="page active" id="pg-landing">
+  <div class="landing">
+    <h1 class="landing-title">GDELT <span>Pulse</span></h1>
+    <p class="landing-sub">Real-time clustering and semantic search across world events.</p>
+    <div class="landing-actions">
+      <button class="btn btn-primary btn-lg" onclick="navTo('clusters')">Explore Clusters</button>
+      <button class="btn btn-lg" onclick="navTo('search')">Search Events</button>
+    </div>
+
+    <div class="features">
+      <div class="features-grid">
+        <a class="feature-link" href="/globe">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          Globe
+        </a>
+        <a class="feature-link" href="/polarization">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="10"/></svg>
+          Polarization
+        </a>
+        <a class="feature-link" href="/gravity">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><circle cx="5" cy="19" r="2"/><line x1="14.5" y1="9.5" x2="17.5" y2="6.5"/><line x1="9.5" y1="9.5" x2="6.5" y2="6.5"/><line x1="14.5" y1="14.5" x2="17.5" y2="17.5"/><line x1="9.5" y1="14.5" x2="6.5" y2="17.5"/></svg>
+          Gravity
+        </a>
+        <a class="feature-link" href="/asymmetry">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          Asymmetry
+        </a>
+        <a class="feature-link" href="/sources">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7V4a2 2 0 0 1 2-2h8.5L20 7.5V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3"/><polyline points="14 2 14 8 20 8"/><line x1="2" y1="15" x2="12" y2="15"/><polyline points="9 12 12 15 9 18"/></svg>
+          Sources
+        </a>
+        <a class="feature-link" href="/propagation">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Propagation
+        </a>
+        <a class="feature-link" href="/velocity">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+          Velocity
+        </a>
+        <a class="feature-link" onclick="navTo('clusters')" style="cursor:pointer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Search
+        </a>
+        <a class="feature-link" href="/developers">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          Developers
+        </a>
+      </div>
+    </div>
+
+    <section class="preview-section">
+      <div class="section-header">
+        <span class="section-label">Trending stories</span>
+        <button class="section-link" onclick="navTo('clusters')">View all &rarr;</button>
+      </div>
+      <div id="previewClusters" class="preview-list">
+        <div class="loading">Loading<span class="spinner"></span></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- CLUSTERS -->
+<div class="page" id="pg-clusters">
+  <div class="topbar">
+    <a class="topbar-back" onclick="navTo('landing')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      GDELT Pulse
+    </a>
+  </div>
+  <div class="page-container">
+    <div class="page-header">
+      <div>
+        <h1>Event Clusters</h1>
+        <p id="clusterCount">Groups of related articles about the same event</p>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-sm" id="cfToggle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+          Filters
+        </button>
+        <select class="select" id="cfSort">
+          <option value="articles">Most articles</option>
+          <option value="recent">Most recent</option>
+          <option value="oldest">Oldest first</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="filter-panel" id="cfPanel">
+      <div class="filter-grid">
+        <div class="filter-item"><label>Location</label><input class="input" type="text" id="cfLoc" placeholder="e.g. Turkey"></div>
+        <div class="filter-item"><label>Person</label><input class="input" type="text" id="cfPer" placeholder="e.g. Biden"></div>
+        <div class="filter-item"><label>Organization</label><input class="input" type="text" id="cfOrg" placeholder="e.g. NATO"></div>
+        <div class="filter-item"><label>Theme</label><input class="input" type="text" id="cfThm" placeholder="e.g. ARMEDCONFLICT"></div>
+        <div class="filter-item"><label>Domain</label><input class="input" type="text" id="cfDom" placeholder="e.g. bbc.co.uk"></div>
+        <div class="filter-item"><label>Source</label><input class="input" type="text" id="cfSrc" placeholder="e.g. reuters"></div>
+        <div class="filter-item"><label>Date from</label><input class="input" type="date" id="cfDF"></div>
+        <div class="filter-item"><label>Date to</label><input class="input" type="date" id="cfDT"></div>
+      </div>
+      <div class="filter-actions">
+        <button class="btn btn-primary btn-sm" id="cfApply">Apply</button>
+        <button class="btn btn-sm" id="cfClear">Clear</button>
+      </div>
+    </div>
+
+    <div class="active-filters" id="activeFilters"></div>
+    <div id="clList"><div class="loading">Loading<span class="spinner"></span></div></div>
+  </div>
+</div>
+
+<!-- SEARCH -->
+<div class="page" id="pg-search">
+  <div class="topbar">
+    <a class="topbar-back" onclick="navTo('landing')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      GDELT Pulse
+    </a>
+  </div>
+  <div class="page-container">
+    <div style="text-align:center; margin-bottom: var(--sp-4)">
+      <h1 style="font-size:1.25rem;font-weight:600;letter-spacing:-0.02em">Search</h1>
+      <p style="font-size:0.8125rem;color:var(--text-3);margin-top:2px">Hybrid semantic + keyword search across events</p>
+    </div>
+
+    <div class="search-container">
+      <div class="search-row">
+        <div class="search-input-wrap">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="input input-lg" type="text" id="searchInput" placeholder="Search articles and events..." autocomplete="off" style="padding-left:44px">
+        </div>
+        <button class="btn btn-primary" style="padding:14px 24px;border-radius:var(--radius-lg)" id="searchBtn">Search</button>
+      </div>
+
+      <div class="search-controls">
+        <div class="weight-row">
+          <span>Semantic</span>
+          <input type="range" id="wSlider" min="0" max="1" step="0.1" value="0.5">
+          <span class="weight-val" id="wVal">0.5</span>
+          <span>Keyword</span>
+        </div>
+        <button class="btn btn-sm" id="searchFilterToggle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+          Filters
+        </button>
+      </div>
+    </div>
+
+    <div class="search-filter-panel" id="searchFilterPanel">
+      <div class="filter-grid" style="margin-bottom:0">
+        <div class="filter-item"><label>Location</label><input class="input" type="text" id="sfLoc" placeholder="e.g. Turkey"></div>
+        <div class="filter-item"><label>Person</label><input class="input" type="text" id="sfPer" placeholder="e.g. Biden"></div>
+        <div class="filter-item"><label>Organization</label><input class="input" type="text" id="sfOrg" placeholder="e.g. NATO"></div>
+        <div class="filter-item"><label>Theme</label><input class="input" type="text" id="sfThm" placeholder="e.g. ECON"></div>
+        <div class="filter-item"><label>Domain</label><input class="input" type="text" id="sfDom" placeholder="e.g. bbc.co.uk"></div>
+        <div class="filter-item"><label>Source</label><input class="input" type="text" id="sfSrc" placeholder="e.g. reuters"></div>
+        <div class="filter-item"><label>Date from</label><input class="input" type="date" id="sfDF"></div>
+        <div class="filter-item"><label>Date to</label><input class="input" type="date" id="sfDT"></div>
+      </div>
+    </div>
+
+    <div id="searchResults" style="display:none">
+      <div class="results-wrap">
+        <div class="results-meta" id="searchMeta"></div>
+        <div style="text-align:center">
+          <div class="segmented">
+            <button class="seg-btn active" data-stab="s-arts">Articles<span class="seg-count" id="sArtCnt"></span></button>
+            <button class="seg-btn" data-stab="s-cls">Clusters<span class="seg-count" id="sClCnt"></span></button>
+          </div>
+        </div>
+        <div id="s-arts"></div>
+        <div id="s-cls" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <button class="modal-close" id="modalX">&times;</button>
+    <h2 id="mTitle" style="font-size:1.1rem;font-weight:600;margin-bottom:4px;padding-right:44px;letter-spacing:-0.02em"></h2>
+    <div class="cl-meta" id="mMeta" style="margin-bottom:var(--sp-4);font-size:0.75rem;color:var(--text-3)"></div>
+    <div id="mBody"></div>
+  </div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s), API='/api';
+
+// ── Navigation ─────────────────────────────────────────
+function navTo(page) {
+  $$('.page').forEach(p => p.classList.remove('active'));
+  $(`#pg-${page}`).classList.add('active');
+  if (page === 'landing') loadLanding();
+  if (page === 'clusters') loadClustersPage();
+  if (page === 'search') setTimeout(() => $('#searchInput').focus(), 100);
+  history.replaceState(null, '', page === 'landing' ? '/' : `#${page}`);
+}
+
+const initPage = location.hash.replace('#', '') || 'landing';
+if (initPage !== 'landing') navTo(initPage);
+
+// ── Landing page ────────────────────────────────────────
+let _landingLoaded = false;
+async function loadLanding() {
+  if (_landingLoaded) return;
+  try {
+    const clusters = await fetch(`${API}/clusters?limit=6&sort=articles`).then(r => r.json());
+    _landingLoaded = true;
+
+    const el = $('#previewClusters');
+    el.innerHTML = clusters.length
+      ? clusters.map((c, i) => mkPreviewItem(c, i)).join('')
+      : '<div class="empty">No clusters yet</div>';
+    el.querySelectorAll('.preview-item').forEach(el =>
+      el.addEventListener('click', () => openCluster(el.dataset.id))
+    );
+  } catch (e) {
+    $('#previewClusters').innerHTML = `<div class="empty">${esc(e.message)}</div>`;
+  }
+}
+loadLanding();
+
+function mkPreviewItem(c, idx) {
+  return `<div class="preview-item" data-id="${c.id}" style="animation: slideUp 0.3s var(--ease) ${idx * 50}ms both">
+    <span class="preview-title">${esc(c.representative_title || '(untitled)')}</span>
+    <span class="preview-meta">${fmtDate(c.last_article_at)}</span>
+  </div>`;
+}
+
+// ── Clusters page ───────────────────────────────────────
+$('#cfToggle').addEventListener('click', () => {
+  const panel = $('#cfPanel');
+  panel.classList.toggle('open');
+  $('#cfToggle').classList.toggle('active', panel.classList.contains('open'));
+});
+
+$('#cfSort').addEventListener('change', loadClustersPage);
+
+async function loadClustersPage() {
+  const el = $('#clList');
+  el.innerHTML = '<div class="loading">Loading<span class="spinner"></span></div>';
+
+  const loc = $('#cfLoc').value.trim();
+  const per = $('#cfPer').value.trim();
+  const org = $('#cfOrg').value.trim();
+  const thm = $('#cfThm').value.trim();
+  const dom = $('#cfDom').value.trim();
+  const src = $('#cfSrc').value.trim();
+  const df = $('#cfDF').value;
+  const dt = $('#cfDT').value;
+  const sort = $('#cfSort').value;
+
+  renderActiveFilters({ loc, per, org, thm, dom, src, df, dt });
+
+  try {
+    const p = new URLSearchParams({ limit: '200', sort });
+    if (loc) p.set('location', loc);
+    if (per) p.set('person', per);
+    if (org) p.set('org', org);
+    if (thm) p.set('theme', thm);
+    if (dom) p.set('domain', dom);
+    if (src) p.set('source', src);
+    if (df) p.set('date_from', df);
+    if (dt) p.set('date_to', dt);
+
+    const clusters = await fetch(`${API}/clusters?${p}`).then(r => {
+      if (!r.ok) throw new Error(`Server error ${r.status}`);
+      return r.json();
+    });
+
+    $('#clusterCount').textContent = `Showing ${clusters.length} cluster${clusters.length !== 1 ? 's' : ''}`;
+    el.innerHTML = clusters.length
+      ? clusters.map((c, i) => mkClCard(c, i)).join('')
+      : '<div class="empty">No clusters match your filters</div>';
+    bindCl('#clList');
+  } catch (e) {
+    el.innerHTML = `<div class="empty">${esc(e.message)}</div>`;
+  }
+}
+
+function renderActiveFilters(f) {
+  const el = $('#activeFilters');
+  const labels = { loc: 'Location', per: 'Person', org: 'Org', thm: 'Theme', dom: 'Domain', src: 'Source', df: 'From', dt: 'To' };
+  const inputIds = { loc: 'cfLoc', per: 'cfPer', org: 'cfOrg', thm: 'cfThm', dom: 'cfDom', src: 'cfSrc', df: 'cfDF', dt: 'cfDT' };
+  let html = '';
+  for (const [k, v] of Object.entries(f)) {
+    if (v) html += `<span class="filter-pill">${labels[k]}: ${esc(v)}<button data-clear="${inputIds[k]}">&times;</button></span>`;
+  }
+  el.innerHTML = html;
+  el.querySelectorAll('button[data-clear]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $(`#${btn.dataset.clear}`).value = '';
+      loadClustersPage();
+    });
+  });
+}
+
+$('#cfApply').addEventListener('click', loadClustersPage);
+$('#cfClear').addEventListener('click', () => {
+  ['cfLoc','cfPer','cfOrg','cfThm','cfDom','cfSrc','cfDF','cfDT'].forEach(id => $(`#${id}`).value = '');
+  loadClustersPage();
+});
+
+// ── Search ──────────────────────────────────────────────
+$('#searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+$('#searchBtn').addEventListener('click', doSearch);
+$('#searchFilterToggle').addEventListener('click', () => {
+  $('#searchFilterPanel').classList.toggle('open');
+  $('#searchFilterToggle').classList.toggle('active', $('#searchFilterPanel').classList.contains('open'));
+});
+$('#wSlider').addEventListener('input', () => { $('#wVal').textContent = $('#wSlider').value; });
+
+$$('.seg-btn[data-stab]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    $$('.seg-btn[data-stab]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.stab;
+    $('#s-arts').style.display = tab === 's-arts' ? '' : 'none';
+    $('#s-cls').style.display = tab === 's-cls' ? '' : 'none';
+  });
+});
+
+async function doSearch() {
+  const q = $('#searchInput').value.trim();
+  if (!q) return;
+  $('#searchResults').style.display = 'block';
+  $('#s-arts').innerHTML = '<div class="loading">Searching<span class="spinner"></span></div>';
+  $('#s-cls').innerHTML = '';
+  $('#searchBtn').disabled = true;
+
+  const p = new URLSearchParams({ q, limit: 30, semantic_weight: $('#wSlider').value, clusters: 'true' });
+  const fv = (id, k) => { const v = $(id).value.trim(); if (v) p.set(k, v); };
+  fv('#sfLoc', 'location'); fv('#sfPer', 'person'); fv('#sfOrg', 'org'); fv('#sfThm', 'theme');
+  fv('#sfDom', 'domain'); fv('#sfSrc', 'source'); fv('#sfDF', 'date_from'); fv('#sfDT', 'date_to');
+
+  try {
+    const d = await fetch(`${API}/search?${p}`).then(r => {
+      if (!r.ok) throw new Error(`Server error ${r.status}`);
+      return r.json();
+    });
+    $('#searchMeta').innerHTML = `Semantic: <strong>${d.total_semantic_hits}</strong> &middot; Keyword: <strong>${d.total_keyword_hits}</strong> &middot; Results: <strong>${d.articles.length}</strong>`;
+    $('#sArtCnt').textContent = d.articles.length || '';
+    $('#sClCnt').textContent = d.clusters.length || '';
+
+    $('#s-arts').innerHTML = d.articles.length
+      ? d.articles.map((sa, i) => mkCard(sa.article, i + 1, sa, i)).join('')
+      : '<div class="empty">No articles found</div>';
+
+    $('#s-cls').innerHTML = d.clusters.length
+      ? d.clusters.map((sc, i) => mkSearchClCard(sc, i)).join('')
+      : '<div class="empty">No matching clusters</div>';
+    bindCl('#s-cls');
+  } catch (e) {
+    $('#s-arts').innerHTML = `<div class="empty">${esc(e.message)}</div>`;
+  } finally {
+    $('#searchBtn').disabled = false;
+  }
+}
+
+// ── Card builders ───────────────────────────────────────
+function mkCard(a, rank, scored, idx) {
+  const title = esc(a.title || '(no title)'), url = a.canonical_url || a.url || '#';
+  const delay = idx !== undefined ? `style="animation-delay:${Math.min(idx, 15) * 35}ms"` : '';
+  let rk = '';
+  if (scored) {
+    const sm = scored.semantic_rank ? `sem #${scored.semantic_rank}` : 'sem -';
+    const kw = scored.keyword_rank ? `kw #${scored.keyword_rank}` : 'kw -';
+    rk = `<div class="card-rank"><span class="hi">#${rank} &middot; ${scored.rrf_score.toFixed(5)}</span> <span>${sm}</span> <span>${kw}</span></div>`;
+  }
+  let tg = tags(a.locations, 'loc', r => r.name || r) + tags(a.persons, 'per', r => r) + tags(a.organizations, 'org', r => r);
+  return `<div class="card-article card-anim" ${delay}>${rk}<div class="card-title"><a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${title}</a></div><div class="card-meta"><span>${esc(a.domain || '')}</span><span>${fmtDate(a.gdelt_timestamp)}</span></div>${tg ? `<div class="tags">${tg}</div>` : ''}</div>`;
+}
+
+function mkClCard(c, idx) {
+  const delay = idx !== undefined ? `style="animation-delay:${Math.min(idx, 15) * 35}ms"` : '';
+  return `<div class="cl-card card-anim" data-id="${c.id}" ${delay}><div class="cl-top"><span class="cl-title">${esc(c.representative_title || '(untitled)')}</span><span class="cl-badge">${c.article_count} articles</span></div><div class="cl-meta">${fmtDate(c.first_article_at)} &mdash; ${fmtDate(c.last_article_at)}</div></div>`;
+}
+
+function mkSearchClCard(sc, idx) {
+  const c = sc.cluster, sim = (1 - sc.cosine_distance).toFixed(4);
+  const delay = idx !== undefined ? `style="animation-delay:${Math.min(idx, 15) * 35}ms"` : '';
+  return `<div class="cl-card card-anim" data-id="${c.id}" ${delay}><div class="cl-sim">similarity ${sim}</div><div class="cl-top"><span class="cl-title">${esc(c.representative_title || '(untitled)')}</span><span class="cl-badge">${c.article_count} articles</span></div><div class="cl-meta">${fmtDate(c.first_article_at)} &mdash; ${fmtDate(c.last_article_at)}</div></div>`;
+}
+
+function bindCl(sel) {
+  $$(`${sel} .cl-card`).forEach(el => el.addEventListener('click', () => openCluster(el.dataset.id)));
+}
+
+// ── Cluster modal ───────────────────────────────────────
+async function openCluster(id) {
+  $('#overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  $('#mTitle').textContent = 'Loading...';
+  $('#mMeta').textContent = '';
+  $('#mBody').innerHTML = '<div class="loading"><span class="spinner"></span></div>';
+
+  try {
+    const d = await fetch(`${API}/clusters/${id}`).then(r => r.json());
+    $('#mTitle').textContent = d.cluster.representative_title || '(untitled cluster)';
+    $('#mMeta').innerHTML = `${d.cluster.article_count} articles &middot; ${fmtDate(d.cluster.first_article_at)} &mdash; ${fmtDate(d.cluster.last_article_at)}`;
+    $('#mBody').innerHTML = d.articles.length
+      ? d.articles.map((a, i) => mkCard(a, null, null, i)).join('')
+      : '<div class="empty">No articles</div>';
+  } catch (e) {
+    $('#mBody').innerHTML = `<div class="empty">${esc(e.message)}</div>`;
+  }
+}
+
+function closeModal() {
+  $('#overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+$('#modalX').addEventListener('click', closeModal);
+$('#overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// ── Helpers ─────────────────────────────────────────────
+function esc(s) { const d = document.createElement('div'); d.textContent = String(s); return d.innerHTML; }
+function fmtDate(s) { if (!s) return ''; const d = new Date(s); return isNaN(d) ? String(s) : d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }); }
+function tags(arr, type, ex) {
+  if (!arr || !Array.isArray(arr)) return '';
+  const seen = new Set();
+  return arr.slice(0, 4).map(item => {
+    const n = typeof item === 'string' ? item : ex(item);
+    if (!n || seen.has(n)) return ''; seen.add(n);
+    return `<span class="tag tag-${type}">${esc(n)}</span>`;
+  }).join('');
+}
+</script>
+</body>
+</html>
