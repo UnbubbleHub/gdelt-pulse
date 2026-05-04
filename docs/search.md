@@ -10,7 +10,7 @@ GDELT Pulse implements a hybrid search system that combines semantic vector simi
                           ┌──────────┴──────────┐
                           │                     │
                     ┌─────▼─────┐         ┌─────▼─────┐
-                    │  Semantic  │         │  Keyword  │
+                    │  Semantic │         │  Keyword  │
                     │  Search   │         │  Search   │
                     │           │         │           │
                     │  Embed    │         │  Parse    │
@@ -20,7 +20,7 @@ GDELT Pulse implements a hybrid search system that combines semantic vector simi
                     │  neighbor │         │           │
                     └─────┬─────┘         └─────┬─────┘
                           │                     │
-                          │   ranked lists       │
+                          │   ranked lists      │
                           └──────────┬──────────┘
                                      │
                               ┌──────▼──────┐
