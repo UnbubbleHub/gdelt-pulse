@@ -7,11 +7,11 @@ GDELT Pulse is split into two independent deployments sharing a single PostgreSQ
 
 ```
                     ┌──────────────────────────────────────────────┐
-                    │            Railway (Pipeline)                 │
+                    │            Railway (Pipeline)                │
                     │                                              │
-                    │   ┌──────────┐  ┌─────────┐  ┌───────────┐  │
-  GDELT GKG ──────►│   │ Ingest   ├─►│  Embed  ├─►│  Cluster  │  │
-  (HTTP, 15min)     │   └──────────┘  └─────────┘  └───────────┘  │
+                    │   ┌──────────┐  ┌─────────┐  ┌───────────┐   │
+  GDELT GKG ──────► │   │ Ingest   ├─►│  Embed  ├─►│  Cluster  │   │
+  (HTTP, 15min)     │   └──────────┘  └─────────┘  └───────────┘   │
                     │                                              │
                     └──────────────────────┬───────────────────────┘
                                            │
@@ -22,15 +22,15 @@ GDELT Pulse is split into two independent deployments sharing a single PostgreSQ
                                    └───────┬────────┘
                                            │
                     ┌──────────────────────▼───────────────────────┐
-                    │            Vercel (API)                       │
+                    │            Vercel (API)                      │
                     │                                              │
                     │   FastAPI ── routers/search.py               │
-                    │              routers/clusters.py              │
-                    │              routers/articles.py              │
-                    │              routers/keys.py                  │
+                    │              routers/clusters.py             │
+                    │              routers/articles.py             │
+                    │              routers/keys.py                 │
                     │                                              │
-                    │   middleware.py ── rate limiting              │
-                    │   auth.py ── Clerk JWT verification           │
+                    │   middleware.py ── rate limiting             │
+                    │   auth.py ── Clerk JWT verification          │
                     └──────────────────────────────────────────────┘
 ```
 
