@@ -51,6 +51,27 @@ def _cleanup_failed_articles() -> int:
     return deleted
 
 
+def _cleanup_old_articles(retention_hours: int) -> int:
+    """Delete articles older than the retention window."""
+    if retention_hours <= 0:
+        return 0
+    pool = get_pool()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                DELETE FROM articles
+                WHERE published_at < NOW() - INTERVAL '%s hours'
+                """,
+                (retention_hours,),
+            )
+            deleted = cur.rowcount
+        conn.commit()
+    if deleted:
+        logger.info("Retention: deleted %d articles older than %dh", deleted, retention_hours)
+    return deleted
+
+
 def _utcnow() -> str:
     return datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
 
@@ -85,6 +106,14 @@ def run_cycle(settings) -> dict[str, str]:
             summary["cleanup"] = f"deleted={deleted}"
     except Exception:
         logger.exception("Cleanup failed")
+
+    # 2c. Delete articles older than the retention window
+    try:
+        expired = _cleanup_old_articles(settings.retention.hours)
+        if expired:
+            summary["retention"] = f"deleted={expired}"
+    except Exception:
+        logger.exception("Retention cleanup failed")
 
     # 3. Embed
     try:

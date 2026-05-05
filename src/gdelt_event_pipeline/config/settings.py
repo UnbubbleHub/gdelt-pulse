@@ -51,6 +51,11 @@ class EmbeddingSettings:
 
 
 @dataclass(frozen=True)
+class RetentionSettings:
+    hours: int = field(default_factory=lambda: int(os.environ.get("RETENTION_HOURS", "168")))
+
+
+@dataclass(frozen=True)
 class ClusteringSettings:
     window_hours: int = field(
         default_factory=lambda: int(os.environ.get("CLUSTER_WINDOW_HOURS", "72"))
@@ -62,6 +67,7 @@ class Settings:
     db: DatabaseSettings = field(default_factory=DatabaseSettings)
     embedding: EmbeddingSettings = field(default_factory=EmbeddingSettings)
     clustering: ClusteringSettings = field(default_factory=ClusteringSettings)
+    retention: RetentionSettings = field(default_factory=RetentionSettings)
 
 
 def get_settings() -> Settings:

@@ -31,6 +31,33 @@ class TestCleanupFailedArticles:
         assert result == 0
 
 
+class TestCleanupOldArticles:
+    def test_deletes_old_articles(self):
+        from gdelt_event_pipeline.runner import _cleanup_old_articles
+
+        pool = make_mock_pool(rowcount=12)
+        with patch(f"{MODULE}.get_pool", return_value=pool):
+            result = _cleanup_old_articles(168)
+        assert result == 12
+        sql = pool._mock_cur.execute.call_args[0][0]
+        assert "DELETE FROM articles" in sql
+        assert "published_at" in sql
+
+    def test_returns_zero_when_none_deleted(self):
+        from gdelt_event_pipeline.runner import _cleanup_old_articles
+
+        pool = make_mock_pool(rowcount=0)
+        with patch(f"{MODULE}.get_pool", return_value=pool):
+            result = _cleanup_old_articles(168)
+        assert result == 0
+
+    def test_disabled_when_zero(self):
+        from gdelt_event_pipeline.runner import _cleanup_old_articles
+
+        result = _cleanup_old_articles(0)
+        assert result == 0
+
+
 class TestRunCycle:
     def test_runs_all_stages(self):
         from gdelt_event_pipeline.runner import run_cycle
@@ -38,6 +65,7 @@ class TestRunCycle:
         mock_settings = MagicMock()
         mock_settings.embedding = MagicMock()
         mock_settings.clustering.window_hours = 72
+        mock_settings.retention.hours = 168
 
         ing_result = MagicMock()
         ing_result.rows_fetched = 10
