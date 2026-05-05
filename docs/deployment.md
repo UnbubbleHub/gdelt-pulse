@@ -111,6 +111,7 @@ Set these in the Railway service settings:
 | `PGDATABASE` | Alt | Database name |
 | `EMBEDDING_BACKEND` | Yes | Set to `fastembed` |
 | `PIPELINE_INTERVAL` | No | Cycle interval in seconds (default: 900) |
+| `RETENTION_HOURS` | No | Delete articles older than this (default: 72 = 3 days) |
 
 If using Railway's database plugin, the PG variables are injected automatically.
 
