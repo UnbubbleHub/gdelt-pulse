@@ -52,7 +52,7 @@ class EmbeddingSettings:
 
 @dataclass(frozen=True)
 class RetentionSettings:
-    hours: int = field(default_factory=lambda: int(os.environ.get("RETENTION_HOURS", "168")))
+    hours: int = field(default_factory=lambda: int(os.environ.get("RETENTION_HOURS", "72")))
 
 
 @dataclass(frozen=True)

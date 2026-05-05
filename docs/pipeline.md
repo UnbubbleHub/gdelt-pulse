@@ -134,6 +134,7 @@ Each cycle:
 | `PIPELINE_INTERVAL` | 900 | Seconds between cycles (matches GDELT's 15-min cadence) |
 | `EMBEDDING_BACKEND` | fastembed | Embedding engine (fastembed is the only supported option) |
 | `CLUSTER_WINDOW_HOURS` | 72 | Only consider clusters active within this window |
+| `RETENTION_HOURS` | 72 | Delete articles older than this (hours). Set to 0 to disable |
 
 ### Graceful Shutdown
 
