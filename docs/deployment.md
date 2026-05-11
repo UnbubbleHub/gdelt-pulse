@@ -155,7 +155,7 @@ Then run the API and pipeline natively:
 
 ```bash
 # API
-uv run --group api uvicorn gdelt_event_pipeline.api.app:app --reload
+uv run uvicorn gdelt_event_pipeline.api.app:app --reload
 
 # Pipeline (in another terminal)
 uv run python -m gdelt_event_pipeline.runner

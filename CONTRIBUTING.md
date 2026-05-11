@@ -31,7 +31,7 @@ See the [Getting Started Guide](docs/getting-started.md) for detailed setup inst
 2. Make your changes
 3. Run the test suite and linter:
    ```bash
-   uv run --group api pytest tests/ -q
+   uv run pytest tests/ -q
    ruff check .
    ruff format . --check
    ```
@@ -79,13 +79,13 @@ Running tests:
 
 ```bash
 # Full suite
-uv run --group api pytest tests/ -q
+uv run pytest tests/ -q
 
 # Single module
-uv run --group api pytest tests/api/ -v
+uv run pytest tests/api/ -v
 
 # Single test
-uv run --group api pytest tests/api/test_search.py::TestSearch::test_happy_path
+uv run pytest tests/api/test_search.py::TestSearch::test_happy_path
 ```
 
 When adding new functionality, write tests in the corresponding `tests/` subdirectory. Shared fixtures and factories are in `tests/conftest.py`.

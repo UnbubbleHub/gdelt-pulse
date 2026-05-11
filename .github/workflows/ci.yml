@@ -41,7 +41,7 @@ jobs:
         run: python -m compileall -q src tests
 
       - name: Run unit tests
-        run: uv run --group api pytest tests/ -q
+        run: uv run pytest tests/ -q
 
       - name: Build sdist and wheel
         run: python -m build

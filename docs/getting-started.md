@@ -93,7 +93,7 @@ The only required setting is `DATABASE_URL`. See `.env.example` for the full lis
 ### Start the API server
 
 ```bash
-uv run --group api uvicorn gdelt_event_pipeline.api.app:app --host 0.0.0.0 --port 8000 --reload
+uv run uvicorn gdelt_event_pipeline.api.app:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 Open `http://<your-host>:8000` for the landing page, or `http://<your-host>:8000/api/docs` for interactive Swagger docs.
@@ -126,7 +126,7 @@ After the pipeline runs, search and browse endpoints will return data.
 ### Run tests
 
 ```bash
-uv run --group api pytest tests/ -q
+uv run pytest tests/ -q
 ```
 
 You should see all 353 tests pass. Tests use mocked database connections and don't require a running PostgreSQL instance.

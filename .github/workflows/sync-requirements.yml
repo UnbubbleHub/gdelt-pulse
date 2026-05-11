@@ -19,7 +19,7 @@ jobs:
       - uses: astral-sh/setup-uv@v4
 
       - name: Regenerate requirements.txt
-        run: uv export --group api --no-group dev --no-emit-project --no-hashes > requirements.txt
+        run: uv export --no-group dev --no-emit-project --no-hashes > requirements.txt
 
       - name: Commit if changed
         run: |

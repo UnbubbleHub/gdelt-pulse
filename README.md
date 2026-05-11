@@ -59,7 +59,7 @@ cp .env.example .env   # set DATABASE_URL
 
 ```bash
 # Start the API server
-uv run --group api uvicorn gdelt_event_pipeline.api.app:app --reload
+uv run uvicorn gdelt_event_pipeline.api.app:app --reload
 
 # Run the pipeline (ingest → embed → cluster)
 uv run python -m gdelt_event_pipeline.ingestion --scrape-titles
@@ -195,7 +195,7 @@ We welcome contributions of all kinds. See **[CONTRIBUTING.md](CONTRIBUTING.md)*
 
 ```bash
 # Run the test suite
-uv run --group api pytest tests/ -q
+uv run pytest tests/ -q
 
 # Lint and format check
 ruff check . && ruff format . --check

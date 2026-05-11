@@ -11,12 +11,12 @@ WORKDIR /app
 
 # Install dependencies first (layer caching)
 COPY pyproject.toml uv.lock README.md ./
-RUN uv sync --frozen --no-group api --no-group dev --no-install-project
+RUN uv sync --frozen --no-group dev --no-install-project
 
 # Copy source code and schema
 COPY src/ src/
 COPY sql/ sql/
-RUN uv sync --frozen --no-group api --no-group dev
+RUN uv sync --frozen --no-group dev
 
 # Download the fastembed model at build time so it's baked into the image
 # (avoids downloading ~23MB on every container start)
