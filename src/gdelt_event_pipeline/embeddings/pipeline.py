@@ -43,13 +43,20 @@ def run_embedding(
 
     result = EmbeddingResult()
 
-    articles = get_unembedded_articles(limit=limit)
+    effective_limit = limit if limit is not None else settings.per_cycle_limit
+    articles = get_unembedded_articles(limit=effective_limit)
     result.articles_fetched = len(articles)
     if not articles:
         logger.info("No unembedded articles found")
         return result
 
-    logger.info("Embedding %d articles with %s", len(articles), settings.model_name)
+    logger.info(
+        "Embedding %d articles with %s (batch_size=%d, per_cycle_limit=%d)",
+        len(articles),
+        settings.model_name,
+        settings.batch_size,
+        effective_limit,
+    )
 
     # Compose texts, tracking which articles produced usable input
     texts: list[str] = []

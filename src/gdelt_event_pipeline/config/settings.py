@@ -48,6 +48,11 @@ class EmbeddingSettings:
     batch_size: int = field(
         default_factory=lambda: int(os.environ.get("EMBEDDING_BATCH_SIZE", "64"))
     )
+    # Cap embedding work per cycle so a constrained container cannot OOM
+    # by trying to embed thousands of articles in a single call.
+    per_cycle_limit: int = field(
+        default_factory=lambda: int(os.environ.get("EMBEDDING_PER_CYCLE_LIMIT", "300"))
+    )
 
 
 @dataclass(frozen=True)

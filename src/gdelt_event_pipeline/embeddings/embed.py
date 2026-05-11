@@ -28,4 +28,4 @@ def embed_texts(
         return []
 
     fe_model = load_fe_model(model_name)
-    return [v.tolist() for v in fe_model.embed(texts)]
+    return [v.tolist() for v in fe_model.embed(texts, batch_size=batch_size)]

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import logging
 import os
+import resource
 import signal
 import sys
 import time
@@ -73,6 +74,12 @@ def _cleanup_old_articles(retention_hours: int) -> int:
 
 def _utcnow() -> str:
     return datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
+
+
+def _peak_rss_mb() -> float:
+    """Peak resident set size in MB. ru_maxrss is KB on Linux, bytes on macOS."""
+    raw = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    return raw / 1024 if sys.platform == "linux" else raw / (1024 * 1024)
 
 
 def run_cycle(settings) -> dict[str, str]:
@@ -198,9 +205,10 @@ def main() -> None:
             elapsed = time.monotonic() - t0
             parts = [f"{k}: {v}" for k, v in summary.items()]
             logger.info(
-                "=== Cycle %d done in %.1fs | %s ===",
+                "=== Cycle %d done in %.1fs | peak_rss=%.0fMB | %s ===",
                 cycle,
                 elapsed,
+                _peak_rss_mb(),
                 " | ".join(parts),
             )
 
