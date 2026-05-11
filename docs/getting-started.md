@@ -7,59 +7,30 @@ This guide walks through setting up GDELT Pulse for local development, from prer
 | Requirement | Version | Notes |
 |-------------|---------|-------|
 | Python | 3.11+ | Required for `match` statements and type union syntax |
-| PostgreSQL | 15+ | With the [pgvector](https://github.com/pgvector/pgvector) extension |
 | uv | Latest | [Install uv](https://docs.astral.sh/uv/getting-started/installation/) |
+| PostgreSQL 15+ with pgvector | — | Pick one option below |
 
-### Installing pgvector
+You don't need to install Postgres locally. Pick whichever DB option matches your workflow:
 
-pgvector adds vector similarity search to PostgreSQL. It's required for semantic search and embedding storage.
-
-```bash
-# macOS (Homebrew)
-brew install pgvector
-
-# Ubuntu/Debian
-sudo apt install postgresql-15-pgvector
-
-# From source (any platform)
-cd /tmp
-git clone --branch v0.8.0 https://github.com/pgvector/pgvector.git
-cd pgvector
-make && make install
-```
-
-See the [pgvector installation docs](https://github.com/pgvector/pgvector#installation) for other platforms.
+- **Neon (recommended)** — free cloud Postgres, identical to production. Requires only an internet connection.
+- **Docker Compose** — containerized Postgres + pgvector. Works fully offline.
+- **Local Postgres** — Homebrew, Postgres.app, or a system install if you already have one.
 
 ## Installation
 
 ```bash
-# Clone the repository
 git clone https://github.com/UnbubbleHub/gdelt-pulse.git
 cd gdelt-pulse
 
-# Install all dependencies (core + dev + API)
-uv sync
-
-# Copy the environment template
-cp .env.example .env
+uv sync                # install all dependencies (core + dev + API)
+cp .env.example .env   # configure DATABASE_URL — see below
 ```
 
 ## Database Setup
 
-### 1. Create the database
+The API server **auto-applies the schema** on startup (`001_schema.sql` + `002_api_keys.sql`) if tables don't exist. You don't need to run any `psql` or `createdb` commands manually for any of the three options below.
 
-```bash
-createdb gdelt_pulse
-```
-
-### 2. Apply the schema
-
-```bash
-psql -d gdelt_pulse -f sql/001_schema.sql
-psql -d gdelt_pulse -f sql/002_api_keys.sql
-```
-
-`001_schema.sql` creates four core tables:
+The schema creates these tables:
 
 | Table | Purpose |
 |-------|---------|
@@ -67,59 +38,55 @@ psql -d gdelt_pulse -f sql/002_api_keys.sql
 | `clusters` | Event clusters with centroids and entity summaries |
 | `cluster_memberships` | Article-to-cluster assignments with similarity scores |
 | `pipeline_state` | Tracks the last processed GDELT timestamp for incremental ingestion |
+| `api_keys` | Per-user API key management |
 
-`002_api_keys.sql` adds the `api_keys` table for per-user key management.
+See [Database Design](database_design.md) for full schema documentation.
 
-> **Note:** The API server auto-applies both schema files on startup if tables don't exist. Manual application is only needed for standalone pipeline use or database inspection.
+### Option 1 — Neon (recommended)
 
-### 3. Verify
+1. Create a free project at [neon.tech](https://neon.tech/)
+2. Copy the connection string from the dashboard (looks like `postgresql://user:pass@ep-xxx.region.aws.neon.tech/dbname?sslmode=require`)
+3. Set it as `DATABASE_URL` in `.env`
+
+pgvector is pre-installed on Neon — the schema enables the extension automatically.
+
+### Option 2 — Docker Compose
 
 ```bash
-psql -d gdelt_pulse -c "\dt"
+docker compose up -d db
 ```
 
-You should see `articles`, `clusters`, `cluster_memberships`, `pipeline_state`, and `api_keys`.
+This starts a `pgvector/pgvector:pg16` container with fixed local-only credentials (`gdelt`/`gdelt`/`gdelt_pulse`) bound to `127.0.0.1:5432`. Set `DATABASE_URL` in `.env` to:
 
-See [Database Design](database_design.md) for full schema documentation and design rationale.
+```bash
+DATABASE_URL=postgresql://gdelt:gdelt@localhost:5432/gdelt_pulse
+```
+
+### Option 3 — Local Postgres install
+
+If you already have Postgres running, just create a database and install pgvector:
+
+```bash
+createdb gdelt_pulse
+psql -d gdelt_pulse -c "CREATE EXTENSION IF NOT EXISTS vector;"
+```
+
+To install pgvector:
+
+```bash
+brew install pgvector                       # macOS
+sudo apt install postgresql-15-pgvector     # Ubuntu/Debian
+```
+
+Then point `DATABASE_URL` at it:
+
+```bash
+DATABASE_URL=postgresql://your_user:your_password@localhost:5432/gdelt_pulse
+```
 
 ## Configuration
 
-Edit `.env` with your PostgreSQL credentials:
-
-```bash
-# Option A: Individual connection parameters
-PGHOST=localhost
-PGPORT=5432
-PGUSER=postgres
-PGPASSWORD=your_password
-PGDATABASE=gdelt_pulse
-
-# Option B: Connection URL (takes precedence over individual params)
-# DATABASE_URL=postgresql://user:pass@localhost:5432/gdelt_pulse
-```
-
-### Optional settings
-
-```bash
-# Pipeline cycle interval in seconds (default: 900 = 15 minutes)
-PIPELINE_INTERVAL=900
-
-# Embedding backend (fastembed is the only supported option)
-EMBEDDING_BACKEND=fastembed
-```
-
-### Auth settings (required for API key features)
-
-```bash
-# Clerk authentication (https://clerk.com)
-CLERK_PUBLISHABLE_KEY=pk_test_...
-CLERK_SECRET_KEY=sk_test_...
-CLERK_JWKS_URL=https://<your-clerk-domain>/.well-known/jwks.json
-
-# Upstash Redis for distributed rate limiting (optional)
-UPSTASH_REDIS_REST_URL=https://...
-UPSTASH_REDIS_REST_TOKEN=...
-```
+The only required setting is `DATABASE_URL`. See `.env.example` for the full list of optional variables (pipeline interval, retention, Clerk auth for the dashboard, Upstash Redis for rate limiting).
 
 ## First Run
 
@@ -163,18 +130,6 @@ uv run --group api pytest tests/ -q
 ```
 
 You should see all 353 tests pass. Tests use mocked database connections and don't require a running PostgreSQL instance.
-
-## Windows Users
-
-If you're using Windows Command Prompt, set the PostgreSQL user explicitly:
-
-```cmd
-# Current session only
-set PGUSER=postgres
-
-# Persistent across sessions
-setx PGUSER postgres
-```
 
 ## Next Steps
 

@@ -41,7 +41,9 @@ class TestCleanupOldArticles:
         assert result == 12
         sql = pool._mock_cur.execute.call_args[0][0]
         assert "DELETE FROM articles" in sql
-        assert "published_at" in sql
+        assert "gdelt_timestamp" in sql
+        params = pool._mock_cur.execute.call_args[0][1]
+        assert params == (168,)
 
     def test_returns_zero_when_none_deleted(self):
         from gdelt_event_pipeline.runner import _cleanup_old_articles

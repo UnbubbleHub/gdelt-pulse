@@ -48,13 +48,13 @@ GDELT stream  -->  normalize  -->  embed  -->  cluster  -->  search API
 
 ## Quick Start
 
-**Prerequisites:** Python 3.11+, PostgreSQL 15+ with [pgvector](https://github.com/pgvector/pgvector), [uv](https://docs.astral.sh/uv/)
+**Prerequisites:** Python 3.11+, [uv](https://docs.astral.sh/uv/), and a Postgres 15+ database with [pgvector](https://github.com/pgvector/pgvector). The fastest path is a free [Neon](https://neon.tech/) project — pgvector comes pre-installed and the API auto-applies the schema on first boot. Docker Compose and local Postgres are also supported (see [Getting Started](docs/getting-started.md)).
 
 ```bash
 git clone https://github.com/UnbubbleHub/gdelt-pulse.git
 cd gdelt-pulse
 uv sync
-cp .env.example .env   # edit with your Postgres credentials
+cp .env.example .env   # set DATABASE_URL
 ```
 
 ```bash

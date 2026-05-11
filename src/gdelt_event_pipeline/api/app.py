@@ -15,11 +15,15 @@ from fastapi.staticfiles import StaticFiles
 from gdelt_event_pipeline.api.middleware import rate_limit_middleware
 from gdelt_event_pipeline.api.routers.articles import router as articles_router
 from gdelt_event_pipeline.api.routers.clusters import router as clusters_router
+from gdelt_event_pipeline.api.routers.health import router as health_router
 from gdelt_event_pipeline.api.routers.keys import router as keys_router
 from gdelt_event_pipeline.api.routers.search import router as search_router
+from gdelt_event_pipeline.config.log_setup import setup_logging
 from gdelt_event_pipeline.config.settings import get_settings
 from gdelt_event_pipeline.storage.database import close_pool, init_pool
 from gdelt_event_pipeline.storage.migrations import ensure_schema
+
+setup_logging()
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -64,6 +68,7 @@ app.include_router(search_router)
 app.include_router(clusters_router)
 app.include_router(articles_router)
 app.include_router(keys_router)
+app.include_router(health_router)
 
 
 # ── Static page routes ──────────────────────────────────────────────

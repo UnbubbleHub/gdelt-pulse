@@ -19,6 +19,7 @@ import time
 from datetime import UTC, datetime
 
 from gdelt_event_pipeline.clustering.pipeline import run_clustering
+from gdelt_event_pipeline.config.log_setup import setup_logging
 from gdelt_event_pipeline.config.settings import get_settings
 from gdelt_event_pipeline.embeddings.pipeline import run_embedding
 from gdelt_event_pipeline.ingestion.pipeline import run_ingestion, run_title_scraping
@@ -59,10 +60,8 @@ def _cleanup_old_articles(retention_hours: int) -> int:
     with pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                """
-                DELETE FROM articles
-                WHERE published_at < NOW() - INTERVAL '%s hours'
-                """,
+                "DELETE FROM articles "
+                "WHERE gdelt_timestamp < NOW() - make_interval(hours => %s)",
                 (retention_hours,),
             )
             deleted = cur.rowcount
@@ -141,11 +140,7 @@ def run_cycle(settings) -> dict[str, str]:
 
 
 def main() -> None:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)-8s %(name)s  %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
+    setup_logging()
 
     interval = int(os.environ.get("PIPELINE_INTERVAL", DEFAULT_INTERVAL))
     settings = get_settings()

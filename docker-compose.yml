@@ -2,18 +2,22 @@ services:
   db:
     image: pgvector/pgvector:pg16
     restart: unless-stopped
+    # Local-only Postgres for offline dev. Credentials are fixed (gdelt/gdelt)
+    # and the port is bound to localhost — no security exposure.
+    # The host process connects with:
+    #   DATABASE_URL=postgresql://gdelt:gdelt@localhost:5432/gdelt_pulse
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-gdelt}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
-      POSTGRES_DB: ${POSTGRES_DB:-gdelt_pulse}
+      POSTGRES_USER: gdelt
+      POSTGRES_PASSWORD: gdelt
+      POSTGRES_DB: gdelt_pulse
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./sql/001_schema.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
       - ./sql/002_api_keys.sql:/docker-entrypoint-initdb.d/002_api_keys.sql:ro
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gdelt} -d ${POSTGRES_DB:-gdelt_pulse}"]
+      test: ["CMD-SHELL", "pg_isready -U gdelt -d gdelt_pulse"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -28,11 +32,7 @@ services:
       db:
         condition: service_healthy
     environment:
-      PGHOST: db
-      PGPORT: "5432"
-      PGUSER: ${POSTGRES_USER:-gdelt}
-      PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
-      PGDATABASE: ${POSTGRES_DB:-gdelt_pulse}
+      DATABASE_URL: postgresql://gdelt:gdelt@db:5432/gdelt_pulse
       PIPELINE_INTERVAL: "900"
 
 volumes:

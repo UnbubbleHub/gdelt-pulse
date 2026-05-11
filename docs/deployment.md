@@ -104,16 +104,9 @@ Set these in the Railway service settings:
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `DATABASE_URL` | Yes | Neon connection string (same as Vercel) |
-| `PGHOST` | Alt | Can use individual PG vars instead of DATABASE_URL |
-| `PGPORT` | Alt | Default: 5432 |
-| `PGUSER` | Alt | Database user |
-| `PGPASSWORD` | Alt | Database password |
-| `PGDATABASE` | Alt | Database name |
 | `EMBEDDING_BACKEND` | Yes | Set to `fastembed` |
 | `PIPELINE_INTERVAL` | No | Cycle interval in seconds (default: 900) |
-| `RETENTION_HOURS` | No | Delete articles older than this (default: 72 = 3 days) |
-
-If using Railway's database plugin, the PG variables are injected automatically.
+| `RETENTION_HOURS` | No | Delete articles older than this (default: 168 = 7 days; 0 disables) |
 
 ### Monitoring
 
@@ -147,12 +140,15 @@ After both services are running:
 
 ---
 
-## Local Development with Docker
+## Local Development
 
-For local development, `docker-compose.yml` provides a PostgreSQL + pgvector database:
+The recommended local setup is documented in [Getting Started](getting-started.md). It supports three database options (Neon, Docker Compose, local Postgres) all driven by a single `DATABASE_URL` env var that mirrors production.
+
+For an offline workflow, `docker-compose.yml` ships a `pgvector/pgvector:pg16` container with fixed local creds bound to `127.0.0.1:5432`:
 
 ```bash
 docker compose up -d db
+# DATABASE_URL=postgresql://gdelt:gdelt@localhost:5432/gdelt_pulse
 ```
 
 Then run the API and pipeline natively:
