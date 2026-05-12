@@ -106,6 +106,7 @@ Set these in the Railway service settings:
 | `EMBEDDING_BACKEND` | Yes | Set to `fastembed` |
 | `PIPELINE_INTERVAL` | No | Cycle interval in seconds (default: 900) |
 | `RETENTION_HOURS` | No | Delete articles older than this (default: 168 = 7 days; 0 disables) |
+| `HEALTHCHECKS_PING_URL` | No | Healthchecks.io URL pinged after each successful cycle (dead-man-switch) |
 
 ### Monitoring
 

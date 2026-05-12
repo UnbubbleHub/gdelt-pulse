@@ -10,6 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/UnbubbleHub/gdelt-pulse/stargazers"><img src="https://img.shields.io/github/stars/UnbubbleHub/gdelt-pulse?style=flat" alt="Stars"></a>
+  <a href="https://gdelt-pulse-eosin.vercel.app/api/health"><img src="https://img.shields.io/website?url=https%3A%2F%2Fgdelt-pulse-eosin.vercel.app%2Fapi%2Fhealth&label=api&up_message=live&down_message=down" alt="API status"></a>
   <img src="https://img.shields.io/badge/python-3.11+-3776ab.svg?logo=python&logoColor=white" alt="Python 3.11+">
   <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
   <img src="https://img.shields.io/badge/fastapi-0.115+-009688.svg?logo=fastapi&logoColor=white" alt="FastAPI">

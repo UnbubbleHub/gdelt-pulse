@@ -22,7 +22,7 @@ router = APIRouter()
 HEARTBEAT_STALE_AFTER_MINUTES = 60
 
 
-@router.get("/api/health")
+@router.api_route("/api/health", methods=["GET", "HEAD"])
 def health():
     from gdelt_event_pipeline.storage.database import get_pool
 

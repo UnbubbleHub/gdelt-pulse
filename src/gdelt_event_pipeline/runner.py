@@ -19,6 +19,8 @@ import sys
 import time
 from datetime import UTC, datetime
 
+import httpx
+
 from gdelt_event_pipeline.clustering.pipeline import run_clustering
 from gdelt_event_pipeline.config.log_setup import setup_logging
 from gdelt_event_pipeline.config.settings import get_settings
@@ -80,6 +82,34 @@ def _peak_rss_mb() -> float:
     """Peak resident set size in MB. ru_maxrss is KB on Linux, bytes on macOS."""
     raw = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     return raw / 1024 if sys.platform == "linux" else raw / (1024 * 1024)
+
+
+def _collect_metrics() -> dict[str, int]:
+    """Snapshot pipeline-wide counters for end-of-cycle METRIC line."""
+    pool = get_pool()
+    with pool.connection() as conn, conn.cursor() as cur:
+        cur.execute("SELECT COUNT(*) FROM articles")
+        articles_total = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM articles WHERE embedding IS NOT NULL")
+        embedded_total = cur.fetchone()[0]
+        cur.execute("SELECT pg_database_size(current_database()) / (1024 * 1024)")
+        db_mb = cur.fetchone()[0]
+    return {
+        "articles_total": int(articles_total),
+        "embedded_total": int(embedded_total),
+        "db_mb": int(db_mb),
+    }
+
+
+def _ping_healthchecks() -> None:
+    """Fire-and-forget dead-man-switch ping. Silent if HEALTHCHECKS_PING_URL unset."""
+    url = os.environ.get("HEALTHCHECKS_PING_URL")
+    if not url:
+        return
+    try:
+        httpx.get(url, timeout=5.0)
+    except Exception as exc:
+        logger.warning("Healthchecks ping failed: %s", exc)
 
 
 def run_cycle(settings) -> dict[str, str]:
@@ -209,14 +239,29 @@ def main() -> None:
             summary = run_cycle(settings)
 
             elapsed = time.monotonic() - t0
+            peak_rss_mb = _peak_rss_mb()
             parts = [f"{k}: {v}" for k, v in summary.items()]
             logger.info(
                 "=== Cycle %d done in %.1fs | peak_rss=%.0fMB | %s ===",
                 cycle,
                 elapsed,
-                _peak_rss_mb(),
+                peak_rss_mb,
                 " | ".join(parts),
             )
+
+            try:
+                m = _collect_metrics()
+                logger.info(
+                    "METRIC cycle_seconds=%.1f articles_total=%d embedded_total=%d "
+                    "db_mb=%d peak_rss_mb=%.0f",
+                    elapsed,
+                    m["articles_total"],
+                    m["embedded_total"],
+                    m["db_mb"],
+                    peak_rss_mb,
+                )
+            except Exception:
+                logger.exception("Failed to collect cycle metrics")
 
             if _is_failed_cycle(summary):
                 consecutive_failures += 1
@@ -239,6 +284,7 @@ def main() -> None:
                     )
                 consecutive_failures = 0
                 wait = max(0, interval - elapsed)
+                _ping_healthchecks()
 
             if shutdown:
                 break
