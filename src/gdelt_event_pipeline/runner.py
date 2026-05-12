@@ -72,6 +72,26 @@ def _cleanup_old_articles(retention_hours: int) -> int:
     return deleted
 
 
+def _cleanup_orphan_clusters() -> int:
+    """Delete clusters whose members were all removed by retention cascade."""
+    pool = get_pool()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                DELETE FROM clusters c
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM cluster_memberships m WHERE m.cluster_id = c.id
+                )
+                """
+            )
+            deleted = cur.rowcount
+        conn.commit()
+    if deleted:
+        logger.info("Cleaned up %d orphan clusters", deleted)
+    return deleted
+
+
 def _utcnow() -> str:
     return datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
 
@@ -120,6 +140,14 @@ def run_cycle(settings) -> dict[str, str]:
             summary["retention"] = f"deleted={expired}"
     except Exception:
         logger.exception("Retention cleanup failed")
+
+    # 2d. Delete clusters left empty by retention cascade
+    try:
+        orphans = _cleanup_orphan_clusters()
+        if orphans:
+            summary["orphans"] = f"deleted={orphans}"
+    except Exception:
+        logger.exception("Orphan cluster cleanup failed")
 
     # 3. Embed
     try:
@@ -188,8 +216,10 @@ def main() -> None:
         step = consecutive_failures - _BACKOFF_GRACE  # 1, 2, 3, ...
         return min(_BACKOFF_START * (2 ** (step - 1)), _BACKOFF_CAP)
 
+    _CLEANUP_KEYS = {"cleanup", "retention", "orphans"}
+
     def _is_failed_cycle(summary: dict[str, str]) -> bool:
-        tracked = {v for k, v in summary.items() if k != "cleanup"}
+        tracked = {v for k, v in summary.items() if k not in _CLEANUP_KEYS}
         return bool(tracked) and all(v == "ERROR" for v in tracked)
 
     consecutive_failures = 0
