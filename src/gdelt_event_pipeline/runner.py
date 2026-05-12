@@ -33,26 +33,6 @@ DEFAULT_INTERVAL = 15 * 60  # 15 minutes — matches GDELT update frequency
 TITLE_SCRAPE_BATCH = None  # no limit — scrape all new untitled articles each cycle
 
 
-def _cleanup_failed_articles() -> int:
-    """Delete articles that failed scraping and will never be useful."""
-    pool = get_pool()
-    with pool.connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                DELETE FROM articles
-                WHERE title IS NULL
-                  AND scrape_attempts >= 1
-                  AND embedding IS NULL
-                """
-            )
-            deleted = cur.rowcount
-        conn.commit()
-    if deleted:
-        logger.info("Cleaned up %d failed articles", deleted)
-    return deleted
-
-
 def _cleanup_old_articles(retention_hours: int) -> int:
     """Delete articles older than the retention window."""
     if retention_hours <= 0:
@@ -125,15 +105,11 @@ def run_cycle(settings) -> dict[str, str]:
         logger.exception("Title scraping failed")
         summary["titles"] = "ERROR"
 
-    # 2b. Delete articles that failed scraping (no title, already attempted)
-    try:
-        deleted = _cleanup_failed_articles()
-        if deleted:
-            summary["cleanup"] = f"deleted={deleted}"
-    except Exception:
-        logger.exception("Cleanup failed")
-
-    # 2c. Delete articles older than the retention window
+    # 2b. Delete articles older than the retention window.
+    # Retention is the single cleanup path for title-less rows too: failed
+    # scrapes have scrape_attempts >= 1 which prevents re-scrape, and the
+    # upsert's ON CONFLICT does not reset the counter, so they age out
+    # naturally without re-ingestion churn.
     try:
         expired = _cleanup_old_articles(settings.retention.hours)
         if expired:
@@ -141,7 +117,7 @@ def run_cycle(settings) -> dict[str, str]:
     except Exception:
         logger.exception("Retention cleanup failed")
 
-    # 2d. Delete clusters left empty by retention cascade
+    # 2c. Delete clusters left empty by retention cascade
     try:
         orphans = _cleanup_orphan_clusters()
         if orphans:
@@ -216,7 +192,7 @@ def main() -> None:
         step = consecutive_failures - _BACKOFF_GRACE  # 1, 2, 3, ...
         return min(_BACKOFF_START * (2 ** (step - 1)), _BACKOFF_CAP)
 
-    _CLEANUP_KEYS = {"cleanup", "retention", "orphans"}
+    _CLEANUP_KEYS = {"retention", "orphans"}
 
     def _is_failed_cycle(summary: dict[str, str]) -> bool:
         tracked = {v for k, v in summary.items() if k not in _CLEANUP_KEYS}

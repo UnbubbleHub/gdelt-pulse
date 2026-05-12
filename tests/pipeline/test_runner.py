@@ -9,28 +9,6 @@ from tests.conftest import make_mock_pool
 MODULE = "gdelt_event_pipeline.runner"
 
 
-class TestCleanupFailedArticles:
-    def test_deletes_articles(self):
-        from gdelt_event_pipeline.runner import _cleanup_failed_articles
-
-        pool = make_mock_pool(rowcount=5)
-        with patch(f"{MODULE}.get_pool", return_value=pool):
-            result = _cleanup_failed_articles()
-        assert result == 5
-        sql = pool._mock_cur.execute.call_args[0][0]
-        assert "DELETE FROM articles" in sql
-        assert "title IS NULL" in sql
-        assert "scrape_attempts >= 1" in sql
-
-    def test_returns_zero_when_none_deleted(self):
-        from gdelt_event_pipeline.runner import _cleanup_failed_articles
-
-        pool = make_mock_pool(rowcount=0)
-        with patch(f"{MODULE}.get_pool", return_value=pool):
-            result = _cleanup_failed_articles()
-        assert result == 0
-
-
 class TestCleanupOldArticles:
     def test_deletes_old_articles(self):
         from gdelt_event_pipeline.runner import _cleanup_old_articles
@@ -212,7 +190,7 @@ class TestBackoffLogic:
 
     def test_is_failed_cycle_all_errors(self):
         def _is_failed(summary):
-            cleanup_keys = {"cleanup", "retention", "orphans"}
+            cleanup_keys = {"retention", "orphans"}
             tracked = {v for k, v in summary.items() if k not in cleanup_keys}
             return bool(tracked) and all(v == "ERROR" for v in tracked)
 
@@ -220,23 +198,23 @@ class TestBackoffLogic:
 
     def test_is_failed_cycle_partial_success(self):
         def _is_failed(summary):
-            cleanup_keys = {"cleanup", "retention", "orphans"}
+            cleanup_keys = {"retention", "orphans"}
             tracked = {v for k, v in summary.items() if k not in cleanup_keys}
             return bool(tracked) and all(v == "ERROR" for v in tracked)
 
         assert _is_failed({"ingest": "ok", "embed": "ERROR"}) is False
 
-    def test_is_failed_cycle_cleanup_excluded(self):
+    def test_is_failed_cycle_retention_excluded(self):
         def _is_failed(summary):
-            cleanup_keys = {"cleanup", "retention", "orphans"}
+            cleanup_keys = {"retention", "orphans"}
             tracked = {v for k, v in summary.items() if k not in cleanup_keys}
             return bool(tracked) and all(v == "ERROR" for v in tracked)
 
-        assert _is_failed({"ingest": "ERROR", "cleanup": "deleted=3"}) is True
+        assert _is_failed({"ingest": "ERROR", "retention": "deleted=3"}) is True
 
     def test_is_failed_cycle_empty_summary(self):
         def _is_failed(summary):
-            cleanup_keys = {"cleanup", "retention", "orphans"}
+            cleanup_keys = {"retention", "orphans"}
             tracked = {v for k, v in summary.items() if k not in cleanup_keys}
             return bool(tracked) and all(v == "ERROR" for v in tracked)
 

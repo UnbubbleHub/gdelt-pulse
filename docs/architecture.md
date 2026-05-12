@@ -97,7 +97,7 @@ while running:
     scrape_titles()   # fill missing titles via HTTP
     embed()           # generate vectors for new articles
     cluster()         # assign articles to event clusters
-    cleanup()         # remove articles that failed title scraping
+    retention()       # delete articles past the retention window
     sleep(interval)   # default: 900s (15 min)
 ```
 
