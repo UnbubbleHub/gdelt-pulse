@@ -60,9 +60,8 @@ Set these in the Vercel dashboard (Settings > Environment Variables):
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `DATABASE_URL` | Yes | Neon connection string |
-| `CLERK_PUBLISHABLE_KEY` | Yes | Clerk frontend key (for dashboard auth widget) |
-| `CLERK_SECRET_KEY` | Yes | Clerk backend key (for JWT verification) |
-| `CLERK_JWKS_URL` | Yes | Clerk JWKS endpoint for key rotation |
+| `CLERK_PUBLISHABLE_KEY` | Yes | Clerk frontend key (returned by `/api/auth/config`, used by the dashboard JS SDK) |
+| `CLERK_JWKS_URL` | Yes | Clerk JWKS endpoint used by the backend to fetch RSA public keys and verify JWTs (supports key rotation) |
 | `UPSTASH_REDIS_REST_URL` | Recommended | Upstash Redis URL for distributed rate limiting |
 | `UPSTASH_REDIS_REST_TOKEN` | Recommended | Upstash Redis auth token |
 
