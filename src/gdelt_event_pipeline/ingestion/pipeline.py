@@ -9,6 +9,7 @@ from gdelt_event_pipeline.ingestion.gkg_fetcher import (
     download_and_parse_gkg,
     get_latest_gkg_url,
 )
+from gdelt_event_pipeline.ingestion.scraper import MAX_WORKERS as DEFAULT_SCRAPE_WORKERS
 from gdelt_event_pipeline.normalization.normalize import normalize_row
 from gdelt_event_pipeline.storage.articles import (
     get_untitled_articles,
@@ -129,7 +130,7 @@ def run_title_scraping(
     *,
     batch_size: int | None = None,
     timeout: int = 10,
-    max_workers: int = 32,
+    max_workers: int = DEFAULT_SCRAPE_WORKERS,
 ) -> tuple[int, int]:
     """Scrape titles for articles that don't have one yet.
 
