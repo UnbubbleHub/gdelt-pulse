@@ -1,4 +1,4 @@
-"""Tests for pipeline runner."""
+"""Tests for pipeline runner (micro-cycle architecture)."""
 
 from __future__ import annotations
 
@@ -7,6 +7,9 @@ from unittest.mock import MagicMock, patch
 from tests.conftest import make_mock_pool
 
 MODULE = "gdelt_event_pipeline.runner"
+
+
+# ── Cleanup helpers (preserved from cycle-based runner) ────────────
 
 
 class TestCleanupOldArticles:
@@ -59,166 +62,217 @@ class TestCleanupOrphanClusters:
         assert result == 0
 
 
-class TestRunCycle:
-    def test_runs_all_stages(self):
-        from gdelt_event_pipeline.runner import run_cycle
+# ── Stage helpers (new in micro-cycle architecture) ────────────────
 
-        mock_settings = MagicMock()
-        mock_settings.embedding = MagicMock()
-        mock_settings.clustering.window_hours = 72
-        mock_settings.retention.hours = 168
 
-        ing_result = MagicMock()
-        ing_result.rows_fetched = 10
-        ing_result.rows_upserted = 8
-        ing_result.duplicate_urls = 2
-        ing_result.rows_failed = 0
+class TestDoIngest:
+    def test_success(self):
+        from gdelt_event_pipeline.runner import _do_ingest
 
-        emb_result = MagicMock()
-        emb_result.articles_fetched = 5
-        emb_result.articles_embedded = 5
-        emb_result.articles_skipped = 0
-        emb_result.articles_failed = 0
-
-        cl_result = MagicMock()
-        cl_result.articles_processed = 5
-        cl_result.assigned_to_existing = 3
-        cl_result.new_clusters_created = 2
-        cl_result.articles_failed = 0
-
-        pool = make_mock_pool(rowcount=0)
-
+        ing = MagicMock(rows_fetched=10, rows_upserted=8, duplicate_urls=2, rows_failed=0)
         with (
-            patch(f"{MODULE}.run_ingestion", return_value=ing_result),
+            patch(f"{MODULE}.run_ingestion", return_value=ing),
             patch(f"{MODULE}.run_title_scraping", return_value=(5, 4)),
-            patch(f"{MODULE}.run_embedding", return_value=emb_result),
-            patch(f"{MODULE}.run_clustering", return_value=cl_result),
-            patch(f"{MODULE}.get_pool", return_value=pool),
         ):
-            summary = run_cycle(mock_settings)
+            ok, summary = _do_ingest(MagicMock())
+        assert ok is True
+        assert "fetched=10" in summary["ingest"]
+        assert "upserted=8" in summary["ingest"]
+        assert "attempted=5" in summary["titles"]
+        assert "succeeded=4" in summary["titles"]
 
-        assert "ingest" in summary
-        assert "titles" in summary
-        assert "embed" in summary
-        assert "cluster" in summary
-        assert "ERROR" not in summary["ingest"]
-        assert "ERROR" not in summary["embed"]
-
-    def test_stage_failure_isolated(self):
-        from gdelt_event_pipeline.runner import run_cycle
-
-        mock_settings = MagicMock()
-        mock_settings.embedding = MagicMock()
-        mock_settings.clustering.window_hours = 72
-
-        pool = make_mock_pool(rowcount=0)
+    def test_ingestion_failure(self):
+        from gdelt_event_pipeline.runner import _do_ingest
 
         with (
             patch(f"{MODULE}.run_ingestion", side_effect=RuntimeError("boom")),
             patch(f"{MODULE}.run_title_scraping", return_value=(0, 0)),
-            patch(f"{MODULE}.run_embedding", side_effect=RuntimeError("boom")),
-            patch(f"{MODULE}.run_clustering", side_effect=RuntimeError("boom")),
-            patch(f"{MODULE}.get_pool", return_value=pool),
         ):
-            summary = run_cycle(mock_settings)
-
+            ok, summary = _do_ingest(MagicMock())
+        assert ok is False
         assert summary["ingest"] == "ERROR"
+        # Title scrape still runs and reports
+        assert summary["titles"] == "attempted=0 succeeded=0"
+
+    def test_scrape_failure(self):
+        from gdelt_event_pipeline.runner import _do_ingest
+
+        ing = MagicMock(rows_fetched=1, rows_upserted=1, duplicate_urls=0, rows_failed=0)
+        with (
+            patch(f"{MODULE}.run_ingestion", return_value=ing),
+            patch(f"{MODULE}.run_title_scraping", side_effect=RuntimeError("net")),
+        ):
+            ok, summary = _do_ingest(MagicMock())
+        assert ok is False
+        assert summary["ingest"].startswith("fetched=1")
+        assert summary["titles"] == "ERROR"
+
+
+class TestDoEmbed:
+    def test_success(self):
+        from gdelt_event_pipeline.runner import _do_embed
+
+        emb = MagicMock(
+            articles_fetched=5, articles_embedded=4, articles_skipped=1, articles_failed=0
+        )
+        with patch(f"{MODULE}.run_embedding", return_value=emb) as p:
+            ok, count, summary = _do_embed(limit=200)
+        assert ok is True
+        assert count == 4
+        assert "embedded=4" in summary["embed"]
+        # Confirm limit is passed through
+        assert p.call_args.kwargs.get("limit") == 200
+
+    def test_zero_embedded_returns_ok(self):
+        from gdelt_event_pipeline.runner import _do_embed
+
+        emb = MagicMock(
+            articles_fetched=0, articles_embedded=0, articles_skipped=0, articles_failed=0
+        )
+        with patch(f"{MODULE}.run_embedding", return_value=emb):
+            ok, count, _ = _do_embed(limit=200)
+        assert ok is True
+        assert count == 0
+
+    def test_failure(self):
+        from gdelt_event_pipeline.runner import _do_embed
+
+        with patch(f"{MODULE}.run_embedding", side_effect=RuntimeError("boom")):
+            ok, count, summary = _do_embed(limit=200)
+        assert ok is False
+        assert count == 0
         assert summary["embed"] == "ERROR"
+
+
+class TestDoCluster:
+    def test_success(self):
+        from gdelt_event_pipeline.runner import _do_cluster
+
+        cl = MagicMock(
+            articles_processed=5,
+            assigned_to_existing=3,
+            new_clusters_created=2,
+            articles_failed=0,
+        )
+        with patch(f"{MODULE}.run_clustering", return_value=cl) as p:
+            ok, summary = _do_cluster(limit=400, window_hours=72)
+        assert ok is True
+        assert "processed=5" in summary["cluster"]
+        assert p.call_args.kwargs.get("limit") == 400
+        assert p.call_args.kwargs.get("max_age_hours") == 72
+
+    def test_failure(self):
+        from gdelt_event_pipeline.runner import _do_cluster
+
+        with patch(f"{MODULE}.run_clustering", side_effect=RuntimeError("boom")):
+            ok, summary = _do_cluster(limit=400, window_hours=72)
+        assert ok is False
         assert summary["cluster"] == "ERROR"
-        assert "titles" in summary
 
-    def test_no_gravity_refresh(self):
-        """Gravity refresh was removed — verify it's not in the summary."""
-        from gdelt_event_pipeline.runner import run_cycle
 
-        mock_settings = MagicMock()
-        mock_settings.embedding = MagicMock()
-        mock_settings.clustering.window_hours = 72
-
-        pool = make_mock_pool(rowcount=0)
+class TestDoCleanup:
+    def test_reports_when_both_deletes_happen(self):
+        from gdelt_event_pipeline.runner import _do_cleanup
 
         with (
-            patch(f"{MODULE}.run_ingestion", return_value=MagicMock()),
-            patch(f"{MODULE}.run_title_scraping", return_value=(0, 0)),
-            patch(f"{MODULE}.run_embedding", return_value=MagicMock()),
-            patch(f"{MODULE}.run_clustering", return_value=MagicMock()),
-            patch(f"{MODULE}.get_pool", return_value=pool),
+            patch(f"{MODULE}._cleanup_old_articles", return_value=12),
+            patch(f"{MODULE}._cleanup_orphan_clusters", return_value=3),
         ):
-            summary = run_cycle(mock_settings)
+            summary = _do_cleanup(retention_hours=168)
+        assert summary["retention"] == "deleted=12"
+        assert summary["orphans"] == "deleted=3"
 
-        assert "gravity_refresh" not in summary
+    def test_omits_keys_when_nothing_deleted(self):
+        from gdelt_event_pipeline.runner import _do_cleanup
+
+        with (
+            patch(f"{MODULE}._cleanup_old_articles", return_value=0),
+            patch(f"{MODULE}._cleanup_orphan_clusters", return_value=0),
+        ):
+            summary = _do_cleanup(retention_hours=168)
+        assert "retention" not in summary
+        assert "orphans" not in summary
+
+    def test_swallows_exceptions(self):
+        from gdelt_event_pipeline.runner import _do_cleanup
+
+        with (
+            patch(f"{MODULE}._cleanup_old_articles", side_effect=RuntimeError("boom")),
+            patch(f"{MODULE}._cleanup_orphan_clusters", return_value=5),
+        ):
+            summary = _do_cleanup(retention_hours=168)
+        # Retention errored; orphan-cluster cleanup still ran and reported.
+        assert summary.get("orphans") == "deleted=5"
+        assert "retention" not in summary
 
 
-class TestBackoffLogic:
-    """Test the backoff functions defined inside main().
+# ── Config / env wiring ────────────────────────────────────────────
 
-    Since _next_wait and _is_failed_cycle are closures, we recreate
-    their logic here to validate the algorithm.
-    """
 
-    def test_next_wait_within_grace_period(self):
-        grace = 3
-        interval = 900
-        backoff_start = 30 * 60
+_RUNNER_ENV_VARS = (
+    "PIPELINE_TICK_SECONDS",
+    "INGEST_INTERVAL_SECONDS",
+    "EMBED_PER_TICK",
+    "CLUSTER_PER_TICK",
+    "CLEANUP_INTERVAL_SECONDS",
+    "PIPELINE_INTERVAL",
+    "HEALTHCHECKS_PING_URL",
+)
 
-        def _next_wait(failures):
-            if failures <= grace:
-                return interval
-            step = failures - grace
-            return min(backoff_start * (2 ** (step - 1)), 120 * 60)
 
-        assert _next_wait(0) == interval
-        assert _next_wait(1) == interval
-        assert _next_wait(3) == interval
+class TestRunnerConfig:
+    def test_defaults(self, monkeypatch):
+        for k in _RUNNER_ENV_VARS:
+            monkeypatch.delenv(k, raising=False)
+        from gdelt_event_pipeline.runner import RunnerConfig
 
-    def test_next_wait_after_grace(self):
-        grace = 3
-        interval = 900
-        backoff_start = 30 * 60
-        cap = 120 * 60
+        cfg = RunnerConfig()
+        assert cfg.tick_seconds == 60
+        assert cfg.ingest_interval == 15 * 60
+        assert cfg.embed_per_tick == 200
+        assert cfg.cluster_per_tick == 400
+        assert cfg.cleanup_interval == 60 * 60
+        assert cfg.healthcheck_url == ""
 
-        def _next_wait(failures):
-            if failures <= grace:
-                return interval
-            step = failures - grace
-            return min(backoff_start * (2 ** (step - 1)), cap)
+    def test_legacy_pipeline_interval_alias(self, monkeypatch):
+        for k in _RUNNER_ENV_VARS:
+            monkeypatch.delenv(k, raising=False)
+        monkeypatch.setenv("PIPELINE_INTERVAL", "1800")
+        from gdelt_event_pipeline.runner import RunnerConfig
 
-        assert _next_wait(4) == 30 * 60
-        assert _next_wait(5) == 60 * 60
-        assert _next_wait(6) == 120 * 60
-        assert _next_wait(10) == cap
+        cfg = RunnerConfig()
+        assert cfg.ingest_interval == 1800
 
-    def test_is_failed_cycle_all_errors(self):
-        def _is_failed(summary):
-            cleanup_keys = {"retention", "orphans"}
-            tracked = {v for k, v in summary.items() if k not in cleanup_keys}
-            return bool(tracked) and all(v == "ERROR" for v in tracked)
+    def test_new_var_overrides_legacy(self, monkeypatch):
+        for k in _RUNNER_ENV_VARS:
+            monkeypatch.delenv(k, raising=False)
+        monkeypatch.setenv("PIPELINE_INTERVAL", "9999")
+        monkeypatch.setenv("INGEST_INTERVAL_SECONDS", "600")
+        from gdelt_event_pipeline.runner import RunnerConfig
 
-        assert _is_failed({"ingest": "ERROR", "embed": "ERROR"}) is True
+        cfg = RunnerConfig()
+        assert cfg.ingest_interval == 600
 
-    def test_is_failed_cycle_partial_success(self):
-        def _is_failed(summary):
-            cleanup_keys = {"retention", "orphans"}
-            tracked = {v for k, v in summary.items() if k not in cleanup_keys}
-            return bool(tracked) and all(v == "ERROR" for v in tracked)
+    def test_invalid_int_falls_back_to_default(self, monkeypatch):
+        for k in _RUNNER_ENV_VARS:
+            monkeypatch.delenv(k, raising=False)
+        monkeypatch.setenv("EMBED_PER_TICK", "not-a-number")
+        from gdelt_event_pipeline.runner import RunnerConfig
 
-        assert _is_failed({"ingest": "ok", "embed": "ERROR"}) is False
+        cfg = RunnerConfig()
+        assert cfg.embed_per_tick == 200
 
-    def test_is_failed_cycle_retention_excluded(self):
-        def _is_failed(summary):
-            cleanup_keys = {"retention", "orphans"}
-            tracked = {v for k, v in summary.items() if k not in cleanup_keys}
-            return bool(tracked) and all(v == "ERROR" for v in tracked)
+    def test_healthcheck_url_trimmed(self, monkeypatch):
+        for k in _RUNNER_ENV_VARS:
+            monkeypatch.delenv(k, raising=False)
+        monkeypatch.setenv("HEALTHCHECKS_PING_URL", "  https://hc-ping.com/abc  ")
+        from gdelt_event_pipeline.runner import RunnerConfig
 
-        assert _is_failed({"ingest": "ERROR", "retention": "deleted=3"}) is True
+        cfg = RunnerConfig()
+        assert cfg.healthcheck_url == "https://hc-ping.com/abc"
 
-    def test_is_failed_cycle_empty_summary(self):
-        def _is_failed(summary):
-            cleanup_keys = {"retention", "orphans"}
-            tracked = {v for k, v in summary.items() if k not in cleanup_keys}
-            return bool(tracked) and all(v == "ERROR" for v in tracked)
 
-        assert _is_failed({}) is False
+# ── Integration touch points ───────────────────────────────────────
 
 
 class TestEnsureSchemaIntegration:
