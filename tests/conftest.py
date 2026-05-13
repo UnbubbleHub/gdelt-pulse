@@ -12,6 +12,22 @@ from fastapi.testclient import TestClient
 TEST_USER_ID = "user_test123"
 
 
+# ── Global isolation ────────────────────────────────────────────────
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limit():
+    """Clear the in-memory rate limit store between tests.
+
+    The middleware keeps a process-wide dict keyed by client IP. Every
+    TestClient request looks like 127.0.0.1, so without this the 31st
+    /api/* request in a run gets a 429 from a prior test.
+    """
+    import gdelt_event_pipeline.api.middleware as _mw
+
+    _mw._rate_limit_store.clear()
+
+
 # ── Mock database fixtures ──────────────────────────────────────────
 
 

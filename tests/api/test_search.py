@@ -4,16 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-import pytest
-
-import gdelt_event_pipeline.api.middleware as middleware_module
 import gdelt_event_pipeline.api.routers.search as search_module
-
-
-@pytest.fixture(autouse=True)
-def _reset_rate_limit():
-    """Clear the in-memory rate limit store between tests."""
-    middleware_module._rate_limit_store.clear()
 
 
 class TestSearchEndpoint:
