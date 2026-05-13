@@ -84,6 +84,11 @@ def developers_page():
     return FileResponse(STATIC_DIR / "developers.html")
 
 
+@app.get("/search", include_in_schema=False)
+def search_page():
+    return FileResponse(STATIC_DIR / "search.html")
+
+
 @app.get("/dashboard", include_in_schema=False)
 def dashboard_page():
     return FileResponse(STATIC_DIR / "dashboard.html")

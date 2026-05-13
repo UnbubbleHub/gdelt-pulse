@@ -6,7 +6,7 @@
 <title>gdelt-pulse</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;450;500;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/pulse.css">
 <style>
 .page {
@@ -25,7 +25,7 @@
 }
 
 .brand {
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono);
   font-size: clamp(2rem, 5.5vw, 2.75rem);
   font-weight: 600;
   color: var(--accent);
@@ -102,7 +102,7 @@
   margin-top: var(--sp-4);
   padding-top: var(--sp-4);
   border-top: 1px solid var(--border);
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono);
   font-size: 0.6875rem;
   color: var(--text-3);
   line-height: 1.8;
@@ -163,7 +163,7 @@
 .code-block.active { display: block; }
 
 .code-block pre {
-  font-family: 'Fira Code', monospace;
+  font-family: var(--font-mono);
   font-size: 0.75rem;
   line-height: 1.7;
   color: var(--text-2);
@@ -259,84 +259,6 @@
 }
 .try-pill:hover { border-color: var(--accent); color: var(--accent-text); }
 
-.try-results {
-  display: none;
-  width: 100%;
-  max-width: 560px;
-}
-.try-results.visible { display: block; animation: slideUp 0.25s var(--ease) both; }
-
-.try-meta {
-  font-size: 0.6875rem;
-  color: var(--text-3);
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  margin-bottom: var(--sp-2);
-}
-
-.try-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  background: var(--border);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-
-.try-card {
-  background: var(--surface);
-  padding: var(--sp-3) var(--sp-4);
-  transition: background var(--duration);
-}
-.try-card:hover { background: var(--surface-2); }
-
-.try-card-title {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--text);
-  line-height: 1.35;
-  margin-bottom: 4px;
-}
-
-.try-badges {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
-
-.tbadge {
-  font-family: 'Fira Code', monospace;
-  font-size: 0.625rem;
-  font-weight: 500;
-  padding: 3px 8px;
-  border-radius: 4px;
-}
-
-.tbadge-count { background: var(--accent-dim); color: var(--accent-text); }
-.tbadge-loc { background: rgba(52, 211, 153, 0.06); color: var(--positive); }
-.tbadge-theme { background: rgba(251, 191, 36, 0.06); color: var(--warning); }
-.tbadge-neg { background: rgba(248, 113, 113, 0.06); color: var(--negative); }
-.tbadge-pos { background: rgba(52, 211, 153, 0.06); color: var(--positive); }
-
-.try-empty {
-  text-align: center;
-  padding: var(--sp-5);
-  color: var(--text-3);
-  font-size: 0.8125rem;
-}
-
-.try-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-2);
-  padding: var(--sp-6);
-  color: var(--text-3);
-  font-size: 0.8125rem;
-}
-
 /* ── Links row ────────────────────────────── */
 .links-row {
   display: flex;
@@ -431,20 +353,16 @@
 <!-- Try it -->
 <section class="try-section">
   <div class="try-label">Try it</div>
-  <form class="try-form" id="sf">
-    <input class="try-input" id="si" type="text" placeholder="Search clusters..." autocomplete="off">
-    <button class="try-btn" type="submit">
+  <form class="try-form" action="/search" method="get">
+    <input class="try-input" name="q" type="text" placeholder="Search clusters..." autocomplete="off" required>
+    <button class="try-btn" type="submit" aria-label="Search">
       <svg viewBox="0 0 18 18" fill="none"><path d="M3.75 9H14.25M9.75 4.5L14.25 9L9.75 13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
   </form>
   <div class="try-pills">
-    <button class="try-pill" type="button" data-q="climate policy">climate policy</button>
-    <button class="try-pill" type="button" data-q="AI regulation">AI regulation</button>
-    <button class="try-pill" type="button" data-q="military conflict">military conflict</button>
-  </div>
-  <div class="try-results" id="res">
-    <div class="try-meta" id="resMeta"></div>
-    <div id="resBody"></div>
+    <a class="try-pill" href="/search?q=climate+policy">climate policy</a>
+    <a class="try-pill" href="/search?q=AI+regulation">AI regulation</a>
+    <a class="try-pill" href="/search?q=military+conflict">military conflict</a>
   </div>
 </section>
 
@@ -594,67 +512,6 @@ document.querySelectorAll('.code-tab').forEach(t => {
     t.classList.add('active');
     document.getElementById('code-' + t.dataset.lang).classList.add('active');
   });
-});
-
-// Fake demo data — instant, no API calls
-const DEMO = {
-  "climate policy": [
-    { title: "EU Carbon Border Tax Takes Effect as Trade Partners Push Back", count: 347, locs: ["Brussels", "Beijing"], themes: ["ENV_CLIMATECHANGE"], tone: -2.1 },
-    { title: "G7 Leaders Pledge $300B Climate Finance Package for Developing Nations", count: 283, locs: ["Rome"], themes: ["ECON_DEBT"], tone: 1.4 },
-    { title: "India Accelerates Coal Phase-Out Timeline After Record Heatwave Deaths", count: 198, locs: ["New Delhi"], themes: ["ENV_CLIMATECHANGE"], tone: -3.5 },
-    { title: "US Strengthens Paris Climate Accord Targets Amid Domestic Opposition", count: 156, locs: ["Washington"], themes: ["ENV_CLIMATECHANGE"], tone: 2.8 },
-  ],
-  "AI regulation": [
-    { title: "EU AI Act Enforcement Begins with First Wave of Compliance Audits", count: 412, locs: ["Brussels"], themes: ["REGULATION"], tone: -0.8 },
-    { title: "China Mandates AI Watermarking for All Synthetically Generated Content", count: 289, locs: ["Beijing"], themes: ["MEDIA_CENSORSHIP"], tone: -1.9 },
-    { title: "OpenAI and Google Face Congressional Hearings on Foundation Model Safety", count: 231, locs: ["Washington"], themes: ["LEGISLATION"], tone: -2.4 },
-    { title: "UK Establishes AI Safety Institute with $500M Government Backing", count: 174, locs: ["London"], themes: ["SCIENCE"], tone: 3.1 },
-  ],
-  "military conflict": [
-    { title: "UN Security Council Emergency Session on Escalating Middle East Tensions", count: 587, locs: ["New York", "Gaza"], themes: ["MILITARY_CONFLICT"], tone: -5.2 },
-    { title: "NATO Deploys Additional Forces to Eastern European Borders", count: 423, locs: ["Warsaw", "Bucharest"], themes: ["MILITARY_CONFLICT"], tone: -3.8 },
-    { title: "Peace Negotiations Resume in Geneva with New Ceasefire Proposal", count: 312, locs: ["Geneva"], themes: ["PEACE_NEGOTIATIONS"], tone: 1.2 },
-    { title: "Red Cross Reports Humanitarian Crisis as Civilian Casualties Mount", count: 276, locs: ["Gaza"], themes: ["HUMANITARIAN_AID"], tone: -6.1 },
-  ],
-};
-
-const sf = document.getElementById('sf');
-const si = document.getElementById('si');
-const res = document.getElementById('res');
-const resMeta = document.getElementById('resMeta');
-const resBody = document.getElementById('resBody');
-
-function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
-
-function toneTag(t) {
-  if (t <= -2) return `<span class="tbadge tbadge-neg">tone ${t.toFixed(1)}</span>`;
-  if (t >= 2) return `<span class="tbadge tbadge-pos">tone +${t.toFixed(1)}</span>`;
-  return '';
-}
-
-function show(q) {
-  if (!q.trim()) return;
-  si.value = q;
-  const key = Object.keys(DEMO).find(k => q.toLowerCase().includes(k));
-  const clusters = key ? DEMO[key] : DEMO["climate policy"];
-  resMeta.textContent = `${clusters.length} clusters`;
-  resBody.innerHTML = '<div class="try-list">' + clusters.map(c => {
-    const locs = (c.locs || []).map(l => `<span class="tbadge tbadge-loc">${esc(l)}</span>`).join('');
-    const themes = (c.themes || []).slice(0, 1).map(t => `<span class="tbadge tbadge-theme">${esc(t)}</span>`).join('');
-    return `<div class="try-card">
-      <div class="try-card-title">${esc(c.title)}</div>
-      <div class="try-badges">
-        <span class="tbadge tbadge-count">${c.count} articles</span>
-        ${locs}${themes}${toneTag(c.tone || 0)}
-      </div>
-    </div>`;
-  }).join('') + '</div>';
-  res.classList.add('visible');
-}
-
-sf.addEventListener('submit', e => { e.preventDefault(); show(si.value); });
-document.querySelectorAll('.try-pill').forEach(p => {
-  p.addEventListener('click', () => show(p.dataset.q));
 });
 </script>
 </body>

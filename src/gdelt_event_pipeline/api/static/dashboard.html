@@ -3,45 +3,64 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GDELT Pulse — Dashboard</title>
+<title>gdelt-pulse — dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/pulse.css">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    background: #0a0a0a;
-    color: #e0e0e0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-size: 15px;
-    line-height: 1.6;
-    padding: 48px 24px 80px;
+    padding: 56px 24px 80px;
   }
   .wrap { max-width: 600px; margin: 0 auto; }
-  a { color: #7eb8f7; text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  h1 { font-size: 2rem; font-weight: 600; letter-spacing: -0.03em; margin-bottom: 6px; }
-  .subtitle { color: #666; font-size: 0.9rem; margin-bottom: 48px; }
-  .subtitle a { color: #555; }
+  a { color: var(--accent-text); }
+  a:hover { color: var(--accent); }
+  h1 {
+    font-family: var(--font-serif);
+    font-size: 2rem;
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+  .subtitle {
+    color: var(--text-3);
+    font-size: 0.875rem;
+    margin-bottom: 48px;
+  }
+  .subtitle code {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--text-2);
+    padding: 1px 5px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .subtitle a { color: var(--text-2); }
   .card {
-    background: #111;
-    border: 1px solid #222;
-    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
     padding: 28px 32px;
   }
   .card-title {
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #555;
+    letter-spacing: 0.1em;
+    color: var(--text-3);
     margin-bottom: 20px;
   }
   .key-display {
-    font-family: "SF Mono", "Fira Code", Menlo, monospace;
-    font-size: 0.9rem;
-    background: #0d0d0d;
-    border: 1px solid #2a2a2a;
-    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
     padding: 12px 16px;
-    color: #c8d9f0;
+    color: var(--accent-text);
     word-break: break-all;
     margin-bottom: 16px;
     display: flex;
@@ -50,101 +69,142 @@
   }
   .key-value { flex: 1; }
   .copy-btn {
-    background: #1a1a1a;
-    border: 1px solid #333;
-    border-radius: 4px;
-    color: #888;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-3);
     cursor: pointer;
-    font-size: 0.75rem;
-    padding: 4px 10px;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 5px 10px;
     white-space: nowrap;
-    transition: color 0.15s, border-color 0.15s;
+    transition: color var(--duration), border-color var(--duration);
   }
-  .copy-btn:hover { color: #e0e0e0; border-color: #555; }
-  .copy-btn.copied { color: #4caf50; border-color: #4caf50; }
+  .copy-btn:hover { color: var(--text); border-color: var(--border-hover); }
+  .copy-btn.copied { color: var(--positive); border-color: var(--positive); }
   .warning {
-    font-size: 0.8rem;
-    color: #e6a817;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--warning);
     margin-bottom: 20px;
     display: flex;
     gap: 8px;
     align-items: flex-start;
   }
   .key-meta {
-    font-size: 0.82rem;
-    color: #555;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-3);
     margin-bottom: 20px;
   }
-  .key-meta span { color: #888; }
-  .no-key-msg { color: #555; font-size: 0.9rem; margin-bottom: 20px; }
+  .key-meta span { color: var(--text-2); }
+  .no-key-msg {
+    color: var(--text-3);
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+  }
   .actions { display: flex; gap: 10px; flex-wrap: wrap; }
   .btn {
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radius);
     cursor: pointer;
-    font-size: 0.875rem;
+    font-family: var(--font);
+    font-size: 0.8125rem;
     font-weight: 500;
+    letter-spacing: 0.02em;
     padding: 9px 18px;
-    transition: opacity 0.15s;
+    transition: opacity var(--duration), background var(--duration);
   }
-  .btn:hover { opacity: 0.85; }
+  .btn:hover { opacity: 0.9; }
   .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .btn-primary { background: #7eb8f7; color: #0a0a0a; }
-  .btn-danger { background: transparent; border: 1px solid #444; color: #e07070; }
-  .btn-danger:hover { border-color: #e07070; }
-  .divider { border: none; border-top: 1px solid #1a1a1a; margin: 24px 0; }
+  .btn-primary { background: var(--accent); color: var(--bg); }
+  .btn-primary:hover { background: var(--accent-text); }
+  .btn-danger {
+    background: transparent;
+    border: 1px solid var(--border-hover);
+    color: var(--negative);
+  }
+  .btn-danger:hover { border-color: var(--negative); }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
   .user-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     margin-bottom: 32px;
   }
-  .user-email { font-size: 0.85rem; color: #666; }
+  .user-email {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-3);
+  }
   .sign-out-btn {
     background: none;
     border: none;
-    color: #444;
+    color: var(--text-3);
     cursor: pointer;
-    font-size: 0.8rem;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     padding: 0;
   }
-  .sign-out-btn:hover { color: #888; }
-  #loading { color: #444; font-size: 0.9rem; padding: 40px 0; }
+  .sign-out-btn:hover { color: var(--accent); }
+  #loading {
+    color: var(--text-3);
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    letter-spacing: 0.04em;
+    padding: 40px 0;
+  }
   .nav-links {
     display: flex;
     gap: 10px;
     margin-top: 48px;
     padding-top: 28px;
-    border-top: 1px solid #1a1a1a;
+    border-top: 1px solid var(--border);
   }
   .nav-card {
     display: flex;
     align-items: center;
     gap: 12px;
     padding: 14px 18px;
-    background: #111;
-    border: 1px solid #222;
-    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
     text-decoration: none;
-    transition: border-color 0.15s, background 0.15s;
+    transition: border-color var(--duration), background var(--duration);
     flex: 1;
   }
-  .nav-card:hover { border-color: #333; background: #161616; text-decoration: none; }
+  .nav-card:hover {
+    border-color: var(--border-hover);
+    background: var(--surface-2);
+  }
   .nav-icon {
     width: 32px;
     height: 32px;
-    border-radius: 6px;
-    background: #1a1a1a;
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #555;
+    color: var(--text-3);
     flex-shrink: 0;
   }
-  .nav-card:hover .nav-icon { color: #888; }
+  .nav-card:hover .nav-icon { color: var(--accent); }
   .nav-icon svg { width: 16px; height: 16px; }
-  .nav-text h4 { font-size: 0.8125rem; font-weight: 500; color: #e0e0e0; margin-bottom: 2px; }
-  .nav-text p { font-size: 0.6875rem; color: #555; }
+  .nav-text h4 {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .nav-text p {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    color: var(--text-3);
+  }
   @media (max-width: 768px) { .nav-links { flex-direction: column; } }
 </style>
 </head>

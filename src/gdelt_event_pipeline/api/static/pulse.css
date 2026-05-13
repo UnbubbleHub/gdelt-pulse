@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════
-   GDELT Pulse — Design System
-   Inspired by Bending Spoons: editorial, premium, clean.
+   gdelt-pulse — design system
+   newsroom research console: warm-dark, editorial, dense.
    ═══════════════════════════════════════════════════════ */
 
 /* ── Reset ─────────────────────────────────────────────── */
@@ -8,46 +8,56 @@
 
 /* ── Design Tokens ─────────────────────────────────────── */
 :root {
-  /* Backgrounds */
-  --bg:         #09090b;
-  --bg-subtle:  #0f0f11;
-  --surface:    #141416;
-  --surface-2:  #1a1a1e;
-  --surface-3:  #222226;
+  /* Backgrounds — warm dark with a hint of olive */
+  --bg:         #0d0e0a;
+  --bg-subtle:  #131410;
+  --surface:    #181a14;
+  --surface-2:  #1f2118;
+  --surface-3:  #2a2c22;
 
-  /* Borders */
-  --border:      rgba(255, 255, 255, 0.06);
-  --border-hover: rgba(255, 255, 255, 0.10);
-  --border-active: rgba(255, 255, 255, 0.14);
+  /* Borders — visible warm grays, not timid */
+  --border:      #2a2c22;
+  --border-hover: #3a3d2f;
+  --border-active: #4f4d3f;
 
-  /* Text */
-  --text:   #fafafa;
-  --text-2: #a1a1aa;
-  --text-3: #63636e;
+  /* Text — bone white instead of pure white */
+  --text:   #ece8d8;
+  --text-2: #b7b2a0;
+  --text-3: #7b7864;
+  --text-4: #4f4d3f;
 
-  /* Accent — blue-indigo, inspired by Unbubble */
-  --accent:     #4c6ef5;
-  --accent-dim: rgba(76, 110, 245, 0.08);
-  --accent-text: #748ffc;
+  /* Accent — terminal amber */
+  --accent:      #f59e0b;
+  --accent-dim:  rgba(245, 158, 11, 0.08);
+  --accent-text: #fbb24c;
+  --accent-hot:  #c4d147;   /* lime-olive for "very high" */
 
   /* Semantic colors (data only, not UI chrome) */
-  --positive: #34d399;
-  --negative: #f87171;
-  --warning:  #fbbf24;
-  --info:     #60a5fa;
+  --positive: #84cc16;
+  --negative: #e57373;
+  --warning:  #f59e0b;
+  --info:     #94b8d4;
 
-  /* Category colors — muted palette */
-  --cat-conflict:    #f87171;
-  --cat-economy:     #fbbf24;
-  --cat-politics:    #818cf8;
-  --cat-health:      #34d399;
-  --cat-environment: #22d3ee;
-  --cat-technology:  #a78bfa;
-  --cat-society:     #fb923c;
-  --cat-general:     #71717a;
+  /* Entity tag tints — muted, used by search badges */
+  --tag-loc:   #a3d4a0;
+  --tag-theme: #d4c376;
+  --tag-pers:  #c8a8d4;
+  --tag-org:   #94b8d4;
+
+  /* Category colors — re-tuned to warm palette */
+  --cat-conflict:    #e57373;
+  --cat-economy:     #f59e0b;
+  --cat-politics:    #c8a8d4;
+  --cat-health:      #84cc16;
+  --cat-environment: #a3d4a0;
+  --cat-technology:  #94b8d4;
+  --cat-society:     #fbb24c;
+  --cat-general:     #7b7864;
 
   /* Typography */
-  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font:       'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono:  'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+  --font-serif: 'Newsreader', 'Iowan Old Style', Georgia, serif;
 
   /* Spacing scale (4px base) */
   --sp-1: 4px;
@@ -61,18 +71,18 @@
   --sp-9: 96px;
   --sp-10: 128px;
 
-  /* Radii */
-  --radius-sm: 8px;
-  --radius:    12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
+  /* Radii — sharp, almost rectangular */
+  --radius-sm: 2px;
+  --radius:    3px;
+  --radius-lg: 4px;
+  --radius-xl: 6px;
   --radius-full: 9999px;
 
   /* Motion */
-  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-out: cubic-bezier(0, 0, 0.2, 1);
-  --duration: 0.2s;
-  --duration-lg: 0.4s;
+  --duration: 0.15s;
+  --duration-lg: 0.32s;
 }
 
 /* ── Base ──────────────────────────────────────────────── */
@@ -91,11 +101,25 @@ body {
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
   min-height: 100vh;
-  font-feature-settings: 'cv11' 1, 'ss01' 1; /* Inter alternates */
+  font-feature-settings: 'ss01' 1, 'ss02' 1, 'cv11' 1;
+  position: relative;
 }
 
+/* Subtle grain overlay to break the flatness */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.04;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+body > * { position: relative; z-index: 2; }
+
 ::selection {
-  background: rgba(139, 139, 245, 0.2);
+  background: rgba(245, 158, 11, 0.32);
   color: var(--text);
 }
 
