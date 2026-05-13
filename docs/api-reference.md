@@ -36,8 +36,8 @@ Hybrid semantic + keyword search across articles and optionally clusters. Result
 | `person` | string | -- | Filter by person name |
 | `org` | string | -- | Filter by organization |
 | `theme` | string | -- | Filter by GDELT theme code |
-| `domain` | string | -- | Filter by source domain |
-| `source` | string | -- | Filter by source name |
+| `domain` | string | -- | Filter by source domain (comma-separated). Soft match: `corriere.it` also matches `video.corriere.it`. |
+| `source` | string | -- | Filter by canonical source slug (comma-separated) |
 | `date_from` | datetime | -- | Start date (ISO 8601) |
 | `date_to` | datetime | -- | End date (ISO 8601) |
 
@@ -86,14 +86,16 @@ List active event clusters.
 |-----------|------|---------|-------------|
 | `limit` | integer | 100 | Max clusters to return (1--500) |
 | `sort` | string | `recent` | Sort order: `recent`, `articles`, or `oldest` |
-| `location` | string | -- | Filter by location |
-| `person` | string | -- | Filter by person |
-| `org` | string | -- | Filter by organization |
-| `theme` | string | -- | Filter by GDELT theme |
-| `domain` | string | -- | Filter by source domain |
-| `source` | string | -- | Filter by source name |
+| `location` | string | -- | Filter by location (comma-separated) |
+| `person` | string | -- | Filter by person (comma-separated) |
+| `org` | string | -- | Filter by organization (comma-separated) |
+| `theme` | string | -- | Filter by GDELT theme (comma-separated) |
+| `domain` | string | -- | Filter by source domain (comma-separated). Soft match: `corriere.it` also matches `video.corriere.it`. |
+| `source` | string | -- | Filter by canonical source slug (comma-separated) |
 | `date_from` | datetime | -- | Start date (ISO 8601) |
 | `date_to` | datetime | -- | End date (ISO 8601) |
+
+Filters share the same semantics as `/api/search` (JSONB containment for entities, exact / soft-domain match for domain) — applied to article-level fields, then clusters are returned for any matching member.
 
 **Example:**
 
@@ -147,16 +149,16 @@ List recent articles, newest first, with optional filters.
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `limit` | integer | 50 | Max articles to return (1--200) |
-| `location` | string | -- | Filter by location |
-| `person` | string | -- | Filter by person |
-| `org` | string | -- | Filter by organization |
-| `theme` | string | -- | Filter by GDELT theme |
-| `domain` | string | -- | Filter by source domain |
-| `source` | string | -- | Filter by source name |
+| `location` | string | -- | Filter by location (comma-separated) |
+| `person` | string | -- | Filter by person (comma-separated) |
+| `org` | string | -- | Filter by organization (comma-separated) |
+| `theme` | string | -- | Filter by GDELT theme (comma-separated) |
+| `domain` | string | -- | Filter by source domain (comma-separated). Soft match: `corriere.it` also matches `video.corriere.it`. |
+| `source` | string | -- | Filter by canonical source slug (comma-separated) |
 | `date_from` | datetime | -- | Start date (ISO 8601) |
 | `date_to` | datetime | -- | End date (ISO 8601) |
 
-When no filters are provided, returns the most recent articles with titles. When filters are provided, builds a dynamic query with ILIKE conditions.
+Filter semantics are shared with `/api/search` and `/api/clusters` (JSONB containment for entities, exact + subdomain match for `domain`, exact match for `source`).
 
 **Example:**
 

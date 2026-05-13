@@ -8,6 +8,8 @@ from typing import Any
 from fastapi import APIRouter, Query
 
 from gdelt_event_pipeline.api.routers._helpers import split_csv, strip_internal_fields
+from gdelt_event_pipeline.query.filters import build_filter_clauses
+from gdelt_event_pipeline.query.models import SearchFilters
 from gdelt_event_pipeline.storage.articles import get_recent_articles
 
 router = APIRouter()
@@ -16,26 +18,35 @@ router = APIRouter()
 @router.get("/api/articles", response_model=list[dict[str, Any]])
 def list_articles(
     limit: int = Query(50, ge=1, le=200, description="Max articles to return"),
-    location: str | None = Query(None, description="Filter by location"),
-    person: str | None = Query(None, description="Filter by person"),
-    org: str | None = Query(None, description="Filter by organization"),
-    theme: str | None = Query(None, description="Filter by GDELT theme"),
-    domain: str | None = Query(None, description="Filter by source domain"),
-    source: str | None = Query(None, description="Filter by source name"),
+    location: str | None = Query(None, description="Filter by location (comma-separated)"),
+    person: str | None = Query(None, description="Filter by person (comma-separated)"),
+    org: str | None = Query(None, description="Filter by organization (comma-separated)"),
+    theme: str | None = Query(None, description="Filter by GDELT theme (comma-separated)"),
+    domain: str | None = Query(
+        None,
+        description=(
+            "Filter by source domain (comma-separated). Soft match: 'corriere.it' "
+            "also matches 'video.corriere.it'."
+        ),
+    ),
+    source: str | None = Query(
+        None, description="Filter by canonical source slug (comma-separated)"
+    ),
     date_from: datetime | None = Query(None, description="Start date (ISO)"),  # noqa: B008
     date_to: datetime | None = Query(None, description="End date (ISO)"),  # noqa: B008
 ):
     """List recent articles, newest first, with optional filters."""
-    locations = split_csv(location)
-    persons = split_csv(person)
-    organizations = split_csv(org)
-    themes = split_csv(theme)
-    domains = split_csv(domain)
-    sources = split_csv(source)
-
-    has_filters = any(
-        [locations, persons, organizations, themes, domains, sources, date_from, date_to]
+    filters = SearchFilters(
+        locations=split_csv(location),
+        persons=split_csv(person),
+        organizations=split_csv(org),
+        themes=split_csv(theme),
+        domains=split_csv(domain),
+        sources=split_csv(source),
+        date_from=date_from,
+        date_to=date_to,
     )
+    has_filters = any(getattr(filters, f) for f in filters.__dataclass_fields__)
 
     if not has_filters:
         rows = get_recent_articles(limit=limit)
@@ -43,35 +54,8 @@ def list_articles(
 
     from gdelt_event_pipeline.storage.database import get_pool
 
-    conditions: list[str] = ["a.title IS NOT NULL"]
-    params: list[Any] = []
-
-    if locations:
-        conditions.append("a.locations::text ILIKE %s")
-        params.append(f"%{locations[0]}%")
-    if persons:
-        conditions.append("a.persons::text ILIKE %s")
-        params.append(f"%{persons[0]}%")
-    if organizations:
-        conditions.append("a.organizations::text ILIKE %s")
-        params.append(f"%{organizations[0]}%")
-    if themes:
-        conditions.append("a.themes::text ILIKE %s")
-        params.append(f"%{themes[0]}%")
-    if domains:
-        conditions.append("a.domain ILIKE %s")
-        params.append(f"%{domains[0]}%")
-    if sources:
-        conditions.append("(a.source_common_name ILIKE %s OR a.canonical_source ILIKE %s)")
-        params.extend([f"%{sources[0]}%", f"%{sources[0]}%"])
-    if date_from:
-        conditions.append("a.gdelt_timestamp >= %s")
-        params.append(date_from)
-    if date_to:
-        conditions.append("a.gdelt_timestamp <= %s")
-        params.append(date_to)
-
-    where = " AND ".join(conditions)
+    filter_sql, filter_params = build_filter_clauses(filters, table_alias="a")
+    params: list[Any] = list(filter_params)
     params.append(limit)
 
     pool = get_pool()
@@ -80,7 +64,7 @@ def list_articles(
 
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
-                f"SELECT a.* FROM articles a WHERE {where}"
+                f"SELECT a.* FROM articles a WHERE a.title IS NOT NULL{filter_sql}"
                 " ORDER BY a.gdelt_timestamp DESC LIMIT %s",
                 params,
             )

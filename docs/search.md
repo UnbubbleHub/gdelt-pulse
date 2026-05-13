@@ -76,16 +76,20 @@ Filters are applied as SQL WHERE conditions **before** search, reducing the cand
 
 | Filter | SQL Behavior |
 |--------|-------------|
-| `location=Turkey` | `locations::text ILIKE '%Turkey%'` |
-| `person=Macron` | `persons::text ILIKE '%Macron%'` |
-| `org=NATO` | `organizations::text ILIKE '%NATO%'` |
-| `theme=MILITARY` | `themes::text ILIKE '%MILITARY%'` |
-| `domain=bbc.com` | `domain ILIKE '%bbc.com%'` |
-| `source=Reuters` | `source_common_name ILIKE '%Reuters%' OR canonical_source ILIKE '%Reuters%'` |
+| `location=Turkey` | `locations @> '[{"name":"Turkey"}]'::jsonb` |
+| `person=Macron` | `persons @> '["Macron"]'::jsonb` |
+| `org=NATO` | `organizations @> '["NATO"]'::jsonb` |
+| `theme=MILITARY` | `themes @> '[{"theme":"MILITARY"}]'::jsonb` |
+| `domain=corriere.it` | `domain = ANY(ARRAY['corriere.it']) OR domain LIKE ANY(ARRAY['%.corriere.it'])` |
+| `source=reuters` | `canonical_source = ANY(ARRAY['reuters'])` |
 | `date_from=...` | `gdelt_timestamp >= <value>` |
 | `date_to=...` | `gdelt_timestamp <= <value>` |
 
-Filters use ILIKE for case-insensitive partial matching. Entity fields (locations, persons, organizations, themes) are stored as PostgreSQL arrays and cast to text for ILIKE matching.
+All filters accept comma-separated values (e.g. `domain=corriere.it,repubblica.it`) and combine via `ANY` / JSONB containment.
+
+**Domain matching** is "soft" — passing `corriere.it` matches both the exact domain (`corriere.it`) and any subdomain of it (`video.corriere.it`, `sport.corriere.it`). Pass the registrable domain you care about; the API does not strip TLDs for you, so `corriere` alone matches nothing useful.
+
+Stored domains are normalized at ingestion: lowercased, `www.` stripped, port stripped (see `normalization/url.py:extract_domain`).
 
 ## Cluster Search
 

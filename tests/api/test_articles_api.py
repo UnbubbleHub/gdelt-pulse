@@ -56,9 +56,25 @@ class TestListArticles:
             resp = client_no_db.get("/api/articles?location=Rome&theme=MILITARY_CONFLICT")
         assert resp.status_code == 200
         sql = pool._mock_cur.execute.call_args[0][0]
-        assert "ILIKE" in sql
-        assert "locations" in sql
-        assert "themes" in sql
+        # Filters now share build_filter_clauses → JSONB containment, not ILIKE
+        assert "a.locations @>" in sql
+        assert "a.themes @>" in sql
+
+    def test_domain_filter_uses_soft_match(self, client_no_db):
+        pool = make_mock_pool()
+        pool._mock_cur.fetchall.return_value = []
+        with patch(
+            "gdelt_event_pipeline.storage.database.get_pool",
+            return_value=pool,
+        ):
+            resp = client_no_db.get("/api/articles?domain=corriere.it,repubblica.it")
+        assert resp.status_code == 200
+        sql, params = pool._mock_cur.execute.call_args[0]
+        assert "a.domain = ANY(%s)" in sql
+        assert "a.domain LIKE ANY(%s)" in sql
+        # Both CSV values must be honored (used to silently drop the second one)
+        assert ["corriere.it", "repubblica.it"] in params
+        assert ["%.corriere.it", "%.repubblica.it"] in params
 
     def test_filters_strip_internal_fields(self, client_no_db):
         pool = make_mock_pool()

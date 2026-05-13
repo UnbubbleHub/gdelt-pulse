@@ -45,7 +45,18 @@ class TestBuildFilterClauses:
     def test_domain_filter(self):
         sql, params = build_filter_clauses(SearchFilters(domains=["bbc.co.uk"]))
         assert "domain = ANY" in sql
+        assert "domain LIKE ANY" in sql
         assert params[0] == ["bbc.co.uk"]
+        assert params[1] == ["%.bbc.co.uk"]
+
+    def test_domain_filter_matches_subdomains(self):
+        # The LIKE pattern is what enables soft subdomain matching:
+        # passing "corriere.it" should also match "video.corriere.it".
+        _, params = build_filter_clauses(
+            SearchFilters(domains=["corriere.it", "repubblica.it"])
+        )
+        assert params[0] == ["corriere.it", "repubblica.it"]
+        assert params[1] == ["%.corriere.it", "%.repubblica.it"]
 
     def test_source_filter(self):
         sql, params = build_filter_clauses(SearchFilters(sources=["reuters"]))
@@ -77,7 +88,8 @@ class TestBuildFilterClauses:
         assert "locations @>" in sql
         assert "domain = ANY" in sql
         assert " AND " in sql
-        assert len(params) == 2
+        # 1 location param + 2 domain params (exact list + LIKE patterns)
+        assert len(params) == 3
 
     def test_sql_starts_with_and(self):
         sql, _ = build_filter_clauses(SearchFilters(domains=["bbc.co.uk"]))

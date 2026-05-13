@@ -58,7 +58,18 @@ class TestListClusters:
             resp = client_no_db.get("/api/clusters?location=Rome")
         assert resp.status_code == 200
         sql = pool._mock_cur.execute.call_args[0][0]
-        assert "ILIKE" in sql
+        assert "a.locations @>" in sql
+
+    def test_domain_filter_uses_soft_match(self, client_no_db):
+        pool = make_mock_pool(fetchall_return=[])
+        with patch("gdelt_event_pipeline.storage.database.get_pool", return_value=pool):
+            resp = client_no_db.get("/api/clusters?domain=corriere.it,repubblica.it")
+        assert resp.status_code == 200
+        sql, params = pool._mock_cur.execute.call_args[0]
+        assert "a.domain = ANY(%s)" in sql
+        assert "a.domain LIKE ANY(%s)" in sql
+        assert ["corriere.it", "repubblica.it"] in params
+        assert ["%.corriere.it", "%.repubblica.it"] in params
 
 
 class TestClusterDetail:

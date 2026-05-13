@@ -54,7 +54,14 @@ def search(
     person: str | None = Query(None, description="Filter by person (comma-separated)"),
     org: str | None = Query(None, description="Filter by organization (comma-separated)"),
     theme: str | None = Query(None, description="Filter by theme (comma-separated)"),
-    domain: str | None = Query(None, description="Filter by domain (comma-separated)"),
+    domain: str | None = Query(
+        None,
+        description=(
+            "Filter by domain (comma-separated). Matches the exact domain and any "
+            "subdomain — e.g. 'corriere.it' matches both 'corriere.it' and "
+            "'video.corriere.it'."
+        ),
+    ),
     source: str | None = Query(None, description="Filter by source (comma-separated)"),
     date_from: datetime | None = Query(None, description="Start date (ISO format)"),  # noqa: B008
     date_to: datetime | None = Query(None, description="End date (ISO format)"),  # noqa: B008

@@ -98,6 +98,7 @@ class TestSearchArticlesByVector:
         search_articles_by_vector([0.1], filters=filters)
         sql = patch_pool._mock_cur.execute.call_args[0][0]
         assert "domain = ANY(%s)" in sql
+        assert "domain LIKE ANY(%s)" in sql
 
     def test_returns_fetchall_result(self, patch_pool):
         from gdelt_event_pipeline.query.vector import search_articles_by_vector
